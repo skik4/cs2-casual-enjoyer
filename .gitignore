@@ -1,0 +1,40 @@
+# Node.js dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.venv
+
+# VS Code settings
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+tmp/
+temp/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Test files
+__tests__/
+
+# Configuration files
+jest.config.json
+.babelrc
+
+# Backup files from refactoring
+*.old
+
+# Temporary documentation and migration files
+LOGGER_README.md
+migrate.js
