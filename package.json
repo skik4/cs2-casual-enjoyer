@@ -1,0 +1,44 @@
+{
+  "name": "cs2-casual-enjoyer",
+  "version": "0.3.0",
+  "description": "CS2 Casual Enjoyer Electron App",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron . --remote-debugging-port=9222",
+    "dev": "electron . --inspect=9223 --remote-debugging-port=9222",
+    "dist": "electron-builder",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/ --ext .js",
+    "format": "prettier --write src/"
+  },
+  "build": {
+    "appId": "cs2casualenjoyer",
+    "productName": "CS2 Casual Enjoyer",
+    "files": [
+      "src/**/*",
+      "index.html",
+      "css/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "assets/icon.ico"
+    },
+    "icon": "assets/icon.ico",
+    "asar": true,
+    "compression": "maximum",
+    "publish": null
+  },
+  "author": "skik4",
+  "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
+    "@babel/preset-env": "^7.27.2",
+    "electron": "^29.0.0",
+    "electron-builder": "^26.0.12",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
+  }
+}
