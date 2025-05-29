@@ -1,20 +1,27 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>CS2 Casual Enjoyer</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <style>
-        /* Anti-white-flash: сразу тёмный фон */
-        body { background: #181c20 !important; }
-        html { background: #181c20 !important; }
+        body {
+            background: #181c20 !important;
+        }
+
+        html {
+            background: #181c20 !important;
+        }
     </style>
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
     <div class="window-bar">
         <span class="window-bar-title">CS2 Casual Enjoyer</span>
         <div class="window-bar-btns">
-            <button class="window-btn minimize" title="Minimize" onclick="window.electronAPI.minimize()">&minus;</button>
+            <button class="window-btn minimize" title="Minimize"
+                onclick="window.electronAPI.minimize()">&minus;</button>
             <button class="window-btn close" title="Close" onclick="window.electronAPI.close()">&times;</button>
         </div>
     </div>
@@ -26,16 +33,15 @@
                 <div class="param-fields-container">
                     <div class="param-label-row" style="margin-bottom:0.1em;">
                         <div class="param-label-cell" style="padding-bottom:0;">
-                            <span
-                                title="Get your Steam Web API Key in Steam"
-                                class="param-label-text"
-                                style="text-decoration:underline dotted; color:inherit; cursor:pointer; margin-bottom:0; padding-bottom:0;"
-                            >
+                            <span title="Get your Steam Web API Key in Steam" class="param-label-text"
+                                style="text-decoration:underline; color:inherit; cursor:pointer; margin-bottom:0; padding-bottom:0;">
                                 Steam Web API Token / Key
                             </span>
                         </div>
                         <div class="param-label-cell" style="padding-bottom:0;">
-                            <a href="steam://url/SteamIDMyProfile" target="_self" title="Open your Steam profile in Steam" class="param-label-text" style="text-decoration:underline dotted; color:inherit; cursor:pointer; margin-bottom:0; padding-bottom:0;">
+                            <a href="steam://url/SteamIDMyProfile" target="_self" title="Open your profile in Steam"
+                                class="param-label-text"
+                                style="text-decoration:underline; color:inherit; cursor:pointer; margin-bottom:0; padding-bottom:0;">
                                 SteamID64
                             </a>
                         </div>
@@ -50,13 +56,15 @@
                     </div>
                 </div>
                 <div class="center-row">
-                    <button id="updateFriendsBtn" class="action-btn" title="Update the complete list of friends from Steam API">Update Friends List</button>
+                    <button id="updateFriendsBtn" class="action-btn"
+                        title="Update the complete list of friends from Steam API">Update Friends List</button>
                 </div>
                 <div id="friends-status-message" class="friends-status-message">
                     <p>Initializing...</p>
                 </div>
                 <div class="center-row" id="friend-filter-row" style="margin-bottom:0.7em;">
-                    <input id="friend-filter-input" type="text" placeholder="Filter by friend name..." style="width: 320px; max-width: 100%; font-size: 1em; border-radius: 8px; border: 1px solid #353a40; padding: 0.5em 1em; background: #202328; color: #f3f6fa;">
+                    <input id="friend-filter-input" type="text" placeholder="Filter by friend name..."
+                        style="width: 320px; max-width: 100%; font-size: 1em; border-radius: 8px; border: 1px solid #353a40; padding: 0.5em 1em; background: #202328; color: #f3f6fa;">
                 </div>
                 <div class="friend-list" id="friends"></div>
             </div>
@@ -66,21 +74,24 @@
         <span class="footer-app-title">
             <span id="app-version"></span>
             by
-            <a href="steam://openurl/https://steamcommunity.com/id/skik4" style="color:#7fa7d9;text-decoration:underline dotted;cursor:pointer;" title="Open skik4's Steam profile">skik4</a>
+            <a href="steam://openurl/https://steamcommunity.com/id/skik4"
+                style="color:#7fa7d9;text-decoration:underline dotted;cursor:pointer;"
+                title="Open skik4's Steam profile">skik4</a>
         </span>
     </div>
-    
+
     <!-- Load the new modular application -->
     <script type="module" src="src/core/app.js"></script>
-    
+
     <script>
         // Initialize app version display
         if (window.electronAPI && window.electronAPI.getAppVersion) {
-            window.electronAPI.getAppVersion().then(function(version) {
+            window.electronAPI.getAppVersion().then(function (version) {
                 const el = document.getElementById('app-version');
                 if (el && version) el.textContent = 'v' + version + ' ';
             });
         }
     </script>
 </body>
+
 </html>

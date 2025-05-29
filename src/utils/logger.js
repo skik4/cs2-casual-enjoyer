@@ -111,7 +111,6 @@ Full API:
 • logger.setLevel('debug')
 • logger.getRecentLogs(100, 'info')
 • logger.getLogsByLevel('debug', 50)
-• logger.getAvailableLevels()
                 `);
                 return 'help shown';
             };
@@ -151,8 +150,6 @@ Full API:
                 
                 // Update feature flags based on level
                 const isDebugOrTrace = level === 'debug' || level === 'trace';
-                LOGGING_CONFIG.ENABLE_API_RESPONSE_LOGGING = isDebugOrTrace;
-                LOGGING_CONFIG.ENABLE_FRIEND_FILTERING_LOGGING = isDebugOrTrace;
                 LOGGING_CONFIG.ENABLE_STATE_CHANGE_LOGGING = isDebugOrTrace;
             }
             
@@ -336,32 +333,7 @@ Full API:
         this.sendToElectron('trace', context, message, data);
     }
 
-    /**
-     * Log API response data if enabled in configuration
-     * @param {string} endpoint - API endpoint name
-     * @param {*} response - API response data
-     * @param {Object} context - Additional context
-     */
-    logApiResponse(endpoint, response, context = {}) {
-        if (!LOGGING_CONFIG?.ENABLE_API_RESPONSE_LOGGING) return;
-        
-        this.debug('SteamAPI', `API Response: ${endpoint}`, {
-            endpoint,
-            ...context,
-            response
-        });
-    }
 
-    /**
-     * Log friend filtering process for debugging
-     * @param {string} step - Filtering step name
-     * @param {any} data - Step data
-     */
-    logFriendFiltering(step, data) {
-        if (!LOGGING_CONFIG.ENABLE_FRIEND_FILTERING_LOGGING) return;
-        
-        this.debug('FriendFilter', `Filtering step: ${step}`, data);
-    }
 
     /**
      * Log state changes for debugging
@@ -412,22 +384,6 @@ Full API:
     clearLogs() {
         this.logBuffer = [];
         this.info('Logger', 'Log buffer cleared');
-    }
-
-    /**
-     * Get available log levels
-     * @returns {string[]} - Array of available log levels
-     */
-    getAvailableLevels() {
-        return Object.values(LOG_LEVELS);
-    }
-
-    /**
-     * Check if Electron logging is available
-     * @returns {boolean} - Whether Electron logging is available
-     */
-    isAvailable() {
-        return this.isElectronAvailable;
     }
 }
 

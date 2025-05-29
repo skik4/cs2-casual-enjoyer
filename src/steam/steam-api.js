@@ -24,7 +24,7 @@ class SteamAPI {
      */
     static async getFriendsList(steam_id, auth) {
         const isToken = this.isWebApiToken(auth);
-        logger.debug('SteamAPI', 'Getting friends list', { steam_id, isToken });
+        logger.info('SteamAPI', 'Getting friends list', { steam_id, isToken });
         
         try {
             let url;
@@ -47,7 +47,12 @@ class SteamAPI {
             }
 
             const data = await resp.json();
-            logger.logApiResponse('GetFriendsList', data, { steam_id, isToken });
+            
+            // TRACE: Raw API response
+            logger.trace('SteamAPI', 'Raw GetFriendsList response', {
+                url: url.replace(/(key|access_token)=[^&]+/g, '$1=***'),
+                response: data
+            });
 
             let friendIds = [];
             if (isToken) {
@@ -55,16 +60,36 @@ class SteamAPI {
                     logger.warn('SteamAPI', 'Empty or invalid friends list from token API', { response: data.response });
                     throw ErrorHandler.createError(ERROR_CODES.EMPTY_FRIENDS_LIST);
                 }
-                friendIds = data.response.friendslist.friends.map(f => f.ulfriendid);
+                // Filter to only confirmed friends (efriendrelationship: 3)
+                const confirmedFriends = data.response.friendslist.friends.filter(f => f.efriendrelationship === 3);
+                friendIds = confirmedFriends.map(f => f.ulfriendid);
+                
+                // DEBUG: Log relationship filtering results
+                const totalFriends = data.response.friendslist.friends.length;
+                logger.debug('SteamAPI', 'Friend relationship filtering (token API)', {
+                    totalFriends,
+                    confirmedFriends: confirmedFriends.length,
+                    filteredOut: totalFriends - confirmedFriends.length
+                });
             } else {
                 if (!data.friendslist?.friends) {
                     logger.warn('SteamAPI', 'Empty or invalid friends list from key API', { friendslist: data.friendslist });
                     throw ErrorHandler.createError(ERROR_CODES.EMPTY_FRIENDS_LIST);
                 }
-                friendIds = data.friendslist.friends.map(f => f.steamid);
+                // Filter to only confirmed friends (efriendrelationship: 3) 
+                const confirmedFriends = data.friendslist.friends.filter(f => f.relationship === "friend");
+                friendIds = confirmedFriends.map(f => f.steamid);
+                
+                // DEBUG: Log relationship filtering results
+                const totalFriends = data.friendslist.friends.length;
+                logger.debug('SteamAPI', 'Friend relationship filtering (key API)', {
+                    totalFriends,
+                    confirmedFriends: confirmedFriends.length,
+                    filteredOut: totalFriends - confirmedFriends.length
+                });
             }
 
-            logger.info('SteamAPI', `Retrieved ${friendIds.length} friends`, { count: friendIds.length });
+            logger.info('SteamAPI', `Retrieved ${friendIds.length} confirmed friends`, { count: friendIds.length });
             
             return friendIds;
         } catch (error) {

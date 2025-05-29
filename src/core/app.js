@@ -50,17 +50,17 @@ class App {
         try {
             const savedAvatars = stateManager.getState('savedAvatars');
             const allStatuses = await SteamAPI.getFriendsStatuses(friendIds, auth, savedAvatars);
-            
+
             const casualFriends = allStatuses.filter(friend => friend.in_casual_mode);
-            
+
             stateManager.setState('friendsData', casualFriends);
-            
+
             const joinStates = keepStates ? JoinManager.getJoinStates() : {};
-            
+
             UIManager.renderFriendsList(casualFriends, joinStates);
-            
+
             logger.info('App', `Friends update completed: ${casualFriends.length} casual friends found, ${casualFriends.filter(f => f.join_available).length} joinable`);
-            
+
             return casualFriends;
         } catch (error) {
             ErrorHandler.logError('App.fetchAndRenderFriendsByIds', error);
@@ -75,7 +75,7 @@ class App {
     async updateFriendsList() {
         let steam_id = this.getSteamId();
         let auth = this.getAuth();
-        
+
         const savedSettings = stateManager.getState('savedSettings');
         if ((!steam_id || !auth) && savedSettings) {
             if (!steam_id && savedSettings.steam_id) steam_id = savedSettings.steam_id;
@@ -83,7 +83,7 @@ class App {
         }
 
         auth = SteamAPI.extractApiKeyOrToken(auth);
-        
+
         if (!steam_id || !auth) {
             UIManager.showError("Please enter your SteamID64 and API Key");
             return;
@@ -96,7 +96,7 @@ class App {
         }
 
         // Check if settings changed
-        if (savedSettings && 
+        if (savedSettings &&
             (savedSettings.steam_id !== steam_id || savedSettings.auth !== auth)) {
             localStorage.removeItem('hide_privacy_warning');
             stateManager.setState('usingSavedFriends', false);
@@ -184,22 +184,22 @@ class App {
     async startAutoRefresh() {
         const auth = this.getAuth();
         UIManager.updateFriendsStatus('Loading friends in Casual mode...');
-        
+
         const savedFriendsIds = stateManager.getState('savedFriendsIds');
         logger.info('App', `Starting auto-refresh with ${savedFriendsIds.length} saved friends`);
 
         try {
             await this.fetchAndRenderFriendsByIds(savedFriendsIds, auth, true);
-            
+
             // Clear existing interval
             stateManager.clearRefreshInterval();
-            
+
             // Set new interval
             const autoRefreshIntervalMs = stateManager.getState('autoRefreshIntervalMs');
             const interval = setInterval(async () => {
                 const usingSavedFriends = stateManager.getState('usingSavedFriends');
                 const currentSavedFriendsIds = stateManager.getState('savedFriendsIds');
-                
+
                 if (usingSavedFriends && currentSavedFriendsIds.length) {
                     try {
                         await this.fetchAndRenderFriendsByIds(currentSavedFriendsIds, auth, true);
@@ -263,7 +263,7 @@ class App {
         if (!pastedText.includes('steamcommunity.com')) return;
 
         event.preventDefault();
-        
+
         const urlValidation = Validators.validateSteamUrl(pastedText);
         if (!urlValidation.valid) {
             UIManager.showError(urlValidation.error);
@@ -325,14 +325,15 @@ class App {
                 const steamIdInput = document.getElementById('steam_id');
                 if (steamIdInput && (!steamIdInput.value || steamIdInput.value !== info.steamid)) {
                     steamIdInput.value = info.steamid;
-                    this.validateInputs();
                 }
-                UIManager.showTokenInfoNotification(info);
+                this.validateInputs(); // This will handle token notification and validation
             } else {
                 UIManager.hideTokenInfoNotification();
+                this.validateInputs();
             }
         } else {
             UIManager.hideTokenInfoNotification();
+            this.validateInputs();
         }
     }
 
@@ -343,12 +344,44 @@ class App {
         const steamId = this.getSteamId();
         const auth = this.getAuth();
         const updateBtn = document.getElementById('updateFriendsBtn');
-        
+
         const validSteamId = Validators.validateSteamId(steamId);
         const validApiKey = Validators.validateApiAuth(auth);
         const savedSettings = stateManager.getState('savedSettings');
         const hasSaved = savedSettings && savedSettings.steam_id && savedSettings.auth;
-        const enableBtn = (validSteamId && validApiKey) || hasSaved;
+
+        // Check for token expiration
+        let isTokenExpired = false;
+        const authInput = document.getElementById('auth');
+        const val = authInput ? authInput.value.trim() : '';
+        const token = SteamAPI.extractTokenIfAny(val);
+
+        // Also check saved settings for token expiration
+        let savedToken = null;
+        if (!token && savedSettings && savedSettings.auth) {
+            savedToken = SteamAPI.extractTokenIfAny(savedSettings.auth);
+        }
+
+        const tokenToCheck = token || savedToken;
+
+        if (tokenToCheck) {
+            const info = SteamAPI.parseWebApiToken(tokenToCheck);
+            if (info) {
+                const now = Date.now();
+                const expiresMs = info.expires * 1000;
+                isTokenExpired = expiresMs < now;
+
+                // Show token info notification only for current input token
+                if (token) {
+                    UIManager.showTokenInfoNotification(info);
+                }
+            }
+        } else {
+            UIManager.hideTokenInfoNotification();
+        }
+
+        // Button should be disabled if token is expired
+        const enableBtn = ((validSteamId && validApiKey) || hasSaved) && !isTokenExpired;
 
         if (updateBtn) updateBtn.disabled = !enableBtn;
 
@@ -365,16 +398,110 @@ class App {
             }
         }
 
-        const authInput = document.getElementById('auth');
         if (authInput) {
-            if (authInput.value.trim() && validApiKey) {
-                authInput.classList.remove('invalid-input');
-                authInput.classList.add('valid-input');
-            } else {
-                authInput.classList.remove('valid-input');
-                if (authInput.value.trim()) authInput.classList.add('invalid-input');
-                else authInput.classList.remove('invalid-input');
+            // Remove all validation classes first
+            authInput.classList.remove('invalid-input', 'valid-input', 'expired-token-input');
+
+            if (authInput.value.trim()) {
+                if (validApiKey) {
+                    // Valid token/key - check if expired
+                    if (isTokenExpired) {
+                        authInput.classList.add('expired-token-input');
+                    } else {
+                        authInput.classList.add('valid-input');
+                    }
+                } else {
+                    // Invalid token/key
+                    authInput.classList.add('invalid-input');
+                }
             }
+        }
+
+        // Update status message based on token/key state
+        this.updateStatusMessage(auth, validApiKey, isTokenExpired, hasSaved);
+
+        // Check if we should start auto-refresh
+        this.checkAndStartAutoRefresh(hasSaved, validSteamId, validApiKey, isTokenExpired);
+    }
+
+    /**
+     * Update status message based on auth state
+     */
+    updateStatusMessage(auth, validApiKey, isTokenExpired, hasSaved) {
+        // Don't update status if we have valid saved settings, no current input, and no token expiration
+        if (hasSaved && !auth && !isTokenExpired) {
+            return;
+        }
+
+        if (!auth && !hasSaved) {
+            // No auth input and no saved settings
+            logger.info('App', 'Status: No auth input and no saved settings');
+            UIManager.updateFriendsStatus(
+                'Enter your <b>Steam Web API Token</b> (recommended) or <b>API Key</b> (with Steam ID),<br>' +
+                'then click <b>Update Friends List</b>.<br>' +
+                'To get them, click <b>Steam Web API Token / Key</b> or <b>SteamID64</b> above.'
+            );
+        } else if (auth && !validApiKey) {
+            // Invalid auth input
+            logger.info('App', 'Status: Invalid auth input provided');
+            UIManager.updateFriendsStatus(
+                'Enter your <b>Steam Web API Token</b> (recommended) or <b>API Key</b> (with Steam ID),<br>' +
+                'then click <b>Update Friends List</b>.<br>' +
+                'To get them, click <b>Steam Web API Token / Key</b> or <b>SteamID64</b> above.'
+            );
+        } else if ((auth && validApiKey && isTokenExpired) || (!auth && hasSaved && isTokenExpired)) {
+            // Valid but expired token (current input) OR saved expired token (no current input)
+            logger.info('App', 'Status: Token is expired', {
+                hasCurrentAuth: !!auth,
+                hasSavedSettings: hasSaved,
+                isExpired: isTokenExpired
+            });
+            UIManager.updateFriendsStatus('Your Steam Web API Token is expired. Please get a new one, paste and click "Update Friends List".');
+        }
+    }
+
+    /**
+     * Check validation and start auto-refresh if conditions are met
+     */
+    checkAndStartAutoRefresh(hasSaved, validSteamId, validApiKey, isTokenExpired) {
+        const initialLoadAttempted = stateManager.getState('initialLoadAttempted');
+        
+        // Don't start auto-refresh if we already attempted initial load
+        if (initialLoadAttempted) {
+            return;
+        }
+
+        // Check if we have valid conditions for auto-refresh
+        const hasValidCurrentInputs = validSteamId && validApiKey && !isTokenExpired;
+        const hasValidSavedSettings = hasSaved && !isTokenExpired;
+        const savedFriendsIds = stateManager.getState('savedFriendsIds');
+        const hasSavedFriends = savedFriendsIds && savedFriendsIds.length > 0;
+
+        // Start auto-refresh if:
+        // 1. We have valid current inputs, OR
+        // 2. We have valid saved settings AND saved friends list
+        if (hasValidCurrentInputs || (hasValidSavedSettings && hasSavedFriends)) {
+            logger.info('App', 'Starting auto-refresh - validation passed', {
+                hasValidCurrentInputs,
+                hasValidSavedSettings,
+                hasSavedFriends,
+                friendsCount: savedFriendsIds?.length || 0
+            });
+
+            setTimeout(() => {
+                stateManager.setState('initialLoadAttempted', true);
+                this.startAutoRefresh()
+                    .catch(error => {
+                        logger.error('App', 'Auto-refresh startup failed: ' + error.message);
+                    });
+            }, 500);
+        } else {
+            logger.info('App', 'Auto-refresh not started - validation failed', {
+                hasValidCurrentInputs,
+                hasValidSavedSettings,
+                hasSavedFriends,
+                isTokenExpired
+            });
         }
     }
 
@@ -392,25 +519,8 @@ class App {
             // Setup event listeners
             this.setupEventListeners();
 
-            // Ensure error div exists
-            if (!document.getElementById('error')) {
-                const errorDiv = document.createElement('div');
-                errorDiv.id = 'error';
-                errorDiv.style.display = 'none';
-                const container = document.querySelector('.container');
-                container.insertBefore(errorDiv, container.firstChild);
-            }
-
             // Load settings
             const savedSettings = await window.electronAPI.loadSettings();
-            
-            // Migrate old API key format
-            if (savedSettings && savedSettings.api_key) {
-                savedSettings.auth = SteamAPI.extractApiKeyOrToken(savedSettings.api_key);
-                delete savedSettings.api_key;
-                await window.electronAPI.saveSettings({ ...savedSettings });
-            }
-
             logger.info('App', 'Settings loaded: ' + JSON.stringify(savedSettings ? {
                 has_steam_id: !!savedSettings.steam_id,
                 has_auth: !!savedSettings.auth,
@@ -423,11 +533,11 @@ class App {
                 // Fill inputs with saved data
                 const steamIdInput = document.getElementById('steam_id');
                 const authInput = document.getElementById('auth');
-                
+
                 if (savedSettings.steam_id && steamIdInput) {
                     steamIdInput.value = savedSettings.steam_id;
                 }
-                
+
                 if (savedSettings.auth && authInput) {
                     authInput.value = savedSettings.auth;
                 }
@@ -442,60 +552,10 @@ class App {
                 if (savedSettings.avatars && typeof savedSettings.avatars === 'object') {
                     stateManager.setState('savedAvatars', savedSettings.avatars);
                 }
-
-                this.validateInputs();
-
-                // Check for valid token and auto-refresh
-                const token = SteamAPI.extractTokenIfAny(savedSettings.auth || "");
-                if (token) {
-                    const info = SteamAPI.parseWebApiToken(token);
-                    if (info && info.expires && info.expires * 1000 > Date.now()) {
-                        logger.info('App', "Detected valid saved token, auto-refreshing friends list");
-                        setTimeout(() => {
-                            stateManager.setState('initialLoadAttempted', true);
-                            this.updateFriendsList();
-                        }, 500);
-                    } else {
-                        logger.info('App', "Token is missing or expired, not auto-refreshing");
-                        UIManager.updateFriendsStatus('Your Steam Web API Token is expired. Please get a new one and click "Update Friends List".');
-                    }
-                } else if (
-                    savedSettings.steam_id &&
-                    savedSettings.auth &&
-                    savedSettings.friends_ids &&
-                    savedSettings.friends_ids.length > 0 &&
-                    Validators.validateApiAuth(savedSettings.auth)
-                ) {
-                    logger.info('App', `Found ${savedSettings.friends_ids.length} saved friend IDs`);
-                    setTimeout(() => {
-                        stateManager.setState('initialLoadAttempted', true);
-                        this.startAutoRefresh()
-                            .catch(error => {
-                                logger.error('App', 'Auto-refresh startup failed: ' + error.message);
-                                UIManager.updateFriendsStatus(`Could not automatically load friends list.<br>Error: ${error.message || 'Unknown error'}<br>Please click "Update Friends List" to try again.`);
-                            });
-                    }, 500);
-                } else {
-                    logger.info('App', "Missing required settings for auto-loading friends");
-                    UIManager.updateFriendsStatus('Click "Update Friends List" to load your friends');
-                }
-            } else {
-                logger.info('App', "No saved settings found");
-                UIManager.updateFriendsStatus(
-                    'Enter your <b>Steam Web API Token</b> (recommended) or <b>API Key</b> (with Steam ID),<br>' +
-                    'then click <b>Update Friends List</b>.<br>' +
-                    'To get them, click <b>Steam Web API Token / Key</b> or <b>SteamID64</b> above.'
-                );
             }
 
-            // Trigger auth input handler
-            const authInput = document.getElementById('auth');
-            if (authInput) {
-                setTimeout(() => {
-                    const event = new Event('input');
-                    authInput.dispatchEvent(event);
-                }, 0);
-            }
+            // Call validateInputs at the end to set proper status and UI state
+            this.validateInputs();
 
             this.initialized = true;
         } catch (error) {
@@ -513,4 +573,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Export for external access
-export default app; 
+export default app;

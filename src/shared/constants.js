@@ -46,7 +46,7 @@ export const LOG_LEVELS = {
     TRACE: 'trace'
 };
 
-// Уровни логирования по приоритету (чем больше число, тем больше логов)
+// Logging levels by priority (higher number means more logs)
 export const LOG_LEVEL_PRIORITY = {
     [LOG_LEVELS.ERROR]: 0,
     [LOG_LEVELS.WARN]: 1,
@@ -56,17 +56,13 @@ export const LOG_LEVEL_PRIORITY = {
 };
 
 export const LOGGING_CONFIG = {
-    // Режим по умолчанию (production)
-    DEFAULT_LEVEL: LOG_LEVELS.INFO,
-    
-    // Максимальное количество логов в памяти
+    // Default mode (production)
+    DEFAULT_LEVEL: LOG_LEVELS.INFO,    // Maximum number of logs in memory
     MAX_LOG_ENTRIES: 1000,
     
-    // Настройки для разных типов логов
-    ENABLE_API_RESPONSE_LOGGING: false,  // Включается только в DEBUG/TRACE
-    ENABLE_FRIEND_FILTERING_LOGGING: false,  // Включается только в DEBUG/TRACE
-    ENABLE_STATE_CHANGE_LOGGING: false,  // Включается только в DEBUG/TRACE
+    // Settings for different types of logs
+    ENABLE_STATE_CHANGE_LOGGING: false,  // Enabled only in DEBUG/TRACE
     
-    // Глобальная переменная для переключения уровня через консоль
+    // Global variable for switching level through console
     CURRENT_LEVEL: LOG_LEVELS.INFO
 }; 
