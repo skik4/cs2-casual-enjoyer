@@ -29,13 +29,6 @@ const electronAPI = {
     },
 
     /**
-     * External URL handling
-     */
-    openExternal: (url) => {
-        ipcRenderer.send('open-external', url);
-    },
-
-    /**
      * App information methods
      */
     app: {

@@ -240,12 +240,15 @@ class App {
         }
 
         // Help links
-        const steamIdHelp = document.querySelector('.param-label-text[title*="Steam profile"]');
+        const steamIdHelp = document.getElementById('steam-id-help');
         if (steamIdHelp) {
-            steamIdHelp.addEventListener('click', UIManager.showSteamIdHelp);
+            steamIdHelp.addEventListener('click', (e) => {
+                e.preventDefault();
+                UIManager.showSteamIdHelp();
+            });
         }
 
-        const apiKeyHelp = document.querySelector('.param-label-text[title*="API Key"]');
+        const apiKeyHelp = document.getElementById('api-key-help');
         if (apiKeyHelp) {
             apiKeyHelp.addEventListener('click', (e) => {
                 e.preventDefault();

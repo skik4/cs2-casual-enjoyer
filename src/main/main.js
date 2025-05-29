@@ -139,12 +139,6 @@ class IPCManager {
             const timestamp = new Date().toISOString();
             console.log(`[${timestamp}] [${level.toUpperCase()}] ${message}`, data || '');
         });
-
-        // External URL handler
-        ipcMain.on('open-external', (event, url) => {
-            const { shell } = require('electron');
-            shell.openExternal(url);
-        });
     }
 }
 
@@ -168,12 +162,11 @@ class AppManager {
         
         // Setup window controls
         WindowManager.setupWindowControls(this.mainWindow);
-    }
-
-    /**
-     * Handle app activation (macOS)
+    }    /**
+     * Handle app activation
      */
     handleActivation() {
+        // Create new window if none exist
         if (BrowserWindow.getAllWindows().length === 0) {
             this.initialize();
         }
@@ -186,14 +179,8 @@ const appManager = new AppManager();
 // App event handlers
 app.whenReady().then(() => {
     appManager.initialize();
-    
-    app.on('activate', () => {
-        appManager.handleActivation();
-    });
 });
 
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
-}); 
+    app.quit();
+});
