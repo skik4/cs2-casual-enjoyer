@@ -363,17 +363,37 @@ class UIManager {
     static showSteamIdHelp() {
         const helpHtml = `
             <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
-                How to get your Steam ID
+                🆔 How to Get Your SteamID64
             </div>
             <div style="margin:10px 0;text-align:left;">
-                <ol style="margin-left:20px;padding-left:0;">
-                    <li>Your Steam profile will open in the Steam</li>
-                    <li>Copy the URL of your profile from the address bar</li>
-                    <li>Paste it into the SteamID64 field</li>
-                </ol>
+                <div style="margin-bottom:15px;">
+                    <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
+                        Option 1: Quick Link (Recommended)
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <a href="steam://url/SteamIDMyProfile" class="privacy-link" target="_self" style="font-weight:600;text-decoration:underline;">Open your Steam profile in the Steam client.</a>
+                    </div>
+                    <div style="margin-bottom:8px;color:#f3f6fa;">
+                        Your profile will open in the Steam client. Click on the URL in the address bar at the top of the Steam window - this automatically copies it to your clipboard. Then paste it into the <strong>SteamID64</strong> field below.
+                    </div>
+                    <div style="color:#bfc9d8;font-size:0.95em;margin-left:10px;">
+                        • Fast and automatic<br>
+                        • Works with any Steam profile URL format<br>
+                        • The app converts URLs to SteamID64 automatically
+                    </div>
+                </div>
+                
+                <div>
+                    <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
+                        Option 2: Manual Entry
+                    </div>
+                    <div style="margin-bottom:8px;color:#f3f6fa;">
+                        If you already know your <strong>SteamID64</strong> (17-digit number), you can enter it directly.
+                    </div>
+                </div>
             </div>
-            <div class="note" style="color:#aaa;font-size:0.95em;margin-top:10px;text-align:left;">
-                The app will automatically convert your profile URL to a SteamID64.
+            <div class="note" style="color:#aaa;font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid #353a40;padding-top:10px;">
+                Your SteamID64 used to identify your account in Steam Web API requests.
             </div>
         `;
         this.showNotification(helpHtml);
@@ -416,7 +436,7 @@ class UIManager {
                         Register a new API key by entering <strong>localhost</strong> as your domain, accept the terms, and copy your key.
                     </div>
                     <div style="margin-bottom:8px;color:#f3f6fa;">
-                        Click the <strong>SteamID64</strong> field label above to open your Steam profile, then copy your profile URL and paste it into the SteamID64 field.
+                        Click the <strong>SteamID64</strong> field label below to open your Steam profile, then copy your profile URL and paste it into the SteamID64 field.
                     </div>
                     <div style="color:#bfc9d8;font-size:0.95em;margin-left:10px;">
                         • You may need to confirm via Steam Guard Mobile or email<br>
