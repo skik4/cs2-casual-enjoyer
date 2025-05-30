@@ -21,8 +21,8 @@
         <span class="window-bar-title">CS2 Casual Enjoyer</span>
         <div class="window-bar-btns">
             <button class="window-btn minimize" title="Minimize"
-                onclick="window.electronAPI.minimize()">&minus;</button>
-            <button class="window-btn close" title="Close" onclick="window.electronAPI.close()">&times;</button>
+                onclick="window.electronAPI.window.minimize()">&minus;</button>
+            <button class="window-btn close" title="Close" onclick="window.electronAPI.window.close()">&times;</button>
         </div>
     </div>
     <div class="main-content">
@@ -83,11 +83,10 @@
 
     <!-- Load the new modular application -->
     <script type="module" src="src/core/app.js"></script>
-
     <script>
         // Initialize app version display
-        if (window.electronAPI && window.electronAPI.getAppVersion) {
-            window.electronAPI.getAppVersion().then(function (version) {
+        if (window.electronAPI && window.electronAPI.app.getVersion) {
+            window.electronAPI.app.getVersion().then(function (version) {
                 const el = document.getElementById('app-version');
                 if (el && version) el.textContent = 'v' + version + ' ';
             });

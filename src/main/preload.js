@@ -33,15 +33,8 @@ const electronAPI = {
      */
     app: {
         getVersion: () => ipcRenderer.invoke('get-app-version')
-    },
-
-    // Legacy methods for backward compatibility
-    minimize: () => ipcRenderer.send('window-minimize'),
-    close: () => ipcRenderer.send('window-close'),
-    loadSettings: () => ipcRenderer.invoke('settings-load'),
-    saveSettings: (data) => ipcRenderer.invoke('settings-save', data),
-    getAppVersion: () => ipcRenderer.invoke('get-app-version')
+    }
 };
 
 // Expose API to renderer process
-contextBridge.exposeInMainWorld('electronAPI', electronAPI); 
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);
