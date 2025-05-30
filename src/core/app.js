@@ -151,7 +151,7 @@ class App {
             const casualFriends = statuses.filter(friend => friend.in_casual_mode);
 
             // Save settings
-            const saveResult = await window.electronAPI.saveSettings({
+            const saveResult = await window.electronAPI.settings.save({
                 steam_id,
                 auth: auth,
                 friends_ids: allFriendIds,
@@ -523,7 +523,7 @@ class App {
             this.setupEventListeners();
 
             // Load settings
-            const savedSettings = await window.electronAPI.loadSettings();
+            const savedSettings = await window.electronAPI.settings.load();
             logger.info('App', 'Settings loaded: ' + JSON.stringify(savedSettings ? {
                 has_steam_id: !!savedSettings.steam_id,
                 has_auth: !!savedSettings.auth,
