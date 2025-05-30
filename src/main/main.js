@@ -95,18 +95,18 @@ class WindowManager {
 
     /**
      * Setup window control IPC handlers
-     * @param {BrowserWindow} win - Window instance
+     * @param {BrowserWindow} window - Window instance
      */
-    static setupWindowControls(win) {
+    static setupWindowControls(window) {
         ipcMain.on('window-minimize', () => {
-            if (win && !win.isDestroyed()) {
-                win.minimize();
+            if (window && !window.isDestroyed()) {
+                window.minimize();
             }
         });
 
         ipcMain.on('window-close', () => {
-            if (win && !win.isDestroyed()) {
-                win.close();
+            if (window && !window.isDestroyed()) {
+                window.close();
             }
         });
     }
