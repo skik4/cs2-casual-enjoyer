@@ -8,21 +8,32 @@ import ErrorHandler from '../utils/error-handler.js';
 class UIManager {
     constructor() {
         this.lastRenderedFriends = [];
+        this.elements = {}; // Cache for DOM elements
     }
 
     /**
-     * Get element by ID
+     * Get cached DOM element or find and cache it
      * @param {string} id - Element ID
-     * @returns {HTMLElement|null} - Found element or null
+     * @returns {HTMLElement|null} - DOM element
      */
-    static $id(id) {
-        return document.getElementById(id);
+    getElement(id) {
+        if (!this.elements[id]) {
+            this.elements[id] = document.getElementById(id);
+        }
+        return this.elements[id];
+    }
+
+    /**
+     * Clear DOM element cache (useful for testing or dynamic content)
+     */
+    clearElementCache() {
+        this.elements = {};
     }
 
     /**
      * Status dot CSS class mapping
      */
-    static get STATUS_DOT_CLASSES() {
+    get STATUS_DOT_CLASSES() {
         return {
             [STATUS_TYPES.WAITING]: 'dot-waiting',
             [STATUS_TYPES.CONNECTING]: 'dot-connecting',
@@ -37,7 +48,7 @@ class UIManager {
      * @param {string} status - Join status
      * @returns {string} - CSS class for the status dot
      */
-    static getStatusDotClass(status) {
+    getStatusDotClass(status) {
         return this.STATUS_DOT_CLASSES[status] || this.STATUS_DOT_CLASSES[STATUS_TYPES.CANCELLED];
     }
 
@@ -46,8 +57,8 @@ class UIManager {
      * @param {string} friend_id - Steam ID of the friend
      * @param {string} status - Join status
      */
-    static updateDot(friend_id, status) {
-        const dot = this.$id('dot-' + friend_id);
+    updateDot(friend_id, status) {
+        const dot = this.getElement('dot-' + friend_id);
         if (dot) {
             dot.className = 'status-dot ' + this.getStatusDotClass(status);
         }
@@ -58,8 +69,8 @@ class UIManager {
      * @param {string} friend_id - Steam ID of the friend
      * @param {string} status - Join status
      */
-    static updateJoinButton(friend_id, status) {
-        const btn = this.$id('join-btn-' + friend_id);
+    updateJoinButton(friend_id, status) {
+        const btn = this.getElement('join-btn-' + friend_id);
         if (!btn) return;
 
         const isActive = status === STATUS_TYPES.WAITING ||
@@ -82,8 +93,8 @@ class UIManager {
      * @param {import('../shared/types.js').Friend[]} friends - Array of friend objects
      * @param {Object} joinStates - Map of join states by friend Steam ID
      */
-    static renderFriendsList(friends, joinStates = {}) {
-        const friendsContainer = this.$id('friends');
+    renderFriendsList(friends, joinStates = {}) {
+        const friendsContainer = this.getElement('friends');
         if (!friendsContainer) return;
 
         this.lastRenderedFriends = Array.isArray(friends) ? [...friends] : [];
@@ -98,7 +109,7 @@ class UIManager {
         this.updateFriendsStatus(sortedFriends);
 
         // Apply filter
-        const filterInput = this.$id('friend-filter-input');
+        const filterInput = this.getElement('friend-filter-input');
         let filteredFriends = sortedFriends;
 
         if (filterInput) {
@@ -138,7 +149,7 @@ class UIManager {
      * @param {string} avatarUrl - Avatar URL
      * @returns {string} - Friend item HTML
      */
-    static renderFriendItem(friend, joinState, isMissing, avatarUrl) {
+    renderFriendItem(friend, joinState, isMissing, avatarUrl) {
         const isActive = joinState && (
             joinState.status === STATUS_TYPES.WAITING ||
             joinState.status === STATUS_TYPES.CONNECTING ||
@@ -169,17 +180,18 @@ class UIManager {
      * @param {import('../shared/types.js').Friend[]} friends - Friends array
      * @param {Object} joinStates - Join states
      */
-    static setupFriendInteractions(friends, joinStates) {
+    setupFriendInteractions(friends, joinStates) {
         for (const friend of friends) {
-            const btn = this.$id(`join-btn-${friend.steamid}`);
+            const btn = this.getElement(`join-btn-${friend.steamid}`);
             if (btn) {
                 btn.addEventListener('click', () => {
-                    // Import JoinManager dynamically to avoid circular dependencies
-                    import('../game/join-manager.js').then(({ default: JoinManager }) => {
+                    // Import joinManager dynamically to avoid circular dependencies
+                    import('../game/join-manager.js').then((module) => {
+                        const joinManager = module.default;
                         if (btn.classList.contains('cancel-btn')) {
-                            JoinManager.cancelJoin(friend.steamid);
+                            joinManager.cancelJoin(friend.steamid);
                         } else {
-                            JoinManager.startJoin(friend.steamid);
+                            joinManager.startJoin(friend.steamid);
                         }
                     });
                 });
@@ -197,8 +209,8 @@ class UIManager {
      * Show a notification with close button
      * @param {string} html - HTML content of the notification
      */
-    static showNotification(html) {
-        const errorElement = this.$id('error');
+    showNotification(html) {
+        const errorElement = this.getElement('error');
         if (!errorElement) return;
 
         const closeBtnHtml = `<div class="notification-header"><span class="notification-close-btn" title="Close">&times;</span></div>`;
@@ -217,9 +229,9 @@ class UIManager {
      * Show persistent notification about token (steamid and expiration)
      * @param {{steamid: string, expires: number, expiresDate: Date}} tokenInfo
      */
-    static showTokenInfoNotification(tokenInfo) {
+    showTokenInfoNotification(tokenInfo) {
         this.hideTokenInfoNotification();
-        const errorElement = this.$id('error');
+        const errorElement = this.getElement('error');
         if (!errorElement) return;
 
         const now = Date.now();
@@ -259,8 +271,8 @@ class UIManager {
     /**
      * Hide token info notification
      */
-    static hideTokenInfoNotification() {
-        const infoDiv = this.$id('token-info-notification');
+    hideTokenInfoNotification() {
+        const infoDiv = this.getElement('token-info-notification');
         if (infoDiv && infoDiv.parentNode) {
             infoDiv.parentNode.removeChild(infoDiv);
         }
@@ -271,7 +283,7 @@ class UIManager {
      * @param {string|Error} message - Error message
      * @param {string} steamId - Steam ID for context
      */
-    static showError(message, steamId = '') {
+    showError(message, steamId = '') {
         const errorMessage = ErrorHandler.formatErrorMessage(message);
 
         if (ErrorHandler.isPrivacyError(message)) {
@@ -287,8 +299,8 @@ class UIManager {
      * Show error updating friends list
      * @param {string} steamId - Steam ID
      */
-    static showUpdateError(steamId = '') {
-        const currentSteamId = steamId || (this.$id('steam_id')?.value.trim() || '');
+    showUpdateError(steamId = '') {
+        const currentSteamId = steamId || (this.getElement('steam-id')?.value.trim() || '');
         const privacyUrl = currentSteamId ?
             `steam://openurl/https://steamcommunity.com/profiles/${currentSteamId}/edit/settings/` : '';
 
@@ -304,7 +316,7 @@ class UIManager {
      * @param {string} linkHtml - HTML for privacy settings link
      * @returns {string} - Privacy warning HTML
      */
-    static getPrivacyWarningHtml(linkHtml) {
+    getPrivacyWarningHtml(linkHtml) {
         return `
             <div class="notification-main-text" style="color:#ff4444;font-weight:500;">
                 No friends list returned. This could be because your friends list is set to private.
@@ -321,8 +333,8 @@ class UIManager {
     /**
      * Hide notification
      */
-    static hideError() {
-        const errorElement = this.$id('error');
+    hideError() {
+        const errorElement = this.getElement('error');
         if (errorElement) {
             errorElement.style.display = 'none';
         }
@@ -332,8 +344,8 @@ class UIManager {
      * Update friends status message
      * @param {import('../shared/types.js').Friend[]|string} friendsInCasual - Friends or status message
      */
-    static updateFriendsStatus(friendsInCasual) {
-        let statusMessage = this.$id('friends-status-message');
+    updateFriendsStatus(friendsInCasual) {
+        let statusMessage = this.getElement('friends-status-message');
         if (!statusMessage) {
             statusMessage = document.createElement('div');
             statusMessage.id = 'friends-status-message';
@@ -360,7 +372,7 @@ class UIManager {
     /**
      * Show help notification for Steam ID
      */
-    static showSteamIdHelp() {
+    showSteamIdHelp() {
         const helpHtml = `
             <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
                 🆔 How to Get Your SteamID64
@@ -402,7 +414,7 @@ class UIManager {
     /**
      * Show help notification for API Key
      */
-    static showApiKeyHelp() {
+    showApiKeyHelp() {
         const helpHtml = `
             <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
                 🔑 How to Get Your Steam API Token or Key
@@ -454,20 +466,24 @@ class UIManager {
     }
 }
 
+// Create singleton instance
+const uiManager = new UIManager();
+
 // Setup filter input handler when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    const filterInput = UIManager.$id('friend-filter-input');
+    const filterInput = uiManager.getElement('friend-filter-input');
     if (filterInput) {
         filterInput.addEventListener('input', () => {
-            if (UIManager.lastRenderedFriends) {
-                // Import JoinManager dynamically to get current states
-                import('../game/join-manager.js').then(({ default: JoinManager }) => {
-                    const joinStates = JoinManager.getJoinStates ? JoinManager.getJoinStates() : {};
-                    UIManager.renderFriendsList(UIManager.lastRenderedFriends, joinStates);
+            if (uiManager.lastRenderedFriends) {
+                // Import joinManager dynamically to get current states
+                import('../game/join-manager.js').then((module) => {
+                    const joinManager = module.default;
+                    const joinStates = joinManager.getJoinStates ? joinManager.getJoinStates() : {};
+                    uiManager.renderFriendsList(uiManager.lastRenderedFriends, joinStates);
                 });
             }
         });
     }
 });
 
-export default UIManager; 
+export default uiManager; 

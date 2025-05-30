@@ -1,6 +1,6 @@
 import { API_CONFIG, STATUS_TYPES } from '../shared/constants.js';
 import SteamAPI from '../steam/steam-api.js';
-import UIManager from '../ui/ui-manager.js';
+import uiManager from '../ui/ui-manager.js';
 import ErrorHandler from '../utils/error-handler.js';
 
 /**
@@ -39,15 +39,15 @@ class JoinManager {
                 interval: null
             };
 
-            UIManager.updateJoinButton(friend_id, STATUS_TYPES.WAITING);
-            UIManager.updateDot(friend_id, STATUS_TYPES.WAITING);
+            uiManager.updateJoinButton(friend_id, STATUS_TYPES.WAITING);
+            uiManager.updateDot(friend_id, STATUS_TYPES.WAITING);
 
             // Setup periodic UI updates
             this.joinStates[friend_id].interval = setInterval(() => {
                 const currentState = this.joinStates[friend_id];
                 if (currentState) {
-                    UIManager.updateDot(friend_id, currentState.status);
-                    UIManager.updateJoinButton(friend_id, currentState.status);
+                    uiManager.updateDot(friend_id, currentState.status);
+                    uiManager.updateJoinButton(friend_id, currentState.status);
                     
                     if (currentState.status === STATUS_TYPES.JOINED || 
                         currentState.status === STATUS_TYPES.CANCELLED) {
@@ -184,13 +184,13 @@ class JoinManager {
             cancelled: true
         });
 
-        UIManager.updateDot(friend_id, STATUS_TYPES.CANCELLED);
-        UIManager.updateJoinButton(friend_id, STATUS_TYPES.CANCELLED);
+        uiManager.updateDot(friend_id, STATUS_TYPES.CANCELLED);
+        uiManager.updateJoinButton(friend_id, STATUS_TYPES.CANCELLED);
 
         // Reset button and dot after a short time
         setTimeout(() => {
-            UIManager.updateDot(friend_id, STATUS_TYPES.CANCELLED);
-            UIManager.updateJoinButton(friend_id, STATUS_TYPES.CANCELLED);
+            uiManager.updateDot(friend_id, STATUS_TYPES.CANCELLED);
+            uiManager.updateJoinButton(friend_id, STATUS_TYPES.CANCELLED);
         }, 200);
     }
 
