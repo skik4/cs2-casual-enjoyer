@@ -3,6 +3,7 @@ import UIManager from '../ui/ui-manager.js';
 import JoinManager from '../game/join-manager.js';
 import Validators from '../utils/validators.js';
 import ErrorHandler from '../utils/error-handler.js';
+import DOMUtils from '../utils/dom-utils.js';
 
 import appStateManager from './app-state-manager.js';
 import logger from '../utils/logger.js';
@@ -100,7 +101,7 @@ class AppFriendsManager {
             appStateManager.setState('usingSavedFriends', false);
         }
 
-        const updateBtn = document.getElementById('updateFriendsBtn');
+        const updateBtn = DOMUtils.getElementById('update-friends-btn');
         if (updateBtn) {
             updateBtn.disabled = true;
             updateBtn.textContent = "Updating...";

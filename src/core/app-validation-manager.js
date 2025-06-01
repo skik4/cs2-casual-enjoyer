@@ -1,4 +1,6 @@
-import AppStateManager from './app-state-manager.js';
+import DOMUtils from '../utils/dom-utils.js';
+
+import appStateManager from './app-state-manager.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -22,7 +24,7 @@ class AppValidationManager {
      * Check validation and start auto-refresh if conditions are met
      */
     checkAndStartAutoRefresh(hasSaved, validSteamId, validApiKey, isTokenExpired) {
-        const initialLoadAttempted = AppStateManager.getState('initialLoadAttempted');
+        const initialLoadAttempted = appStateManager.getState('initialLoadAttempted');
         
         // Don't start auto-refresh if we already attempted initial load
         if (initialLoadAttempted) {
@@ -30,7 +32,7 @@ class AppValidationManager {
         }
 
         // Only start auto-refresh for users with saved settings that include friends list
-        const savedFriendsIds = AppStateManager.getState('savedFriendsIds');
+        const savedFriendsIds = appStateManager.getState('savedFriendsIds');
         const hasSavedFriends = savedFriendsIds && savedFriendsIds.length > 0;
         const hasValidSavedSettings = hasSaved && !isTokenExpired;
 
@@ -47,7 +49,7 @@ class AppValidationManager {
             });
 
             setTimeout(() => {
-                AppStateManager.setState('initialLoadAttempted', true);
+                appStateManager.setState('initialLoadAttempted', true);
                 if (this.friendsManager) {
                     this.friendsManager.startAutoRefresh()
                         .catch(error => {
@@ -69,7 +71,7 @@ class AppValidationManager {
      * Update hint visibility based on user state
      */
     updateHintVisibility(hasValidInputs, hasSavedFriends) {
-        const hintElement = document.getElementById('update-hint');
+        const hintElement = DOMUtils.getElementById('update-hint');
         if (!hintElement) return;
 
         // Show hint if user has valid inputs but no saved friends list

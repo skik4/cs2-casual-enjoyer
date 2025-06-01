@@ -19,8 +19,8 @@ class JoinManager {
      */
     async startJoin(friend_id) {
         try {
-            const steamIdInput = document.getElementById('steam_id');
-            const authInput = document.getElementById('auth');
+            const steamIdInput = DOMUtils.getElementById('steam-id');
+            const authInput = DOMUtils.getElementById('auth');
             
             if (!steamIdInput || !authInput) {
                 throw new Error('Required input elements not found');

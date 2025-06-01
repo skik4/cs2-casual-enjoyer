@@ -1,22 +1,16 @@
 import { STATUS_TYPES } from '../shared/constants.js';
 import ErrorHandler from '../utils/error-handler.js';
+import DOMUtils from '../utils/dom-utils.js';
 
 /**
  * UI Manager module
  * Handles all UI rendering and updates
  */
 class UIManager {
-    constructor() {
-        this.lastRenderedFriends = [];    }
-
     /**
-     * Get element by ID
-     * @param {string} id - Element ID
-     * @returns {HTMLElement|null} - Found element or null
+     * Cache for last rendered friends (for re-rendering on filter)
      */
-    static $id(id) {
-        return document.getElementById(id);
-    }
+    static lastRenderedFriends = [];
 
     /**
      * Status dot CSS class mapping
@@ -46,7 +40,7 @@ class UIManager {
      * @param {string} status - Join status
      */
     static updateDot(friend_id, status) {
-        const dot = this.$id('dot-' + friend_id);
+        const dot = DOMUtils.getElementById('dot-' + friend_id);
         if (dot) {
             dot.className = 'status-dot ' + this.getStatusDotClass(status);
         }
@@ -58,7 +52,7 @@ class UIManager {
      * @param {string} status - Join status
      */
     static updateJoinButton(friend_id, status) {
-        const btn = this.$id('join-btn-' + friend_id);
+        const btn = DOMUtils.getElementById('join-btn-' + friend_id);
         if (!btn) return;
 
         const isActive = status === STATUS_TYPES.WAITING ||
@@ -82,20 +76,20 @@ class UIManager {
      * @param {Object} joinStates - Map of join states by friend Steam ID
      */
     static renderFriendsList(friends, joinStates = {}) {
-        const friendsContainer = this.$id('friends');
+        const friendsContainer = DOMUtils.getElementById('friends');
         if (!friendsContainer) return;
 
-        this.lastRenderedFriends = Array.isArray(friends) ? [...friends] : [];
+        UIManager.lastRenderedFriends = Array.isArray(friends) ? [...friends] : [];
 
         // Sort friends alphabetically
         let sortedFriends = [...friends].sort((a, b) => {
             const nameA = (a.personaname || '').toLowerCase();
             const nameB = (b.personaname || '').toLowerCase();
             return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
-        });        
-        
+        });
+
         // Apply filter
-        const filterInput = this.$id('friend-filter-input');
+        const filterInput = DOMUtils.getElementById('friend-filter-input');
         let filteredFriends = sortedFriends;
 
         if (filterInput) {
@@ -107,7 +101,7 @@ class UIManager {
                 });
             }
         }
-        
+
         // Render friends
         let html = '';
         for (const friend of filteredFriends) {
@@ -154,11 +148,14 @@ class UIManager {
                 </div>
             </div>
         `;
-    }    /**
+    }
+
+    /**
      * Show a notification with close button
      * @param {string} html - HTML content of the notification
-     */    static showNotification(html, type = 'info') {
-        const errorElement = this.$id('error');
+    */
+    static showNotification(html, type = 'info') {
+        const errorElement = DOMUtils.getElementById('error');
         if (!errorElement) return;
 
         const closeBtnHtml = `<div class="notification-header"><span class="notification-close-btn" title="Close">&times;</span></div>`;
@@ -179,7 +176,7 @@ class UIManager {
      */
     static showTokenInfoNotification(tokenInfo) {
         this.hideTokenInfoNotification();
-        const errorElement = this.$id('error');
+        const errorElement = DOMUtils.getElementById('error');
         if (!errorElement) return;
 
         const now = Date.now();
@@ -215,9 +212,9 @@ class UIManager {
 
     /**
      * Hide token info notification
-     */
+    */
     static hideTokenInfoNotification() {
-        const infoDiv = this.$id('token-info-notification');
+        const infoDiv = DOMUtils.getElementById('token-info-notification');
         if (infoDiv && infoDiv.parentNode) {
             infoDiv.parentNode.removeChild(infoDiv);
         }
@@ -227,7 +224,7 @@ class UIManager {
      * Show error to the user
      * @param {string|Error} message - Error message
      * @param {string} steamId - Steam ID for context
-     */
+    */
     static showError(message, steamId = '') {
         const errorMessage = ErrorHandler.formatErrorMessage(message);
 
@@ -246,7 +243,7 @@ class UIManager {
      * @param {string} steamId - Steam ID
      */
     static showUpdateError(steamId = '') {
-        const currentSteamId = steamId || (this.$id('steam_id')?.value.trim() || '');
+        const currentSteamId = steamId || (DOMUtils.getElementById('steam-id')?.value.trim() || '');
         const privacyUrl = currentSteamId ?
             `steam://openurl/https://steamcommunity.com/profiles/${currentSteamId}/edit/settings/` : '';
 
@@ -280,7 +277,7 @@ class UIManager {
      * Hide notification
      */
     static hideError() {
-        const errorElement = this.$id('error');
+        const errorElement = DOMUtils.getElementById('error');
         if (errorElement) {
             errorElement.style.display = 'none';
         }

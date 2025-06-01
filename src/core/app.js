@@ -4,6 +4,7 @@ import AppInputManager from './app-input-manager.js';
 import AppFriendsManager from './app-friends-manager.js';
 import AppEventManager from './app-event-manager.js';
 import AppValidationManager from './app-validation-manager.js';
+import DOMUtils from '../utils/dom-utils.js';
 
 import appStateManager from './app-state-manager.js';
 import logger from '../utils/logger.js';
@@ -15,13 +16,13 @@ import logger from '../utils/logger.js';
 class App {
     constructor() {
         this.initialized = false;
-        
+
         // Initialize managers
         this.inputManager = new AppInputManager();
         this.friendsManager = new AppFriendsManager();
         this.eventManager = new AppEventManager();
         this.validationManager = new AppValidationManager();
-        
+
         // Set up cross-references
         this.inputManager.setValidationManager(this.validationManager);
         this.friendsManager.setManagers(this.inputManager, this.eventManager, this.validationManager);
@@ -37,9 +38,9 @@ class App {
 
         try {
             // Disable update button initially
-            const updateFriendsBtn = document.getElementById('updateFriendsBtn');
-            if (updateFriendsBtn) updateFriendsBtn.disabled = true;            
-            
+            const updateFriendsBtn = DOMUtils.getElementById('update-friends-btn');
+            if (updateFriendsBtn) updateFriendsBtn.disabled = true;
+
             // Setup event listeners
             this.eventManager.setupEventListeners();
 
@@ -61,8 +62,8 @@ class App {
 
             if (savedSettings) {
                 // Fill inputs with saved data
-                const steamIdInput = document.getElementById('steam_id');
-                const authInput = document.getElementById('auth');
+                const steamIdInput = DOMUtils.getElementById('steam-id');
+                const authInput = DOMUtils.getElementById('auth');
 
                 if (savedSettings.steam_id && steamIdInput) {
                     steamIdInput.value = savedSettings.steam_id;
@@ -70,7 +71,7 @@ class App {
 
                 if (savedSettings.auth && authInput) {
                     authInput.value = savedSettings.auth;
-                }                
+                }
                 if (savedSettings.friends_ids && Array.isArray(savedSettings.friends_ids)) {
                     appStateManager.batchUpdate({
                         savedFriendsIds: savedSettings.friends_ids,

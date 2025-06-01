@@ -1,5 +1,6 @@
 import UIManager from '../ui/ui-manager.js';
 import JoinManager from '../game/join-manager.js';
+import DOMUtils from '../utils/dom-utils.js';
 
 /**
  * Event management module
@@ -26,9 +27,9 @@ class AppEventManager {
      * Setup all app event listeners
      */
     setupEventListeners() {
-        const updateFriendsBtn = document.getElementById('updateFriendsBtn');
-        const steamIdInput = document.getElementById('steam_id');
-        const authInput = document.getElementById('auth');
+        const updateFriendsBtn = DOMUtils.getElementById('update-friends-btn');
+        const steamIdInput = DOMUtils.getElementById('steam-id');
+        const authInput = DOMUtils.getElementById('auth');
 
         if (updateFriendsBtn && this.friendsManager) {
             updateFriendsBtn.addEventListener('click', () => this.friendsManager.updateFriendsList());
@@ -43,7 +44,7 @@ class AppEventManager {
         }
 
         // Help links
-        const steamIdHelp = document.getElementById('steam-id-help');
+        const steamIdHelp = DOMUtils.getElementById('steam-id-help');
         if (steamIdHelp) {
             steamIdHelp.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -51,7 +52,7 @@ class AppEventManager {
             });
         }
 
-        const apiKeyHelp = document.getElementById('api-key-help');
+        const apiKeyHelp = DOMUtils.getElementById('api-key-help');
         if (apiKeyHelp) {
             apiKeyHelp.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -60,7 +61,7 @@ class AppEventManager {
         }
 
         // Friend filter input
-        const filterInput = document.getElementById('friend-filter-input');
+        const filterInput = DOMUtils.getElementById('friend-filter-input');
         if (filterInput) {
             filterInput.addEventListener('input', () => {
                 if (UIManager.lastRenderedFriends) {
@@ -80,7 +81,7 @@ class AppEventManager {
      * Setup event listeners for friend join buttons using event delegation
      */
     setupFriendListeners() {
-        const friendsContainer = document.getElementById('friends');
+        const friendsContainer = DOMUtils.getElementById('friends');
         if (!friendsContainer) return;
 
         // Remove existing listener if it exists

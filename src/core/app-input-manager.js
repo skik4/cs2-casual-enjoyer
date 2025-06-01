@@ -2,6 +2,7 @@ import SteamAPI from '../steam/steam-api.js';
 import UIManager from '../ui/ui-manager.js';
 import JoinManager from '../game/join-manager.js';
 import Validators from '../utils/validators.js';
+import DOMUtils from '../utils/dom-utils.js';
 
 import appStateManager from './app-state-manager.js';
 
@@ -20,6 +21,20 @@ class AppInputManager {
      */
     setValidationManager(validationManager) {
         this.validationManager = validationManager;
+    }    /**
+     * Get Steam ID input element
+     * @returns {HTMLElement|null} - Steam ID input element
+     */
+    getSteamIdInput() {
+        return DOMUtils.getElementById('steam-id');
+    }
+
+    /**
+     * Get Auth input element
+     * @returns {HTMLElement|null} - Auth input element
+     */
+    getAuthInput() {
+        return DOMUtils.getElementById('auth');
     }
 
     /**
@@ -27,7 +42,7 @@ class AppInputManager {
      * @returns {string} - Steam ID value
      */
     getSteamId() {
-        const steamIdInput = document.getElementById('steam_id');
+        const steamIdInput = this.getSteamIdInput();
         return steamIdInput ? steamIdInput.value.trim() : '';
     }
 
@@ -36,7 +51,7 @@ class AppInputManager {
      * @returns {string} - API auth value
      */
     getAuth() {
-        const authInput = document.getElementById('auth');
+        const authInput = this.getAuthInput();
         if (!authInput) return '';
         return SteamAPI.extractApiKeyOrToken(authInput.value.trim());
     }
@@ -57,7 +72,7 @@ class AppInputManager {
             return;
         }
 
-        const steamIdInput = document.getElementById('steam_id');
+        const steamIdInput = this.getSteamIdInput();
         if (!steamIdInput) return;
 
         if (urlValidation.type === 'steamid') {
@@ -97,7 +112,7 @@ class AppInputManager {
      * Handle auth input changes
      */
     handleAuthInput() {
-        const authInput = document.getElementById('auth');
+        const authInput = this.getAuthInput();
         if (!authInput) return;
 
         const val = authInput.value.trim();
@@ -109,7 +124,7 @@ class AppInputManager {
         if (token) {
             const info = SteamAPI.parseWebApiToken(token);
             if (info && info.steamid) {
-                const steamIdInput = document.getElementById('steam_id');
+                const steamIdInput = this.getSteamIdInput();
                 if (steamIdInput && (!steamIdInput.value || steamIdInput.value !== info.steamid)) {
                     steamIdInput.value = info.steamid;
                 }
@@ -130,7 +145,7 @@ class AppInputManager {
     validateInputs() {
         const steamId = this.getSteamId();
         const auth = this.getAuth();
-        const updateBtn = document.getElementById('updateFriendsBtn');
+        const updateBtn = DOMUtils.getElementById('update-friends-btn');
 
         const validSteamId = Validators.validateSteamId(steamId);
         const validApiKey = Validators.validateApiAuth(auth);
@@ -139,7 +154,7 @@ class AppInputManager {
 
         // Check for token expiration
         let isTokenExpired = false;
-        const authInput = document.getElementById('auth');
+        const authInput = DOMUtils.getElementById('auth');
         const val = authInput ? authInput.value.trim() : '';
         const token = SteamAPI.extractTokenIfAny(val);
 
@@ -173,7 +188,7 @@ class AppInputManager {
         if (updateBtn) updateBtn.disabled = !enableBtn;
 
         // Update input field styles
-        const steamIdInput = document.getElementById('steam_id');
+        const steamIdInput = this.getSteamIdInput();
         if (steamIdInput) {
             if (steamId && validSteamId) {
                 steamIdInput.classList.remove('invalid-input');
@@ -201,7 +216,7 @@ class AppInputManager {
                     // Invalid token/key
                     authInput.classList.add('invalid-input');
                 }
-            }        
+            }
         }
 
         // Check if we should start auto-refresh
