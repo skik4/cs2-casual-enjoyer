@@ -1,4 +1,4 @@
-import stateManager from './state-manager.js';
+import AppStateManager from './app-state-manager.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -22,7 +22,7 @@ class AppValidationManager {
      * Check validation and start auto-refresh if conditions are met
      */
     checkAndStartAutoRefresh(hasSaved, validSteamId, validApiKey, isTokenExpired) {
-        const initialLoadAttempted = stateManager.getState('initialLoadAttempted');
+        const initialLoadAttempted = AppStateManager.getState('initialLoadAttempted');
         
         // Don't start auto-refresh if we already attempted initial load
         if (initialLoadAttempted) {
@@ -30,7 +30,7 @@ class AppValidationManager {
         }
 
         // Only start auto-refresh for users with saved settings that include friends list
-        const savedFriendsIds = stateManager.getState('savedFriendsIds');
+        const savedFriendsIds = AppStateManager.getState('savedFriendsIds');
         const hasSavedFriends = savedFriendsIds && savedFriendsIds.length > 0;
         const hasValidSavedSettings = hasSaved && !isTokenExpired;
 
@@ -47,7 +47,7 @@ class AppValidationManager {
             });
 
             setTimeout(() => {
-                stateManager.setState('initialLoadAttempted', true);
+                AppStateManager.setState('initialLoadAttempted', true);
                 if (this.friendsManager) {
                     this.friendsManager.startAutoRefresh()
                         .catch(error => {

@@ -1,11 +1,12 @@
 import JoinManager from '../game/join-manager.js';
 import UIManager from '../ui/ui-manager.js';
-import stateManager from './state-manager.js';
-import logger from '../utils/logger.js';
 import AppInputManager from './app-input-manager.js';
 import AppFriendsManager from './app-friends-manager.js';
 import AppEventManager from './app-event-manager.js';
 import AppValidationManager from './app-validation-manager.js';
+
+import appStateManager from './app-state-manager.js';
+import logger from '../utils/logger.js';
 
 /**
  * Main application module
@@ -56,7 +57,7 @@ class App {
                 friend_count: savedSettings.friends_ids?.length || 0
             } : null));
 
-            stateManager.setState('savedSettings', savedSettings);
+            appStateManager.setState('savedSettings', savedSettings);
 
             if (savedSettings) {
                 // Fill inputs with saved data
@@ -71,7 +72,7 @@ class App {
                     authInput.value = savedSettings.auth;
                 }                
                 if (savedSettings.friends_ids && Array.isArray(savedSettings.friends_ids)) {
-                    stateManager.batchUpdate({
+                    appStateManager.batchUpdate({
                         savedFriendsIds: savedSettings.friends_ids,
                         usingSavedFriends: true
                     });

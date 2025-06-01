@@ -1,9 +1,10 @@
 import SteamAPI from '../steam/steam-api.js';
 import UIManager from '../ui/ui-manager.js';
 import JoinManager from '../game/join-manager.js';
-import stateManager from './state-manager.js';
 import Validators from '../utils/validators.js';
 import ErrorHandler from '../utils/error-handler.js';
+
+import appStateManager from './app-state-manager.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -40,13 +41,13 @@ class AppFriendsManager {
         if (!friendIds || !friendIds.length) {
             logger.error('App', "No friend IDs provided to fetchAndRenderFriendsByIds");
             return [];
-        }        
+        }
         try {
             const allStatuses = await SteamAPI.getFriendsStatuses(friendIds, auth);
 
             const casualFriends = allStatuses.filter(friend => friend.in_casual_mode);
 
-            stateManager.setState('friendsData', casualFriends);
+            appStateManager.setState('friendsData', casualFriends);
             const joinStates = keepStates ? JoinManager.getJoinStates() : {};
 
             UIManager.renderFriendsList(casualFriends, joinStates);
@@ -73,7 +74,7 @@ class AppFriendsManager {
         let steam_id = this.inputManager ? this.inputManager.getSteamId() : '';
         let auth = this.inputManager ? this.inputManager.getAuth() : '';
 
-        const savedSettings = stateManager.getState('savedSettings');
+        const savedSettings = appStateManager.getState('savedSettings');
         if ((!steam_id || !auth) && savedSettings) {
             if (!steam_id && savedSettings.steam_id) steam_id = savedSettings.steam_id;
             if (!auth && savedSettings.auth) auth = savedSettings.auth;
@@ -96,7 +97,7 @@ class AppFriendsManager {
         if (savedSettings &&
             (savedSettings.steam_id !== steam_id || savedSettings.auth !== auth)) {
             localStorage.removeItem('hide_privacy_warning');
-            stateManager.setState('usingSavedFriends', false);
+            appStateManager.setState('usingSavedFriends', false);
         }
 
         const updateBtn = document.getElementById('updateFriendsBtn');
@@ -118,14 +119,14 @@ class AppFriendsManager {
                     updateBtn.disabled = false;
                     updateBtn.textContent = "Update Friends List";
                 }
-            }            
+            }
             if (!allFriendIds.length) {
                 UIManager.showError("No friends found in your friends list.", steam_id);
                 return;
             }
 
             // Update state
-            stateManager.batchUpdate({
+            appStateManager.batchUpdate({
                 savedFriendsIds: allFriendIds,
                 usingSavedFriends: true
             });
@@ -145,7 +146,7 @@ class AppFriendsManager {
             JoinManager.resetAll();
 
             // Render friends
-            stateManager.setState('friendsData', casualFriends);
+            appStateManager.setState('friendsData', casualFriends);
             const joinStates = JoinManager.getJoinStates();
             UIManager.renderFriendsList(casualFriends, joinStates);
 
@@ -173,24 +174,24 @@ class AppFriendsManager {
 
     /**
      * Start auto-refresh for friends list
-     */    
+     */
     async startAutoRefresh() {
         const auth = this.inputManager ? this.inputManager.getAuth() : '';
 
-        const savedFriendsIds = stateManager.getState('savedFriendsIds');
+        const savedFriendsIds = appStateManager.getState('savedFriendsIds');
         logger.info('App', `Starting auto-refresh with ${savedFriendsIds.length} saved friends`);
 
         try {
             await this.fetchAndRenderFriendsByIds(savedFriendsIds, auth, true);
 
             // Clear existing interval
-            stateManager.clearRefreshInterval();
+            appStateManager.clearRefreshInterval();
 
             // Set new interval
-            const autoRefreshIntervalMs = stateManager.getState('autoRefreshIntervalMs');
+            const autoRefreshIntervalMs = appStateManager.getState('autoRefreshIntervalMs');
             const interval = setInterval(async () => {
-                const usingSavedFriends = stateManager.getState('usingSavedFriends');
-                const currentSavedFriendsIds = stateManager.getState('savedFriendsIds');
+                const usingSavedFriends = appStateManager.getState('usingSavedFriends');
+                const currentSavedFriendsIds = appStateManager.getState('savedFriendsIds');
 
                 if (usingSavedFriends && currentSavedFriendsIds.length) {
                     try {
@@ -201,7 +202,7 @@ class AppFriendsManager {
                 }
             }, autoRefreshIntervalMs);
 
-            stateManager.setState('friendsRefreshInterval', interval);
+            appStateManager.setState('friendsRefreshInterval', interval);
             logger.info('App', "Auto-refresh of casual friends status started");
         } catch (error) {
             logger.error('App', "Failed to start auto-refresh", { error: error.message });

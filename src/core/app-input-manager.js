@@ -1,9 +1,9 @@
 import SteamAPI from '../steam/steam-api.js';
 import UIManager from '../ui/ui-manager.js';
 import JoinManager from '../game/join-manager.js';
-import stateManager from './state-manager.js';
 import Validators from '../utils/validators.js';
-import logger from '../utils/logger.js';
+
+import appStateManager from './app-state-manager.js';
 
 /**
  * Input management module
@@ -134,7 +134,7 @@ class AppInputManager {
 
         const validSteamId = Validators.validateSteamId(steamId);
         const validApiKey = Validators.validateApiAuth(auth);
-        const savedSettings = stateManager.getState('savedSettings');
+        const savedSettings = appStateManager.getState('savedSettings');
         const hasSaved = savedSettings && savedSettings.steam_id && savedSettings.auth;
 
         // Check for token expiration

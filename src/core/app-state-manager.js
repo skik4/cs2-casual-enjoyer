@@ -5,7 +5,7 @@ import logger from '../utils/logger.js';
  * Reactive state manager for the application
  * Provides centralized state management with subscription capabilities
  */
-class StateManager {
+class AppStateManager {
     constructor() {
         this.state = {
             friendsData: [],
@@ -147,6 +147,6 @@ class StateManager {
 }
 
 // Create singleton instance
-const stateManager = new StateManager();
+const appStateManager = new AppStateManager();
 
-export default stateManager; 
+export default appStateManager;
