@@ -98,5 +98,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     await app.initialize();
 });
 
-// Export for external access
-export default app;
+// Export class for testing and external access
+export default App;

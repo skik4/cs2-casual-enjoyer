@@ -180,6 +180,10 @@ class AppFriendsManager {
         const auth = this.inputManager ? this.inputManager.getAuth() : '';
 
         const savedFriendsIds = appStateManager.getState('savedFriendsIds');
+        if (!savedFriendsIds || !Array.isArray(savedFriendsIds) || savedFriendsIds.length === 0) {
+            logger.info('App', 'No saved friends found for auto-refresh');
+            return;
+        }
         logger.info('App', `Starting auto-refresh with ${savedFriendsIds.length} saved friends`);
 
         try {
