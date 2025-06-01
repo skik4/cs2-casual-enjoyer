@@ -1,6 +1,5 @@
 import { API_CONFIG, STATUS_TYPES } from '../shared/constants.js';
 import SteamAPI from '../steam/steam-api.js';
-import uiManager from '../ui/ui-manager.js';
 import ErrorHandler from '../utils/error-handler.js';
 
 /**
@@ -10,6 +9,8 @@ import ErrorHandler from '../utils/error-handler.js';
 class JoinManager {
     constructor() {
         this.joinStates = {};
+        this.onUpdateDot = null;
+        this.onUpdateJoinButton = null;
     }
 
     /**
@@ -31,23 +32,21 @@ class JoinManager {
 
             if (!steam_id || !auth) {
                 throw new Error('Steam ID and API auth are required');
-            }
-
-            this.joinStates[friend_id] = {
+            }            this.joinStates[friend_id] = {
                 status: STATUS_TYPES.WAITING,
                 cancelled: false,
                 interval: null
             };
 
-            uiManager.updateJoinButton(friend_id, STATUS_TYPES.WAITING);
-            uiManager.updateDot(friend_id, STATUS_TYPES.WAITING);
+            if (this.onUpdateJoinButton) this.onUpdateJoinButton(friend_id, STATUS_TYPES.WAITING);
+            if (this.onUpdateDot) this.onUpdateDot(friend_id, STATUS_TYPES.WAITING);
 
             // Setup periodic UI updates
             this.joinStates[friend_id].interval = setInterval(() => {
                 const currentState = this.joinStates[friend_id];
                 if (currentState) {
-                    uiManager.updateDot(friend_id, currentState.status);
-                    uiManager.updateJoinButton(friend_id, currentState.status);
+                    if (this.onUpdateDot) this.onUpdateDot(friend_id, currentState.status);
+                    if (this.onUpdateJoinButton) this.onUpdateJoinButton(friend_id, currentState.status);
                     
                     if (currentState.status === STATUS_TYPES.JOINED || 
                         currentState.status === STATUS_TYPES.CANCELLED) {
@@ -177,20 +176,18 @@ class JoinManager {
 
         if (state.interval) {
             clearInterval(state.interval);
-        }
-
-        this.updateJoinState(friend_id, {
+        }        this.updateJoinState(friend_id, {
             status: STATUS_TYPES.CANCELLED,
             cancelled: true
         });
 
-        uiManager.updateDot(friend_id, STATUS_TYPES.CANCELLED);
-        uiManager.updateJoinButton(friend_id, STATUS_TYPES.CANCELLED);
+        if (this.onUpdateDot) this.onUpdateDot(friend_id, STATUS_TYPES.CANCELLED);
+        if (this.onUpdateJoinButton) this.onUpdateJoinButton(friend_id, STATUS_TYPES.CANCELLED);
 
         // Reset button and dot after a short time
         setTimeout(() => {
-            uiManager.updateDot(friend_id, STATUS_TYPES.CANCELLED);
-            uiManager.updateJoinButton(friend_id, STATUS_TYPES.CANCELLED);
+            if (this.onUpdateDot) this.onUpdateDot(friend_id, STATUS_TYPES.CANCELLED);
+            if (this.onUpdateJoinButton) this.onUpdateJoinButton(friend_id, STATUS_TYPES.CANCELLED);
         }, 200);
     }
 
@@ -235,9 +232,19 @@ class JoinManager {
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
+    /**
+     * Set UI update callbacks
+     * @param {Function} onUpdateDot - Callback for updating status dot
+     * @param {Function} onUpdateJoinButton - Callback for updating join button
+     */
+    setUICallbacks(onUpdateDot, onUpdateJoinButton) {
+        this.onUpdateDot = onUpdateDot;
+        this.onUpdateJoinButton = onUpdateJoinButton;
+    }
 }
 
 // Create singleton instance
 const joinManager = new JoinManager();
 
-export default joinManager; 
+export default joinManager;

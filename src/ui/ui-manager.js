@@ -7,33 +7,21 @@ import ErrorHandler from '../utils/error-handler.js';
  */
 class UIManager {
     constructor() {
-        this.lastRenderedFriends = [];
-        this.elements = {}; // Cache for DOM elements
-    }
+        this.lastRenderedFriends = [];    }
 
     /**
-     * Get cached DOM element or find and cache it
+     * Get element by ID
      * @param {string} id - Element ID
-     * @returns {HTMLElement|null} - DOM element
+     * @returns {HTMLElement|null} - Found element or null
      */
-    getElement(id) {
-        if (!this.elements[id]) {
-            this.elements[id] = document.getElementById(id);
-        }
-        return this.elements[id];
-    }
-
-    /**
-     * Clear DOM element cache (useful for testing or dynamic content)
-     */
-    clearElementCache() {
-        this.elements = {};
+    static $id(id) {
+        return document.getElementById(id);
     }
 
     /**
      * Status dot CSS class mapping
      */
-    get STATUS_DOT_CLASSES() {
+    static get STATUS_DOT_CLASSES() {
         return {
             [STATUS_TYPES.WAITING]: 'dot-waiting',
             [STATUS_TYPES.CONNECTING]: 'dot-connecting',
@@ -48,7 +36,7 @@ class UIManager {
      * @param {string} status - Join status
      * @returns {string} - CSS class for the status dot
      */
-    getStatusDotClass(status) {
+    static getStatusDotClass(status) {
         return this.STATUS_DOT_CLASSES[status] || this.STATUS_DOT_CLASSES[STATUS_TYPES.CANCELLED];
     }
 
@@ -57,8 +45,8 @@ class UIManager {
      * @param {string} friend_id - Steam ID of the friend
      * @param {string} status - Join status
      */
-    updateDot(friend_id, status) {
-        const dot = this.getElement('dot-' + friend_id);
+    static updateDot(friend_id, status) {
+        const dot = this.$id('dot-' + friend_id);
         if (dot) {
             dot.className = 'status-dot ' + this.getStatusDotClass(status);
         }
@@ -69,8 +57,8 @@ class UIManager {
      * @param {string} friend_id - Steam ID of the friend
      * @param {string} status - Join status
      */
-    updateJoinButton(friend_id, status) {
-        const btn = this.getElement('join-btn-' + friend_id);
+    static updateJoinButton(friend_id, status) {
+        const btn = this.$id('join-btn-' + friend_id);
         if (!btn) return;
 
         const isActive = status === STATUS_TYPES.WAITING ||
@@ -93,8 +81,8 @@ class UIManager {
      * @param {import('../shared/types.js').Friend[]} friends - Array of friend objects
      * @param {Object} joinStates - Map of join states by friend Steam ID
      */
-    renderFriendsList(friends, joinStates = {}) {
-        const friendsContainer = this.getElement('friends');
+    static renderFriendsList(friends, joinStates = {}) {
+        const friendsContainer = this.$id('friends');
         if (!friendsContainer) return;
 
         this.lastRenderedFriends = Array.isArray(friends) ? [...friends] : [];
@@ -104,12 +92,10 @@ class UIManager {
             const nameA = (a.personaname || '').toLowerCase();
             const nameB = (b.personaname || '').toLowerCase();
             return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
-        });
-
-        this.updateFriendsStatus(sortedFriends);
-
+        });        
+        
         // Apply filter
-        const filterInput = this.getElement('friend-filter-input');
+        const filterInput = this.$id('friend-filter-input');
         let filteredFriends = sortedFriends;
 
         if (filterInput) {
@@ -121,12 +107,7 @@ class UIManager {
                 });
             }
         }
-
-        if (!filteredFriends.length) {
-            friendsContainer.innerHTML = '<div style="text-align:center;color:#aaa;padding:1.5em 0;">No friends found.</div>';
-            return;
-        }
-
+        
         // Render friends
         let html = '';
         for (const friend of filteredFriends) {
@@ -137,8 +118,8 @@ class UIManager {
             html += this.renderFriendItem(friend, joinState, isMissing, avatarUrl);
         }
 
+        // Set the generated HTML to the friends container
         friendsContainer.innerHTML = html;
-        this.setupFriendInteractions(filteredFriends, joinStates);
     }
 
     /**
@@ -149,7 +130,7 @@ class UIManager {
      * @param {string} avatarUrl - Avatar URL
      * @returns {string} - Friend item HTML
      */
-    renderFriendItem(friend, joinState, isMissing, avatarUrl) {
+    static renderFriendItem(friend, joinState, isMissing, avatarUrl) {
         const isActive = joinState && (
             joinState.status === STATUS_TYPES.WAITING ||
             joinState.status === STATUS_TYPES.CONNECTING ||
@@ -173,48 +154,15 @@ class UIManager {
                 </div>
             </div>
         `;
-    }
-
-    /**
-     * Setup interactions for rendered friends
-     * @param {import('../shared/types.js').Friend[]} friends - Friends array
-     * @param {Object} joinStates - Join states
-     */
-    setupFriendInteractions(friends, joinStates) {
-        for (const friend of friends) {
-            const btn = this.getElement(`join-btn-${friend.steamid}`);
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    // Import joinManager dynamically to avoid circular dependencies
-                    import('../game/join-manager.js').then((module) => {
-                        const joinManager = module.default;
-                        if (btn.classList.contains('cancel-btn')) {
-                            joinManager.cancelJoin(friend.steamid);
-                        } else {
-                            joinManager.startJoin(friend.steamid);
-                        }
-                    });
-                });
-            }
-
-            // Update status if exists
-            if (joinStates[friend.steamid]) {
-                this.updateDot(friend.steamid, joinStates[friend.steamid].status);
-                this.updateJoinButton(friend.steamid, joinStates[friend.steamid].status);
-            }
-        }
-    }
-
-    /**
+    }    /**
      * Show a notification with close button
      * @param {string} html - HTML content of the notification
-     */
-    showNotification(html) {
-        const errorElement = this.getElement('error');
+     */    static showNotification(html, type = 'info') {
+        const errorElement = this.$id('error');
         if (!errorElement) return;
 
         const closeBtnHtml = `<div class="notification-header"><span class="notification-close-btn" title="Close">&times;</span></div>`;
-        errorElement.innerHTML = closeBtnHtml + `<div class="notification-content">${html}</div>`;
+        errorElement.innerHTML = closeBtnHtml + `<div class="notification-content ${type}">${html}</div>`;
         errorElement.style.display = 'block';
 
         const closeBtn = errorElement.querySelector('.notification-close-btn');
@@ -229,9 +177,9 @@ class UIManager {
      * Show persistent notification about token (steamid and expiration)
      * @param {{steamid: string, expires: number, expiresDate: Date}} tokenInfo
      */
-    showTokenInfoNotification(tokenInfo) {
+    static showTokenInfoNotification(tokenInfo) {
         this.hideTokenInfoNotification();
-        const errorElement = this.getElement('error');
+        const errorElement = this.$id('error');
         if (!errorElement) return;
 
         const now = Date.now();
@@ -244,14 +192,11 @@ class UIManager {
             warnHtml = `
                 <div style="color:#ff4444;font-weight:500;margin-top:8px;">
                     Your token has expired.<br>
-                    Please get a new one by clicking <b>Steam Web API Token / Key</b> above or <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="privacy-link" target="_self">Get your Steam Web API Token in Steam</a>.<br>
-                    Note: Steam will only issue a new token after the previous one fully expires.
+                    <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="privacy-link" target="_self">Get a new one</a><br>
                 </div>
             `;
-        }
-
-        const html = `
-            <div class="notification-content" style="border-color:#2d8cf0;">
+        } const html = `
+            <div class="notification-content info">
                 <div style="color:#2d8cf0;font-weight:500;">
                     Steam Web API Token detected.<br>
                     <span style="font-size:0.98em;">SteamID: <b>${tokenInfo.steamid}</b></span><br>
@@ -271,8 +216,8 @@ class UIManager {
     /**
      * Hide token info notification
      */
-    hideTokenInfoNotification() {
-        const infoDiv = this.getElement('token-info-notification');
+    static hideTokenInfoNotification() {
+        const infoDiv = this.$id('token-info-notification');
         if (infoDiv && infoDiv.parentNode) {
             infoDiv.parentNode.removeChild(infoDiv);
         }
@@ -283,14 +228,15 @@ class UIManager {
      * @param {string|Error} message - Error message
      * @param {string} steamId - Steam ID for context
      */
-    showError(message, steamId = '') {
+    static showError(message, steamId = '') {
         const errorMessage = ErrorHandler.formatErrorMessage(message);
 
         if (ErrorHandler.isPrivacyError(message)) {
             this.showUpdateError(steamId);
         } else {
             this.showNotification(
-                `<div class="notification-main-text" style="color:#ff4444;font-weight:500;">${errorMessage}</div>`
+                `<div class="notification-main-text" style="color:#ff4444;font-weight:500;">${errorMessage}</div>`,
+                'error'
             );
         }
     }
@@ -299,8 +245,8 @@ class UIManager {
      * Show error updating friends list
      * @param {string} steamId - Steam ID
      */
-    showUpdateError(steamId = '') {
-        const currentSteamId = steamId || (this.getElement('steam-id')?.value.trim() || '');
+    static showUpdateError(steamId = '') {
+        const currentSteamId = steamId || (this.$id('steam_id')?.value.trim() || '');
         const privacyUrl = currentSteamId ?
             `steam://openurl/https://steamcommunity.com/profiles/${currentSteamId}/edit/settings/` : '';
 
@@ -308,7 +254,7 @@ class UIManager {
             `<a href="${privacyUrl}" class="privacy-link" style="color:#2d8cf0;text-decoration:underline;" 
                 title="Open privacy settings in Steam">Open your Steam privacy settings</a>` : '';
 
-        this.showNotification(this.getPrivacyWarningHtml(linkHtml));
+        this.showNotification(this.getPrivacyWarningHtml(linkHtml), 'error');
     }
 
     /**
@@ -316,16 +262,16 @@ class UIManager {
      * @param {string} linkHtml - HTML for privacy settings link
      * @returns {string} - Privacy warning HTML
      */
-    getPrivacyWarningHtml(linkHtml) {
+    static getPrivacyWarningHtml(linkHtml) {
         return `
             <div class="notification-main-text" style="color:#ff4444;font-weight:500;">
                 No friends list returned. This could be because your friends list is set to private.
-            </div>
+            </div>            
             <div style="margin:8px 0 8px 0;">
                 ${linkHtml}
-            </div>
-            <div class="note" style="color:#aaa;font-size:0.95em;margin-bottom:2px;">
-                <b>Note:</b> After setting your friends list to Public, you can set it back to Private.
+            </div>            
+            <div class="note" style="color:#aaa;font-size:0.95em;margin-bottom:2px;margin-top:15px;border-top:1px solid #353a40;padding-top:10px;">
+                After setting your friends list to public, click "Update Friend List", then you can set it back to private.
             </div>
         `;
     }
@@ -333,46 +279,17 @@ class UIManager {
     /**
      * Hide notification
      */
-    hideError() {
-        const errorElement = this.getElement('error');
+    static hideError() {
+        const errorElement = this.$id('error');
         if (errorElement) {
             errorElement.style.display = 'none';
         }
     }
 
     /**
-     * Update friends status message
-     * @param {import('../shared/types.js').Friend[]|string} friendsInCasual - Friends or status message
-     */
-    updateFriendsStatus(friendsInCasual) {
-        let statusMessage = this.getElement('friends-status-message');
-        if (!statusMessage) {
-            statusMessage = document.createElement('div');
-            statusMessage.id = 'friends-status-message';
-            statusMessage.className = 'friends-status-message';
-            const centerRow = document.querySelector('.center-row');
-            centerRow.parentNode.insertBefore(statusMessage, centerRow.nextSibling);
-        }
-
-        if (typeof friendsInCasual === 'string') {
-            statusMessage.innerHTML = `<p>${friendsInCasual}</p>`;
-            return;
-        }
-
-        if (Array.isArray(friendsInCasual) && friendsInCasual.length === 0) {
-            statusMessage.innerHTML = `
-                <p>None of your friends are currently playing Casual mode.</p>
-                <p class="note">The friends list is automatically updated periodically.</p>
-            `;
-        } else if (Array.isArray(friendsInCasual)) {
-            statusMessage.innerHTML = `<p>${friendsInCasual.length} friend(s) currently in Casual mode.</p>`;
-        }
-    }
-
-    /**
      * Show help notification for Steam ID
      */
-    showSteamIdHelp() {
+    static showSteamIdHelp() {
         const helpHtml = `
             <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
                 🆔 How to Get Your SteamID64
@@ -403,18 +320,18 @@ class UIManager {
                         If you already know your <strong>SteamID64</strong> (17-digit number), you can enter it directly.
                     </div>
                 </div>
-            </div>
+            </div>            
             <div class="note" style="color:#aaa;font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid #353a40;padding-top:10px;">
                 Your SteamID64 used to identify your account in Steam Web API requests.
             </div>
         `;
-        this.showNotification(helpHtml);
+        this.showNotification(helpHtml, 'info');
     }
 
     /**
      * Show help notification for API Key
      */
-    showApiKeyHelp() {
+    static showApiKeyHelp() {
         const helpHtml = `
             <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
                 🔑 How to Get Your Steam API Token or Key
@@ -426,9 +343,9 @@ class UIManager {
                     </div>
                     <div style="margin-bottom:8px;">
                         <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="privacy-link" target="_self" style="font-weight:600;text-decoration:underline;">Get your Steam Web API Token in the Steam client.</a>
-                    </div>
+                    </div>                    
                     <div style="margin-bottom:8px;color:#f3f6fa;">
-                        On the opened page, press <strong>Ctrl+A</strong> (select all), then <strong>Ctrl+C</strong> (copy), and paste it into the Steam Web API Token / Key field.
+                        On the opened page, press <strong>Ctrl+A</strong> (select all), then <strong>Ctrl+C</strong> (copy), and <strong>Ctrl+V</strong> to paste it into the Steam Web API Token / Key field.
                     </div>
                     <div style="color:#bfc9d8;font-size:0.95em;margin-left:10px;">
                         • The app will extract your token and SteamID automatically<br>
@@ -451,39 +368,18 @@ class UIManager {
                         Click the <strong>SteamID64</strong> field label below to open your Steam profile, then copy your profile URL and paste it into the SteamID64 field.
                     </div>
                     <div style="color:#bfc9d8;font-size:0.95em;margin-left:10px;">
-                        • You may need to confirm via Steam Guard Mobile or email<br>
+                        • You may need to confirm via Steam Guard or email<br>
                         • Set your friend list to public at least once for caching<br>
                         • Make it public again temporarily to update your friends list
                     </div>
                 </div>
-            </div>
-            <div class="note" style="color:#aaa;font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid #353a40;padding-top:10px;">
+            </div>            <div class="note" style="color:#aaa;font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid #353a40;padding-top:10px;">
                 Your credentials are stored locally only.<br>
                 All requests are made only through the official Steam Web API.
             </div>
         `;
-        this.showNotification(helpHtml);
+        this.showNotification(helpHtml, 'info');
     }
 }
 
-// Create singleton instance
-const uiManager = new UIManager();
-
-// Setup filter input handler when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    const filterInput = uiManager.getElement('friend-filter-input');
-    if (filterInput) {
-        filterInput.addEventListener('input', () => {
-            if (uiManager.lastRenderedFriends) {
-                // Import joinManager dynamically to get current states
-                import('../game/join-manager.js').then((module) => {
-                    const joinManager = module.default;
-                    const joinStates = joinManager.getJoinStates ? joinManager.getJoinStates() : {};
-                    uiManager.renderFriendsList(uiManager.lastRenderedFriends, joinStates);
-                });
-            }
-        });
-    }
-});
-
-export default uiManager; 
+export default UIManager;
