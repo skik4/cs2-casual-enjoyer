@@ -1,6 +1,7 @@
 import { API_CONFIG, STATUS_TYPES } from '../shared/constants.js';
 import SteamAPI from '../steam/steam-api.js';
 import ErrorHandler from '../utils/error-handler.js';
+import DOMUtils from '../utils/dom-utils.js';
 
 /**
  * Join Manager module
