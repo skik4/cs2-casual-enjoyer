@@ -1,0 +1,111 @@
+import UIManager from '../ui/ui-manager.js';
+import JoinManager from '../game/join-manager.js';
+
+/**
+ * Event management module
+ * Handles all DOM event listeners and event delegation
+ */
+class AppEventManager {
+    constructor() {
+        this.inputManager = null;
+        this.friendsManager = null;
+        this.friendsClickHandler = null;
+    }
+
+    /**
+     * Set manager references
+     * @param {Object} inputManager - Reference to input manager
+     * @param {Object} friendsManager - Reference to friends manager
+     */
+    setManagers(inputManager, friendsManager) {
+        this.inputManager = inputManager;
+        this.friendsManager = friendsManager;
+    }
+
+    /**
+     * Setup all app event listeners
+     */
+    setupEventListeners() {
+        const updateFriendsBtn = document.getElementById('updateFriendsBtn');
+        const steamIdInput = document.getElementById('steam_id');
+        const authInput = document.getElementById('auth');
+
+        if (updateFriendsBtn && this.friendsManager) {
+            updateFriendsBtn.addEventListener('click', () => this.friendsManager.updateFriendsList());
+        }
+
+        if (steamIdInput && this.inputManager) {
+            steamIdInput.addEventListener('input', this.inputManager.validateInputs.bind(this.inputManager));
+            steamIdInput.addEventListener('paste', this.inputManager.handleSteamIdPaste.bind(this.inputManager));
+        }        
+        if (authInput && this.inputManager) {
+            authInput.addEventListener('input', this.inputManager.handleAuthInput.bind(this.inputManager));
+        }
+
+        // Help links
+        const steamIdHelp = document.getElementById('steam-id-help');
+        if (steamIdHelp) {
+            steamIdHelp.addEventListener('click', (e) => {
+                e.preventDefault();
+                UIManager.showSteamIdHelp();
+            });
+        }
+
+        const apiKeyHelp = document.getElementById('api-key-help');
+        if (apiKeyHelp) {
+            apiKeyHelp.addEventListener('click', (e) => {
+                e.preventDefault();
+                UIManager.showApiKeyHelp();
+            });
+        }
+
+        // Friend filter input
+        const filterInput = document.getElementById('friend-filter-input');
+        if (filterInput) {
+            filterInput.addEventListener('input', () => {
+                if (UIManager.lastRenderedFriends) {
+                    const joinStates = JoinManager.getJoinStates();
+                    UIManager.renderFriendsList(UIManager.lastRenderedFriends, joinStates);
+                    // Re-setup friend listeners after re-render
+                    this.setupFriendListeners();
+                }
+            });
+        }
+
+        // Setup friend listeners using event delegation
+        this.setupFriendListeners();
+    }
+
+    /**
+     * Setup event listeners for friend join buttons using event delegation
+     */
+    setupFriendListeners() {
+        const friendsContainer = document.getElementById('friends');
+        if (!friendsContainer) return;
+
+        // Remove existing listener if it exists
+        if (this.friendsClickHandler) {
+            friendsContainer.removeEventListener('click', this.friendsClickHandler);
+        }
+
+        // Create new click handler
+        this.friendsClickHandler = (event) => {
+            const button = event.target.closest('[id^="join-btn-"]');
+            if (!button) return;
+
+            const steamId = button.id.replace('join-btn-', '');
+            if (!steamId) return;
+
+            if (button.classList.contains('cancel-btn')) {
+                JoinManager.cancelJoin(steamId);
+            } else {
+                JoinManager.startJoin(steamId);
+            }
+        };
+
+        // Add event listener using delegation
+        friendsContainer.addEventListener('click', this.friendsClickHandler);
+    }
+}
+
+export default AppEventManager;
