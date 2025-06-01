@@ -1,7 +1,6 @@
 import StatusManager from './status-manager.js';
 import FriendsRenderer from './friends-renderer.js';
 import NotificationManager from './notification-manager.js';
-import HelpManager from './help-manager.js';
 
 /**
  * UI Manager module
@@ -93,19 +92,18 @@ class UIManager {    /**
         return NotificationManager.hideError();
     }
 
-    // Help Methods - delegate to HelpManager
     /**
      * Show help notification for Steam ID
      */
     static showSteamIdHelp() {
-        return HelpManager.showSteamIdHelp();
+        return NotificationManager.showSteamIdHelp();
     }
 
     /**
      * Show help notification for API Key
      */
     static showApiKeyHelp() {
-        return HelpManager.showApiKeyHelp();
+        return NotificationManager.showApiKeyHelp();
     }
 }
 

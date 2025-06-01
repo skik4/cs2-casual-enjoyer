@@ -1,5 +1,6 @@
 import { STATUS_TYPES } from '../shared/constants.js';
 import DOMUtils from '../utils/dom-utils.js';
+import { FRIENDS_TEMPLATES } from './html-templates.js';
 
 /**
  * Friends Renderer module
@@ -55,9 +56,7 @@ class FriendsRenderer {
 
         // Set the generated HTML to the friends container
         friendsContainer.innerHTML = html;
-    }
-
-    /**
+    }    /**
      * Render individual friend item HTML
      * @param {import('../shared/types.js').Friend} friend - Friend object
      * @param {import('../shared/types.js').JoinState} joinState - Join state
@@ -72,23 +71,18 @@ class FriendsRenderer {
             isMissing
         );
 
-        return `
-            <div class="friend" id="friend-${friend.steamid}">
-                <div class="friend-info-row">
-                    <img src="${avatarUrl}" alt="avatar" class="friend-avatar">
-                    <div class="friend-info">
-                        <span class="personaname">${friend.personaname}</span>
-                        ${friend.status || isMissing ?
-                `<span class="game-status" style="font-weight:400;color:#bfc9d8;">${isMissing ? 'Temporarily not in Casual' : friend.status
-                }</span>` : ''}
-                    </div>
-                </div>
-                <div class="join-section" id="join-section-${friend.steamid}">
-                    <span class="status-dot ${isMissing ? 'dot-missing' : 'dot-cancelled'}" id="dot-${friend.steamid}"></span>
-                    <button id="join-btn-${friend.steamid}" class="action-btn${isActive ? ' cancel-btn' : ''}">${isActive ? 'Cancel' : 'Join'}</button>
-                </div>
-            </div>
-        `;
+        const statusText = isMissing ? 'Temporarily not in Casual' : friend.status;
+        const hasStatus = friend.status || isMissing;
+
+        return FRIENDS_TEMPLATES.FRIEND_ITEM(
+            friend.steamid,
+            avatarUrl,
+            friend.personaname,
+            statusText,
+            hasStatus,
+            isMissing,
+            isActive
+        );
     }
 }
 
