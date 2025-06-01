@@ -239,20 +239,39 @@ class SteamAPI {
             const accounts = data.response?.accounts || [];
             logger.info('SteamAPI', `Received ${accounts.length} accounts from ${friend_ids.length} requested friends`);
 
-            // Get avatars if not cached
-            let avatarMap = avatarsCache;
-            if (!avatarMap || Object.keys(avatarMap).length === 0) {
-                const steamids = accounts.map(acc => acc.public_data?.steamid).filter(Boolean);
-                logger.info('SteamAPI', `Fetching avatars for ${steamids.length} accounts`);
-                avatarMap = await this.getPlayerSummaries(steamids, auth);
-                logger.info('SteamAPI', `Retrieved ${Object.keys(avatarMap).length} avatars`);
-            } else {
-                logger.info('SteamAPI', `Using ${Object.keys(avatarMap).length} cached avatars`);
-            }
-
-            // Filter for CS2 players
+            // Filter for CS2 players first
             const cs2Players = accounts.filter(acc => acc.private_data?.game_id === "730");
             logger.info('SteamAPI', `Found ${cs2Players.length} friends playing CS2`);
+
+            // Pre-filter for casual players to only load avatars for them
+            const casualPlayerSteamIds = cs2Players
+                .filter(acc => {
+                    const priv = acc.private_data || {};
+                    const richPresence = this.parseRichPresence(priv.rich_presence_kv || "");
+                    return richPresence.game_mode === "casual" && 
+                           !["", null, "lobby"].includes(richPresence.game_state);
+                })
+                .map(acc => acc.public_data?.steamid)
+                .filter(Boolean);
+
+            logger.info('SteamAPI', `Found ${casualPlayerSteamIds.length} friends in casual mode`);
+
+            // Get avatars only for casual players (unless we have cached avatars for them)
+            let avatarMap = {};
+            if (casualPlayerSteamIds.length > 0) {
+                // Check if we have cached avatars for these players
+                const missingAvatars = casualPlayerSteamIds.filter(steamid => !avatarsCache[steamid]);
+                
+                if (missingAvatars.length > 0) {
+                    logger.info('SteamAPI', `Fetching avatars for ${missingAvatars.length} casual players`);
+                    const fetchedAvatars = await this.getPlayerSummaries(missingAvatars, auth);
+                    avatarMap = { ...avatarsCache, ...fetchedAvatars };
+                    logger.info('SteamAPI', `Retrieved ${Object.keys(fetchedAvatars).length} new avatars`);
+                } else {
+                    avatarMap = avatarsCache;
+                    logger.info('SteamAPI', `Using cached avatars for all ${casualPlayerSteamIds.length} casual players`);
+                }
+            }
 
             // DEBUG: Show all friends with their game status
             logger.debug('SteamAPI', 'All friends breakdown', {
