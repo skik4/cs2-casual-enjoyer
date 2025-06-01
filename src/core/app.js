@@ -1,6 +1,6 @@
 import SteamAPI from '../steam/steam-api.js';
-import uiManager from '../ui/ui-manager.js';
-import joinManager from '../game/join-manager.js';
+import UIManager from '../ui/ui-manager.js';
+import JoinManager from '../game/join-manager.js';
 import stateManager from './state-manager.js';
 import Validators from '../utils/validators.js';
 import ErrorHandler from '../utils/error-handler.js';
@@ -13,32 +13,14 @@ import logger from '../utils/logger.js';
 class App {
     constructor() {
         this.initialized = false;
-        this.elements = {}; // Cache for DOM elements
     }
 
     /**
-     * Get cached DOM element or find and cache it
-     * @param {string} id - Element ID
-     * @returns {HTMLElement|null} - DOM element
-     */
-    getElement(id) {
-        if (!this.elements[id]) {
-            this.elements[id] = document.getElementById(id);
-        }
-        return this.elements[id];
-    }
-
-    /**
-     * Clear DOM element cache (useful for testing or dynamic content)
-     */
-    clearElementCache() {
-        this.elements = {};
-    }    /**
      * Get Steam ID from input
      * @returns {string} - Steam ID value
      */
     getSteamId() {
-        const steamIdInput = this.getElement('steam-id');
+        const steamIdInput = document.getElementById('steam_id');
         return steamIdInput ? steamIdInput.value.trim() : '';
     }
 
@@ -47,7 +29,7 @@ class App {
      * @returns {string} - API auth value
      */
     getAuth() {
-        const authInput = this.getElement('api-auth');
+        const authInput = document.getElementById('auth');
         if (!authInput) return '';
         return SteamAPI.extractApiKeyOrToken(authInput.value.trim());
     }
@@ -63,26 +45,25 @@ class App {
         if (!friendIds || !friendIds.length) {
             logger.error('App', "No friend IDs provided to fetchAndRenderFriendsByIds");
             return [];
-        }
-
+        }        
         try {
-            const savedAvatars = stateManager.getState('savedAvatars');
-            const allStatuses = await SteamAPI.getFriendsStatuses(friendIds, auth, savedAvatars);
+            const allStatuses = await SteamAPI.getFriendsStatuses(friendIds, auth);
 
             const casualFriends = allStatuses.filter(friend => friend.in_casual_mode);
 
-            stateManager.setState('friendsData', casualFriends);
+            stateManager.setState('friendsData', casualFriends);            const joinStates = keepStates ? JoinManager.getJoinStates() : {};
 
-            const joinStates = keepStates ? joinManager.getJoinStates() : {};
+            UIManager.renderFriendsList(casualFriends, joinStates);
 
-            uiManager.renderFriendsList(casualFriends, joinStates);
+            // Setup friend listeners after rendering
+            this.setupFriendListeners();
 
             logger.info('App', `Friends update completed: ${casualFriends.length} casual friends found, ${casualFriends.filter(f => f.join_available).length} joinable`);
 
             return casualFriends;
         } catch (error) {
             ErrorHandler.logError('App.fetchAndRenderFriendsByIds', error);
-            if (!keepStates) uiManager.showError(error.message || error);
+            if (!keepStates) UIManager.showError(error.message || error);
             throw error;
         }
     }
@@ -103,13 +84,13 @@ class App {
         auth = SteamAPI.extractApiKeyOrToken(auth);
 
         if (!steam_id || !auth) {
-            uiManager.showError("Please enter your SteamID64 and API Key");
+            UIManager.showError("Please enter your SteamID64 and API Key");
             return;
         }
 
         const validation = Validators.validateRequiredFields({ steamId: steam_id, auth });
         if (!validation.valid) {
-            uiManager.showError(validation.errors.join('. '));
+            UIManager.showError(validation.errors.join('. '));
             return;
         }
 
@@ -117,7 +98,10 @@ class App {
         if (savedSettings &&
             (savedSettings.steam_id !== steam_id || savedSettings.auth !== auth)) {
             localStorage.removeItem('hide_privacy_warning');
-            stateManager.setState('usingSavedFriends', false);        }        const updateBtn = this.getElement('update-friends-btn');
+            stateManager.setState('usingSavedFriends', false);
+        }
+
+        const updateBtn = document.getElementById('updateFriendsBtn');
         if (updateBtn) {
             updateBtn.disabled = true;
             updateBtn.textContent = "Updating...";
@@ -127,64 +111,52 @@ class App {
             let allFriendIds = [];
             try {
                 allFriendIds = await SteamAPI.getFriendsList(steam_id, auth);
-                uiManager.hideError();
+                UIManager.hideError();
             } catch (err) {
-                uiManager.showError(err, steam_id);
+                UIManager.showError(err, steam_id);
                 return;
             } finally {
                 if (updateBtn) {
                     updateBtn.disabled = false;
                     updateBtn.textContent = "Update Friends List";
                 }
-            }
-
+            }            
             if (!allFriendIds.length) {
-                uiManager.showError("No friends found in your friends list.", steam_id);
+                UIManager.showError("No friends found in your friends list.", steam_id);
                 return;
-            }
-
-            // Get avatars
-            const avatarsMap = await SteamAPI.getPlayerSummaries(allFriendIds, auth);
-            const savedAvatars = {};
-            for (const sid of allFriendIds) {
-                if (avatarsMap[sid]) {
-                    savedAvatars[sid] = {
-                        avatarfull: avatarsMap[sid].avatarfull
-                    };
-                }
             }
 
             // Update state
             stateManager.batchUpdate({
                 savedFriendsIds: allFriendIds,
-                savedAvatars: savedAvatars,
                 usingSavedFriends: true
             });
 
-            // Get friend statuses
-            const statuses = await SteamAPI.getFriendsStatuses(allFriendIds, auth, savedAvatars);
+            // Get friend statuses (avatars will be loaded only for casual players)
+            const statuses = await SteamAPI.getFriendsStatuses(allFriendIds, auth);
             const casualFriends = statuses.filter(friend => friend.in_casual_mode);
 
-            // Save settings
+            // Save settings without avatars (they will be loaded on demand)
             const saveResult = await window.electronAPI.settings.save({
                 steam_id,
                 auth: auth,
-                friends_ids: allFriendIds,
-                avatars: savedAvatars
+                friends_ids: allFriendIds
             });
 
             // Reset join states
-            joinManager.resetAll();
-
-            // Render friends
+            JoinManager.resetAll();            // Render friends
             stateManager.setState('friendsData', casualFriends);
-            const joinStates = joinManager.getJoinStates();
-            uiManager.renderFriendsList(casualFriends, joinStates);
+            const joinStates = JoinManager.getJoinStates();
+            UIManager.renderFriendsList(casualFriends, joinStates);            // Setup friend listeners after rendering
+            this.setupFriendListeners();
+
+            // Hide the hint since we now have friends data
+            this.updateHintVisibility(false, true);
 
             this.startAutoRefresh();
         } catch (error) {
             ErrorHandler.logError('App.updateFriendsList', error);
-            uiManager.showError(error.message || error, steam_id);
+            UIManager.showError(error.message || error, steam_id);
         } finally {
             if (updateBtn) {
                 updateBtn.disabled = false;
@@ -195,10 +167,9 @@ class App {
 
     /**
      * Start auto-refresh for friends list
-     */
+     */    
     async startAutoRefresh() {
         const auth = this.getAuth();
-        uiManager.updateFriendsStatus('Loading friends in Casual mode...');
 
         const savedFriendsIds = stateManager.getState('savedFriendsIds');
         logger.info('App', `Starting auto-refresh with ${savedFriendsIds.length} saved friends`);
@@ -230,13 +201,15 @@ class App {
             logger.error('App', "Failed to start auto-refresh", { error: error.message });
             throw error;
         }
-    }    /**
+    }    
+    
+    /**
      * Setup all app event listeners
      */
     setupEventListeners() {
-        const updateFriendsBtn = this.getElement('update-friends-btn');
-        const steamIdInput = this.getElement('steam-id');
-        const authInput = this.getElement('api-auth');
+        const updateFriendsBtn = document.getElementById('updateFriendsBtn');
+        const steamIdInput = document.getElementById('steam_id');
+        const authInput = document.getElementById('auth');
 
         if (updateFriendsBtn) {
             updateFriendsBtn.addEventListener('click', () => this.updateFriendsList());
@@ -245,29 +218,43 @@ class App {
         if (steamIdInput) {
             steamIdInput.addEventListener('input', this.validateInputs.bind(this));
             steamIdInput.addEventListener('paste', this.handleSteamIdPaste.bind(this));
-        }
-
+        }        
         if (authInput) {
-            authInput.addEventListener('input', this.validateInputs.bind(this));
             authInput.addEventListener('input', this.handleAuthInput.bind(this));
         }
 
         // Help links
-        const steamIdHelp = this.getElement('steam-id-help');
+        const steamIdHelp = document.getElementById('steam-id-help');
         if (steamIdHelp) {
             steamIdHelp.addEventListener('click', (e) => {
                 e.preventDefault();
-                uiManager.showSteamIdHelp();
+                UIManager.showSteamIdHelp();
             });
         }
 
-        const apiKeyHelp = this.getElement('api-key-help');
+        const apiKeyHelp = document.getElementById('api-key-help');
         if (apiKeyHelp) {
             apiKeyHelp.addEventListener('click', (e) => {
                 e.preventDefault();
-                uiManager.showApiKeyHelp();
+                UIManager.showApiKeyHelp();
             });
         }
+
+        // Friend filter input
+        const filterInput = document.getElementById('friend-filter-input');
+        if (filterInput) {
+            filterInput.addEventListener('input', () => {
+                if (UIManager.lastRenderedFriends) {
+                    const joinStates = JoinManager.getJoinStates();
+                    UIManager.renderFriendsList(UIManager.lastRenderedFriends, joinStates);
+                    // Re-setup friend listeners after re-render
+                    this.setupFriendListeners();
+                }
+            });
+        }
+
+        // Setup friend listeners using event delegation
+        this.setupFriendListeners();
     }
 
     /**
@@ -282,9 +269,11 @@ class App {
 
         const urlValidation = Validators.validateSteamUrl(pastedText);
         if (!urlValidation.valid) {
-            uiManager.showError(urlValidation.error);
+            UIManager.showError(urlValidation.error);
             return;
-        }        const steamIdInput = this.getElement('steam-id');
+        }
+
+        const steamIdInput = document.getElementById('steam_id');
         if (!steamIdInput) return;
 
         if (urlValidation.type === 'steamid') {
@@ -293,7 +282,7 @@ class App {
         } else if (urlValidation.type === 'vanity') {
             const auth = this.getAuth();
             if (!auth) {
-                uiManager.showError("Please enter your API Key first to resolve vanity URLs");
+                UIManager.showError("Please enter your API Key first to resolve vanity URLs");
                 return;
             }
 
@@ -305,54 +294,59 @@ class App {
                 const steamId = await SteamAPI.resolveVanityUrl(urlValidation.value, auth);
                 if (steamId) {
                     steamIdInput.value = steamId;
-                    uiManager.hideError();
+                    UIManager.hideError();
                 } else {
                     steamIdInput.value = originalValue;
-                    uiManager.showError("Could not resolve vanity URL. Please enter SteamID64 manually.");
+                    UIManager.showError("Could not resolve vanity URL. Please enter SteamID64 manually.");
                 }
             } catch (error) {
                 steamIdInput.value = originalValue;
-                uiManager.showError("Error resolving vanity URL: " + error.message);
+                UIManager.showError("Error resolving vanity URL: " + error.message);
             } finally {
                 steamIdInput.disabled = false;
                 this.validateInputs();
             }
         }
-    }    /**
+    }    
+    
+    /**
      * Handle auth input changes
      */
     handleAuthInput() {
-        const authInput = this.getElement('api-auth');
+        const authInput = document.getElementById('auth');
         if (!authInput) return;
 
         const val = authInput.value.trim();
         const token = SteamAPI.extractTokenIfAny(val);
 
         // Reset join states when auth changes
-        joinManager.resetAll();
+        JoinManager.resetAll();
 
         if (token) {
             const info = SteamAPI.parseWebApiToken(token);
             if (info && info.steamid) {
-                const steamIdInput = this.getElement('steam-id');
+                const steamIdInput = document.getElementById('steam_id');
                 if (steamIdInput && (!steamIdInput.value || steamIdInput.value !== info.steamid)) {
                     steamIdInput.value = info.steamid;
                 }
                 this.validateInputs(); // This will handle token notification and validation
             } else {
-                uiManager.hideTokenInfoNotification();
+                UIManager.hideTokenInfoNotification();
                 this.validateInputs();
             }
         } else {
-            uiManager.hideTokenInfoNotification();
+            UIManager.hideTokenInfoNotification();
             this.validateInputs();
         }
-    }/**
+    }
+
+    /**
      * Validate input fields and update UI
-     */    validateInputs() {
+     */
+    validateInputs() {
         const steamId = this.getSteamId();
         const auth = this.getAuth();
-        const updateBtn = this.getElement('update-friends-btn');
+        const updateBtn = document.getElementById('updateFriendsBtn');
 
         const validSteamId = Validators.validateSteamId(steamId);
         const validApiKey = Validators.validateApiAuth(auth);
@@ -361,7 +355,7 @@ class App {
 
         // Check for token expiration
         let isTokenExpired = false;
-        const authInput = this.getElement('api-auth');
+        const authInput = document.getElementById('auth');
         const val = authInput ? authInput.value.trim() : '';
         const token = SteamAPI.extractTokenIfAny(val);
 
@@ -382,18 +376,20 @@ class App {
 
                 // Show token info notification only for current input token
                 if (token) {
-                    uiManager.showTokenInfoNotification(info);
+                    UIManager.showTokenInfoNotification(info);
                 }
             }
         } else {
-            uiManager.hideTokenInfoNotification();
+            UIManager.hideTokenInfoNotification();
         }
 
         // Button should be disabled if token is expired
-        const enableBtn = ((validSteamId && validApiKey) || hasSaved) && !isTokenExpired;        if (updateBtn) updateBtn.disabled = !enableBtn;
+        const enableBtn = ((validSteamId && validApiKey) || hasSaved) && !isTokenExpired;
+
+        if (updateBtn) updateBtn.disabled = !enableBtn;
 
         // Update input field styles
-        const steamIdInput = this.getElement('steam-id');
+        const steamIdInput = document.getElementById('steam_id');
         if (steamIdInput) {
             if (steamId && validSteamId) {
                 steamIdInput.classList.remove('invalid-input');
@@ -421,52 +417,13 @@ class App {
                     // Invalid token/key
                     authInput.classList.add('invalid-input');
                 }
-            }
+            }        
         }
-
-        // Update status message based on token/key state
-        this.updateStatusMessage(auth, validApiKey, isTokenExpired, hasSaved);
 
         // Check if we should start auto-refresh
-        this.checkAndStartAutoRefresh(hasSaved, validSteamId, validApiKey, isTokenExpired);
-    }
-
-    /**
-     * Update status message based on auth state
-     */
-    updateStatusMessage(auth, validApiKey, isTokenExpired, hasSaved) {
-        // Don't update status if we have valid saved settings, no current input, and no token expiration
-        if (hasSaved && !auth && !isTokenExpired) {
-            return;
-        }
-
-        if (!auth && !hasSaved) {
-            // No auth input and no saved settings
-            logger.info('App', 'Status: No auth input and no saved settings');
-            uiManager.updateFriendsStatus(
-                'Enter your <b>Steam Web API Token</b> (recommended) or <b>API Key</b> (with Steam ID),<br>' +
-                'then click <b>Update Friends List</b>.<br>' +
-                'To get them, click <b>Steam Web API Token / Key</b> or <b>SteamID64</b> above.'
-            );
-        } else if (auth && !validApiKey) {
-            // Invalid auth input
-            logger.info('App', 'Status: Invalid auth input provided');
-            uiManager.updateFriendsStatus(
-                'Enter your <b>Steam Web API Token</b> (recommended) or <b>API Key</b> (with Steam ID),<br>' +
-                'then click <b>Update Friends List</b>.<br>' +
-                'To get them, click <b>Steam Web API Token / Key</b> or <b>SteamID64</b> above.'
-            );
-        } else if ((auth && validApiKey && isTokenExpired) || (!auth && hasSaved && isTokenExpired)) {
-            // Valid but expired token (current input) OR saved expired token (no current input)
-            logger.info('App', 'Status: Token is expired', {
-                hasCurrentAuth: !!auth,
-                hasSavedSettings: hasSaved,
-                isExpired: isTokenExpired
-            });
-            uiManager.updateFriendsStatus('Your Steam Web API Token is expired. Please get a new one, paste and click "Update Friends List".');
-        }
-    }
-
+        this.checkAndStartAutoRefresh(hasSaved, validSteamId, validApiKey, isTokenExpired);    
+    }    
+    
     /**
      * Check validation and start auto-refresh if conditions are met
      */
@@ -478,18 +435,18 @@ class App {
             return;
         }
 
-        // Check if we have valid conditions for auto-refresh
-        const hasValidCurrentInputs = validSteamId && validApiKey && !isTokenExpired;
-        const hasValidSavedSettings = hasSaved && !isTokenExpired;
+        // Only start auto-refresh for users with saved settings that include friends list
         const savedFriendsIds = stateManager.getState('savedFriendsIds');
         const hasSavedFriends = savedFriendsIds && savedFriendsIds.length > 0;
+        const hasValidSavedSettings = hasSaved && !isTokenExpired;
 
-        // Start auto-refresh if:
-        // 1. We have valid current inputs, OR
-        // 2. We have valid saved settings AND saved friends list
-        if (hasValidCurrentInputs || (hasValidSavedSettings && hasSavedFriends)) {
+        // Show hint for new users with valid inputs but no saved friends
+        const hasValidCurrentInputs = validSteamId && validApiKey && !isTokenExpired;
+        this.updateHintVisibility(hasValidCurrentInputs, hasSavedFriends);
+
+        // Start auto-refresh ONLY if we have valid saved settings AND saved friends list
+        if (hasValidSavedSettings && hasSavedFriends) {
             logger.info('App', 'Starting auto-refresh - validation passed', {
-                hasValidCurrentInputs,
                 hasValidSavedSettings,
                 hasSavedFriends,
                 friendsCount: savedFriendsIds?.length || 0
@@ -513,16 +470,39 @@ class App {
     }
 
     /**
+     * Update hint visibility based on user state
+     */
+    updateHintVisibility(hasValidInputs, hasSavedFriends) {
+        const hintElement = document.getElementById('update-hint');
+        if (!hintElement) return;
+
+        // Show hint if user has valid inputs but no saved friends list
+        if (hasValidInputs && !hasSavedFriends) {
+            hintElement.classList.add('show');
+        } else {
+            hintElement.classList.remove('show');
+        }
+    }
+
+    /**
      * Initialize the application
      */
     async initialize() {
-        if (this.initialized) return;        try {
-            // Disable update button initially
-            const updateFriendsBtn = this.getElement('update-friends-btn');
-            if (updateFriendsBtn) updateFriendsBtn.disabled = true;
+        if (this.initialized) return;
 
+        try {
+            // Disable update button initially
+            const updateFriendsBtn = document.getElementById('updateFriendsBtn');
+            if (updateFriendsBtn) updateFriendsBtn.disabled = true;            
+            
             // Setup event listeners
             this.setupEventListeners();
+
+            // Setup JoinManager UI callbacks
+            JoinManager.setUICallbacks(
+                (friendId, status) => UIManager.updateDot(friendId, status),
+                (friendId, status) => UIManager.updateJoinButton(friendId, status)
+            );
 
             // Load settings
             const savedSettings = await window.electronAPI.settings.load();
@@ -532,10 +512,12 @@ class App {
                 friend_count: savedSettings.friends_ids?.length || 0
             } : null));
 
-            stateManager.setState('savedSettings', savedSettings);            if (savedSettings) {
+            stateManager.setState('savedSettings', savedSettings);
+
+            if (savedSettings) {
                 // Fill inputs with saved data
-                const steamIdInput = this.getElement('steam-id');
-                const authInput = this.getElement('api-auth');
+                const steamIdInput = document.getElementById('steam_id');
+                const authInput = document.getElementById('auth');
 
                 if (savedSettings.steam_id && steamIdInput) {
                     steamIdInput.value = savedSettings.steam_id;
@@ -543,17 +525,12 @@ class App {
 
                 if (savedSettings.auth && authInput) {
                     authInput.value = savedSettings.auth;
-                }
-
+                }                
                 if (savedSettings.friends_ids && Array.isArray(savedSettings.friends_ids)) {
                     stateManager.batchUpdate({
                         savedFriendsIds: savedSettings.friends_ids,
                         usingSavedFriends: true
                     });
-                }
-
-                if (savedSettings.avatars && typeof savedSettings.avatars === 'object') {
-                    stateManager.setState('savedAvatars', savedSettings.avatars);
                 }
             }
 
@@ -563,8 +540,39 @@ class App {
             this.initialized = true;
         } catch (error) {
             logger.error('App', 'Error during app initialization: ' + error.message);
-            uiManager.showError('Failed to initialize app: ' + error.message);
+            UIManager.showError('Failed to initialize app: ' + error.message);
         }
+    }
+
+    /**
+     * Setup event listeners for friend join buttons using event delegation
+     */
+    setupFriendListeners() {
+        const friendsContainer = document.getElementById('friends');
+        if (!friendsContainer) return;
+
+        // Remove existing listener if it exists
+        if (this.friendsClickHandler) {
+            friendsContainer.removeEventListener('click', this.friendsClickHandler);
+        }
+
+        // Create new click handler
+        this.friendsClickHandler = (event) => {
+            const button = event.target.closest('[id^="join-btn-"]');
+            if (!button) return;
+
+            const steamId = button.id.replace('join-btn-', '');
+            if (!steamId) return;
+
+            if (button.classList.contains('cancel-btn')) {
+                JoinManager.cancelJoin(steamId);
+            } else {
+                JoinManager.startJoin(steamId);
+            }
+        };
+
+        // Add event listener using delegation
+        friendsContainer.addEventListener('click', this.friendsClickHandler);
     }
 }
 
