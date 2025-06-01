@@ -31,7 +31,6 @@
  * @property {string} steam_id - User's Steam ID
  * @property {string} auth - API key or token
  * @property {string[]} friends_ids - Array of friend Steam IDs
- * @property {Object} avatars - Map of Steam ID to avatar data
  */
 
 /**
