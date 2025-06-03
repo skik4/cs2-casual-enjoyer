@@ -135,7 +135,7 @@ class SteamAPIResponseProcessor {
         logger.info('SteamAPIResponseProcessor', `Found ${cs2Players.length} friends playing CS2`);
 
         // Pre-filter for casual players to only load avatars for them
-        const casualPlayerSteamIds = this._extractCasualPlayerSteamIds(cs2Players);
+        const casualPlayerSteamIds = this._extractSupportedPlayerSteamIds(cs2Players);
         logger.info('SteamAPIResponseProcessor', `Found ${casualPlayerSteamIds.length} friends in casual mode`);
 
         // Get avatars only for casual players
@@ -243,20 +243,19 @@ class SteamAPIResponseProcessor {
         return null;
     }
 
-    // Private helper methods
-
+    // Private helper methods    
     /**
-     * Extract Steam IDs of players in casual mode
+     * Extract Steam IDs of players in supported modes (casual and deathmatch)
      * @param {Object[]} cs2Players - Players playing CS2
-     * @returns {string[]} - Steam IDs of casual players
+     * @returns {string[]} - Steam IDs of players in supported modes
      * @private
      */
-    static _extractCasualPlayerSteamIds(cs2Players) {
+    static _extractSupportedPlayerSteamIds(cs2Players) {
         return cs2Players
             .filter(acc => {
                 const priv = acc.private_data || {};
                 const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv || "");
-                return richPresence.game_mode === "casual" &&
+                return (richPresence.game_mode === "casual" || richPresence.game_mode === "deathmatch") &&
                     !["", null, "lobby"].includes(richPresence.game_state);
             })
             .map(acc => acc.public_data?.steamid)
