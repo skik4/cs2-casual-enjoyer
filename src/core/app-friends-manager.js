@@ -43,24 +43,24 @@ class AppFriendsManager {
             logger.error('App', "No friend IDs provided to fetchAndRenderFriendsByIds");
             return [];
         }
+
         try {
             const allStatuses = await SteamAPI.getFriendsStatuses(friendIds, auth);
 
-            const casualFriends = allStatuses.filter(friend => friend.in_casual_mode);
+            const supportedFriends = allStatuses.filter(friend => friend.in_casual_mode);
 
-            appStateManager.setState('friendsData', casualFriends);
+            appStateManager.setState('friendsData', supportedFriends);
             const joinStates = keepStates ? JoinManager.getJoinStates() : {};
-
-            UIManager.renderFriendsList(casualFriends, joinStates);
+            UIManager.renderFriendsList(supportedFriends, joinStates);
 
             // Setup friend listeners after rendering
             if (this.eventManager) {
                 this.eventManager.setupFriendListeners();
             }
 
-            logger.info('App', `Friends update completed: ${casualFriends.length} casual friends found, ${casualFriends.filter(f => f.join_available).length} joinable`);
+            logger.info('App', `Friends update completed: ${supportedFriends.length} supported friends found, ${supportedFriends.filter(f => f.join_available).length} joinable`);
 
-            return casualFriends;
+            return supportedFriends;
         } catch (error) {
             ErrorHandler.logError('App.fetchAndRenderFriendsByIds', error);
             if (!keepStates) UIManager.showError(error.message || error);
@@ -132,9 +132,9 @@ class AppFriendsManager {
                 usingSavedFriends: true
             });
 
-            // Get friend statuses (avatars will be loaded only for casual players)
+            // Get friend statuses (avatars will be loaded only for supported players)
             const statuses = await SteamAPI.getFriendsStatuses(allFriendIds, auth);
-            const casualFriends = statuses.filter(friend => friend.in_casual_mode);
+            const supportedFriends = statuses.filter(friend => friend.in_casual_mode);
 
             // Save settings without avatars (they will be loaded on demand)
             const saveResult = await window.electronAPI.settings.save({
@@ -147,9 +147,9 @@ class AppFriendsManager {
             JoinManager.resetAll();
 
             // Render friends
-            appStateManager.setState('friendsData', casualFriends);
+            appStateManager.setState('friendsData', supportedFriends);
             const joinStates = JoinManager.getJoinStates();
-            UIManager.renderFriendsList(casualFriends, joinStates);
+            UIManager.renderFriendsList(supportedFriends, joinStates);
 
             // Setup friend listeners after rendering
             if (this.eventManager) {
@@ -208,7 +208,7 @@ class AppFriendsManager {
             }, autoRefreshIntervalMs);
 
             appStateManager.setState('friendsRefreshInterval', interval);
-            logger.info('App', "Auto-refresh of casual friends status started");
+            logger.info('App', "Auto-refresh of supported friends status started");
         } catch (error) {
             logger.error('App', "Failed to start auto-refresh", { error: error.message });
             throw error;

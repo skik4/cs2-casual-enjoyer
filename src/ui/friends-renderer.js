@@ -71,7 +71,7 @@ class FriendsRenderer {
             isMissing
         );
 
-        const statusText = isMissing ? 'Temporarily not in Casual' : friend.status;
+        const statusText = isMissing ? 'Temporarily not in supported mode' : friend.status;
         const hasStatus = friend.status || isMissing;
 
         return FRIENDS_TEMPLATES.FRIEND_ITEM(

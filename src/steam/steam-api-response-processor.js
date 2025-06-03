@@ -19,16 +19,16 @@ class SteamAPIResponseProcessor {
         logger.debug('SteamAPIResponseProcessor', 'Processing friends list response', { isToken });
 
         let friendIds = [];
-        
+
         if (isToken) {
             // Token API response format
             if (!rawData.response?.friendslist?.friends || !Array.isArray(rawData.response.friendslist.friends)) {
-                logger.warn('SteamAPIResponseProcessor', 'Empty or invalid friends list from token API', { 
-                    response: rawData.response 
+                logger.warn('SteamAPIResponseProcessor', 'Empty or invalid friends list from token API', {
+                    response: rawData.response
                 });
                 throw ErrorHandler.createError(ERROR_CODES.EMPTY_FRIENDS_LIST);
             }
-            
+
             // Filter to only confirmed friends (efriendrelationship: 3)
             const allFriends = rawData.response.friendslist.friends;
             const confirmedFriends = allFriends.filter(f => f.efriendrelationship === 3);
@@ -49,12 +49,12 @@ class SteamAPIResponseProcessor {
         } else {
             // API Key response format
             if (!rawData.friendslist?.friends) {
-                logger.warn('SteamAPIResponseProcessor', 'Empty or invalid friends list from key API', { 
-                    friendslist: rawData.friendslist 
+                logger.warn('SteamAPIResponseProcessor', 'Empty or invalid friends list from key API', {
+                    friendslist: rawData.friendslist
                 });
                 throw ErrorHandler.createError(ERROR_CODES.EMPTY_FRIENDS_LIST);
             }
-            
+
             // Filter to only confirmed friends (relationship: "friend")
             const allFriends = rawData.friendslist.friends;
             const confirmedFriends = allFriends.filter(f => f.relationship === "friend");
@@ -74,8 +74,8 @@ class SteamAPIResponseProcessor {
             });
         }
 
-        logger.info('SteamAPIResponseProcessor', `Processed ${friendIds.length} confirmed friends`, { 
-            count: friendIds.length 
+        logger.info('SteamAPIResponseProcessor', `Processed ${friendIds.length} confirmed friends`, {
+            count: friendIds.length
         });
 
         return friendIds;
@@ -91,7 +91,7 @@ class SteamAPIResponseProcessor {
         logger.debug('SteamAPIResponseProcessor', `Processing player summaries response chunk ${chunkIndex}`);
 
         let players = [];
-        
+
         // Handle different response formats based on auth type
         if (Array.isArray(rawData.players)) {
             // Token response format
@@ -134,14 +134,14 @@ class SteamAPIResponseProcessor {
         const cs2Players = accounts.filter(acc => acc.private_data?.game_id === "730");
         logger.info('SteamAPIResponseProcessor', `Found ${cs2Players.length} friends playing CS2`);
 
-        // Pre-filter for casual players to only load avatars for them
-        const casualPlayerSteamIds = this._extractSupportedPlayerSteamIds(cs2Players);
-        logger.info('SteamAPIResponseProcessor', `Found ${casualPlayerSteamIds.length} friends in casual mode`);
+        // Pre-filter for supported players to only load avatars for them
+        const supportedPlayerSteamIds = this._extractSupportedPlayerSteamIds(cs2Players);
+        logger.info('SteamAPIResponseProcessor', `Found ${supportedPlayerSteamIds.length} friends in supported modes (casual/deathmatch)`);
 
-        // Get avatars only for casual players
-        const avatarMap = await this._processAvatarsForCasualPlayers(
-            casualPlayerSteamIds, 
-            avatarsCache, 
+        // Get avatars only for supported players
+        const avatarMap = await this._processAvatarsForSupportedPlayers(
+            supportedPlayerSteamIds,
+            avatarsCache,
             getPlayerSummariesCallback
         );
 
@@ -151,7 +151,7 @@ class SteamAPIResponseProcessor {
         // Map to friend objects
         const mapped = this._mapAccountsToFriends(cs2Players, avatarMap);
 
-        // Debug logging for casual and non-casual friends
+        // Debug logging for supported and non-supported friends
         this._logFriendsBreakdown(mapped);
 
         return mapped;
@@ -178,9 +178,8 @@ class SteamAPIResponseProcessor {
         }
 
         const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv || "");
-        
-        if (richPresence.game_mode === "casual" && !["", null, "lobby"].includes(richPresence.game_state)) {
-            logger.debug('SteamAPIResponseProcessor', 'Found connect info for casual player', {
+        if ((richPresence.game_mode === "casual" || richPresence.game_mode === "deathmatch") && !["", null, "lobby"].includes(richPresence.game_state)) {
+            logger.debug('SteamAPIResponseProcessor', 'Found connect info for supported game mode player', {
                 game_mode: richPresence.game_mode,
                 game_state: richPresence.game_state,
                 hasConnect: !!richPresence.connect
@@ -188,7 +187,7 @@ class SteamAPIResponseProcessor {
             return richPresence.connect;
         }
 
-        logger.debug('SteamAPIResponseProcessor', 'Player not in joinable casual game', {
+        logger.debug('SteamAPIResponseProcessor', 'Player not in joinable supported game mode', {
             game_mode: richPresence.game_mode,
             game_state: richPresence.game_state
         });
@@ -213,7 +212,7 @@ class SteamAPIResponseProcessor {
         const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv || "");
 
         const serverId = richPresence.game_server_steam_id || priv.game_server_steam_id || null;
-        
+
         logger.debug('SteamAPIResponseProcessor', 'Extracted game server Steam ID', {
             hasServerId: !!serverId,
             fromRichPresence: !!richPresence.game_server_steam_id,
@@ -263,28 +262,27 @@ class SteamAPIResponseProcessor {
     }
 
     /**
-     * Process avatars for casual players
-     * @param {string[]} casualPlayerSteamIds - Steam IDs of casual players
+     * Process avatars for supported players
+     * @param {string[]} supportedPlayerSteamIds - Steam IDs of supported players
      * @param {Object} avatarsCache - Existing avatar cache
      * @param {Function} getPlayerSummariesCallback - Callback to fetch avatars
      * @returns {Promise<Object>} - Avatar map
      * @private
      */
-    static async _processAvatarsForCasualPlayers(casualPlayerSteamIds, avatarsCache, getPlayerSummariesCallback) {
+    static async _processAvatarsForSupportedPlayers(supportedPlayerSteamIds, avatarsCache, getPlayerSummariesCallback) {
         let avatarMap = {};
-        
-        if (casualPlayerSteamIds.length > 0) {
+        if (supportedPlayerSteamIds.length > 0) {
             // Check if we have cached avatars for these players
-            const missingAvatars = casualPlayerSteamIds.filter(steamid => !avatarsCache[steamid]);
+            const missingAvatars = supportedPlayerSteamIds.filter(steamid => !avatarsCache[steamid]);
 
             if (missingAvatars.length > 0 && getPlayerSummariesCallback) {
-                logger.info('SteamAPIResponseProcessor', `Fetching avatars for ${missingAvatars.length} casual players`);
+                logger.info('SteamAPIResponseProcessor', `Fetching avatars for ${missingAvatars.length} supported players`);
                 const fetchedAvatars = await getPlayerSummariesCallback(missingAvatars);
                 avatarMap = { ...avatarsCache, ...fetchedAvatars };
                 logger.info('SteamAPIResponseProcessor', `Retrieved ${Object.keys(fetchedAvatars).length} new avatars`);
             } else {
                 avatarMap = avatarsCache;
-                logger.info('SteamAPIResponseProcessor', `Using cached avatars for all ${casualPlayerSteamIds.length} casual players`);
+                logger.info('SteamAPIResponseProcessor', `Using cached avatars for all ${supportedPlayerSteamIds.length} supported players`);
             }
         }
 
@@ -319,11 +317,10 @@ class SteamAPIResponseProcessor {
             const priv = acc.private_data || {};
             const pub = acc.public_data || {};
             const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv || "");
-
             const status = richPresence.status || "";
-            const inCasualMode = richPresence.game_mode === "casual" &&
+            const inSupportedMode = (richPresence.game_mode === "casual" || richPresence.game_mode === "deathmatch") &&
                 !["", null, "lobby"].includes(richPresence.game_state);
-            const joinAvailable = inCasualMode && richPresence.connect?.startsWith("+gcconnect");
+            const joinAvailable = inSupportedMode && richPresence.connect?.startsWith("+gcconnect");
 
             const steamid = pub.steamid || "";
             const avatar = avatarMap[steamid]?.avatarfull ||
@@ -345,7 +342,7 @@ class SteamAPIResponseProcessor {
                 game_server_id: richPresence.game_server_steam_id || "",
 
                 // App logic flags
-                in_casual_mode: inCasualMode,
+                in_casual_mode: inSupportedMode,
                 join_available: joinAvailable,
                 connect: richPresence.connect || ""
             };
@@ -353,36 +350,37 @@ class SteamAPIResponseProcessor {
     }
 
     /**
-     * Log breakdown of casual and non-casual friends
+     * Log breakdown of supported and non-supported friends
      * @param {import('../shared/types.js').Friend[]} mapped - Mapped friend objects
      * @private
      */
     static _logFriendsBreakdown(mapped) {
-        const casualFriends = mapped.filter(friend => friend.in_casual_mode);
-        const joinableFriends = casualFriends.filter(f => f.join_available);
+        const supportedFriends = mapped.filter(friend => friend.in_casual_mode);
+        const joinableFriends = supportedFriends.filter(f => f.join_available);
 
-        logger.info('SteamAPIResponseProcessor', `Found ${casualFriends.length} friends in casual mode, ${joinableFriends.length} joinable`);
+        logger.info('SteamAPIResponseProcessor', `Found ${supportedFriends.length} friends in supported modes (casual/deathmatch), ${joinableFriends.length} joinable`);
 
-        // Debug: Show non-casual CS2 friends and why they're not casual
-        const nonCasualFriends = mapped.filter(f => !f.in_casual_mode);
-        logger.debug('SteamAPIResponseProcessor', 'Non-casual CS2 friends', {
-            nonCasualFriends: nonCasualFriends.map(f => ({
+        // Debug: Show non-supported CS2 friends and why they're not supported
+        const nonSupportedFriends = mapped.filter(f => !f.in_casual_mode);
+        logger.debug('SteamAPIResponseProcessor', 'Non-supported CS2 friends', {
+            nonSupportedFriends: nonSupportedFriends.map(f => ({
                 name: f.personaname || 'Unknown',
                 status: f.status,
                 game_mode: f.game_mode || 'Unknown',
                 game_state: f.game_state || 'Unknown',
                 reason: !f.game_mode ? 'No game mode' :
-                    f.game_mode !== 'casual' ? `Playing ${f.game_mode}` :
+                    !['casual', 'deathmatch'].includes(f.game_mode) ? `Playing ${f.game_mode}` :
                         ['', null, 'lobby'].includes(f.game_state) ? `In ${f.game_state || 'lobby'}` :
                             'Other reason'
             }))
         });
 
-        // Debug: Show casual friends (always show, even if empty)
-        logger.debug('SteamAPIResponseProcessor', 'Casual friends', {
-            casualFriends: casualFriends.map(f => ({
+        // Debug: Show supported friends (always show, even if empty)
+        logger.debug('SteamAPIResponseProcessor', 'Supported friends', {
+            supportedFriends: supportedFriends.map(f => ({
                 name: f.personaname || 'Unknown',
                 status: f.status,
+                game_mode: f.game_mode,
                 game_map: f.game_map,
                 game_score: f.game_score,
                 join_available: f.join_available,

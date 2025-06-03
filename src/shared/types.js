@@ -8,7 +8,7 @@
  * @property {string} steamid - Steam ID of the friend
  * @property {string} personaname - Display name
  * @property {string} status - Game status text
- * @property {boolean} in_casual_mode - Whether friend is in casual mode
+ * @property {boolean} in_casual_mode - Whether friend is in supported mode (casual or deathmatch)
  * @property {boolean} join_available - Whether join is available
  * @property {string} game_map - Current map
  * @property {string} game_score - Current score

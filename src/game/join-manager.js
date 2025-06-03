@@ -22,7 +22,7 @@ class JoinManager {
         try {
             const steamIdInput = DOMUtils.getElementById('steam-id');
             const authInput = DOMUtils.getElementById('auth');
-            
+
             if (!steamIdInput || !authInput) {
                 throw new Error('Required input elements not found');
             }
@@ -33,7 +33,7 @@ class JoinManager {
 
             if (!steam_id || !auth) {
                 throw new Error('Steam ID and API auth are required');
-            }            this.joinStates[friend_id] = {
+            } this.joinStates[friend_id] = {
                 status: STATUS_TYPES.WAITING,
                 cancelled: false,
                 interval: null
@@ -48,8 +48,8 @@ class JoinManager {
                 if (currentState) {
                     if (this.onUpdateDot) this.onUpdateDot(friend_id, currentState.status);
                     if (this.onUpdateJoinButton) this.onUpdateJoinButton(friend_id, currentState.status);
-                    
-                    if (currentState.status === STATUS_TYPES.JOINED || 
+
+                    if (currentState.status === STATUS_TYPES.JOINED ||
                         currentState.status === STATUS_TYPES.CANCELLED) {
                         clearInterval(currentState.interval);
                     }
@@ -79,14 +79,13 @@ class JoinManager {
             try {
                 // Try to get connect info for the friend
                 const currentConnect = await SteamAPI.getFriendConnectInfo(friend_id, auth);
-                
+
                 if (!currentConnect) {
                     // Check if the friend is still in casual
                     const statuses = await SteamAPI.getFriendsStatuses([friend_id], auth);
                     const friendStatus = statuses && statuses.length ? statuses[0] : null;
-                    
                     if (!friendStatus || !friendStatus.in_casual_mode) {
-                        // Friend is not in casual - mark as "missing"
+                        // Friend is not in supported mode - mark as "missing"
                         if (!missingSince) {
                             missingSince = Date.now();
                             lastKnownPersona = friendStatus?.personaname || this.joinStates[friend_id]?.personaname || 'Unknown';
@@ -105,7 +104,7 @@ class JoinManager {
                             break;
                         }
                     } else {
-                        // Friend is back in casual - reset the timer
+                        // Friend is back in supported mode - reset the timer
                         missingSince = null;
                         lastKnownPersona = friendStatus.personaname;
                         lastKnownAvatar = friendStatus.avatar;
@@ -133,10 +132,10 @@ class JoinManager {
 
                 if (userServer && friendServer && userServer === friendServer) {
                     this.updateJoinState(friend_id, { status: STATUS_TYPES.JOINED });
-                    
+
                     // Stop all other join loops
                     this.cancelAllExcept(friend_id);
-                    
+
                     // Keep the green status for a bit before resetting
                     await this.sleep(API_CONFIG.JOIN_SUCCESS_DISPLAY_MS);
                     this.cancelJoin(friend_id);
@@ -177,7 +176,7 @@ class JoinManager {
 
         if (state.interval) {
             clearInterval(state.interval);
-        }        this.updateJoinState(friend_id, {
+        } this.updateJoinState(friend_id, {
             status: STATUS_TYPES.CANCELLED,
             cancelled: true
         });
