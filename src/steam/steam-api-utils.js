@@ -78,9 +78,7 @@ class SteamAPIUtils {
             const re = new RegExp('"' + key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '"\\s+"([^"]+)"');
             const m = kv.match(re);
             return m ? m[1] : null;
-        }
-
-        return {
+        }        return {
             status: extract("status"),
             game_state: extract("game:state"),
             game_mode: extract("game:mode"),
