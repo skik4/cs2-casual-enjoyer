@@ -9,85 +9,165 @@ import SteamAPIUtils from './steam-api-utils.js';
  */
 class SteamAPIClient {
     /**
+     * Universal method for making Steam API requests
+     * Handles authentication, error handling, and logging for all API calls
+     * @param {Object} config - Configuration for the API request
+     * @param {string} auth - API key or token
+     * @param {Object} [context] - Additional context for logging
+     * @returns {Promise<Object>} - Parsed JSON response
+     * @private
+     */
+    static async _makeApiRequest(config, auth, context = {}) {
+        const isToken = SteamAPIUtils.isWebApiToken(auth);
+        const authConfig = isToken ? config.token : config.key;
+
+        if (!authConfig) {
+            throw new Error(`No ${isToken ? 'token' : 'key'} configuration provided for ${config.method}`);
+        }
+
+        try {
+            // Build URL and parameters
+            let url = `${API_CONFIG.STEAM_API_BASE}${authConfig.endpoint}`;
+            const params = new URLSearchParams();
+
+            // Add authentication
+            if (isToken) {
+                params.append('access_token', auth);
+            } else {
+                params.append('key', auth);
+            }
+
+            // Add method-specific parameters
+            if (authConfig.params) {
+                Object.entries(authConfig.params).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null) {
+                        params.append(key, value);
+                    }
+                });
+            }
+
+            // Construct final URL
+            url += `?${params.toString()}`;
+
+            // Log request (before making it)
+            logger.info('SteamAPI', `Making ${config.method} request`, {
+                ...context,
+                isToken,
+                endpoint: authConfig.endpoint
+            });
+
+            // Make the request
+            const resp = await fetch(url);
+
+            // Handle HTTP errors
+            if (!resp.ok) {
+                const errorContext = {
+                    ...context,
+                    status: resp.status,
+                    statusText: resp.statusText
+                };
+
+                // Check for custom error handlers
+                if (config.errorHandlers && config.errorHandlers[resp.status]) {
+                    logger.warn('SteamAPI', `${config.method} request failed with status ${resp.status}`, errorContext);
+                    throw config.errorHandlers[resp.status]();
+                }
+
+                // Default error handling
+                logger.error('SteamAPI', `${config.method} request failed with status ${resp.status}`, errorContext);
+
+                if (config.allowFailure) {
+                    return null;
+                }
+
+                throw ErrorHandler.createError(`API_ERROR_${resp.status}`, `${config.method} failed: ${resp.status} ${resp.statusText}`);
+            }
+
+            // Parse response
+            const data = await resp.json();
+
+            // Log response (with masked auth tokens)
+            logger.trace('SteamAPI', `Raw ${config.method} response`, {
+                url: url.replace(/(key|access_token)=[^&]+/g, '$1=***'),
+                response: data
+            });
+
+            return data;
+        } catch (error) {
+            logger.error('SteamAPI', `${config.method} error: ${error.message}`, {
+                ...context,
+                isToken,
+                error
+            });
+            throw error;
+        }
+    }
+
+    /**
      * Get the user's friends list
      * @param {string} steam_id - Steam ID of the user
      * @param {string} auth - API key or token
      * @returns {Promise<string[]>} - Array of friend Steam IDs
      */
     static async getFriendsList(steam_id, auth) {
+        const config = {
+            method: 'GetFriendsList',
+            key: {
+                endpoint: '/ISteamUser/GetFriendList/v1/',
+                params: {
+                    steamid: steam_id,
+                    relationship: 'friend'
+                }
+            },
+            token: {
+                endpoint: '/IFriendsListService/GetFriendsList/v1/',
+                params: {}
+            },
+            errorHandlers: {
+                401: () => ErrorHandler.createError(ERROR_CODES.PRIVATE_FRIENDS_LIST)
+            }
+        };
+        const data = await this._makeApiRequest(config, auth, { steam_id });
         const isToken = SteamAPIUtils.isWebApiToken(auth);
-        logger.info('SteamAPI', 'Getting friends list', { steam_id, isToken });
-        
-        try {
-            let url;
-            if (isToken) {
-                url = `${API_CONFIG.STEAM_API_BASE}/IFriendsListService/GetFriendsList/v1/?access_token=${encodeURIComponent(auth)}`;
-            } else {
-                url = `${API_CONFIG.STEAM_API_BASE}/ISteamUser/GetFriendList/v1/?steamid=${encodeURIComponent(steam_id)}&relationship=friend&key=${encodeURIComponent(auth)}`;
-            }
 
-            const resp = await fetch(url);
-            
-            if (resp.status === 401) {
-                logger.warn('SteamAPI', 'Friends list request unauthorized (401)', { steam_id });
-                throw ErrorHandler.createError(ERROR_CODES.PRIVATE_FRIENDS_LIST);
+        let friendIds = [];
+        if (isToken) {
+            if (!data.response?.friendslist?.friends || !Array.isArray(data.response.friendslist.friends)) {
+                logger.warn('SteamAPI', 'Empty or invalid friends list from token API', { response: data.response });
+                throw ErrorHandler.createError(ERROR_CODES.EMPTY_FRIENDS_LIST);
             }
-            
-            if (!resp.ok) {
-                logger.error('SteamAPI', `Friends list request failed with status ${resp.status}`, { steam_id, status: resp.status });
-                throw ErrorHandler.createError(`API_ERROR_${resp.status}`);
-            }
+            // Filter to only confirmed friends (efriendrelationship: 3)
+            const confirmedFriends = data.response.friendslist.friends.filter(f => f.efriendrelationship === 3);
+            friendIds = confirmedFriends.map(f => f.ulfriendid);
 
-            const data = await resp.json();
-            
-            // TRACE: Raw API response
-            logger.trace('SteamAPI', 'Raw GetFriendsList response', {
-                url: url.replace(/(key|access_token)=[^&]+/g, '$1=***'),
-                response: data
+            // DEBUG: Log relationship filtering results
+            const totalFriends = data.response.friendslist.friends.length;
+            logger.debug('SteamAPI', 'Friend relationship filtering (token API)', {
+                totalFriends,
+                confirmedFriends: confirmedFriends.length,
+                filteredOut: totalFriends - confirmedFriends.length
             });
-
-            let friendIds = [];
-            if (isToken) {
-                if (!data.response?.friendslist?.friends || !Array.isArray(data.response.friendslist.friends)) {
-                    logger.warn('SteamAPI', 'Empty or invalid friends list from token API', { response: data.response });
-                    throw ErrorHandler.createError(ERROR_CODES.EMPTY_FRIENDS_LIST);
-                }
-                // Filter to only confirmed friends (efriendrelationship: 3)
-                const confirmedFriends = data.response.friendslist.friends.filter(f => f.efriendrelationship === 3);
-                friendIds = confirmedFriends.map(f => f.ulfriendid);
-                
-                // DEBUG: Log relationship filtering results
-                const totalFriends = data.response.friendslist.friends.length;
-                logger.debug('SteamAPI', 'Friend relationship filtering (token API)', {
-                    totalFriends,
-                    confirmedFriends: confirmedFriends.length,
-                    filteredOut: totalFriends - confirmedFriends.length
-                });
-            } else {
-                if (!data.friendslist?.friends) {
-                    logger.warn('SteamAPI', 'Empty or invalid friends list from key API', { friendslist: data.friendslist });
-                    throw ErrorHandler.createError(ERROR_CODES.EMPTY_FRIENDS_LIST);
-                }
-                // Filter to only confirmed friends (efriendrelationship: 3) 
-                const confirmedFriends = data.friendslist.friends.filter(f => f.relationship === "friend");
-                friendIds = confirmedFriends.map(f => f.steamid);
-                
-                // DEBUG: Log relationship filtering results
-                const totalFriends = data.friendslist.friends.length;
-                logger.debug('SteamAPI', 'Friend relationship filtering (key API)', {
-                    totalFriends,
-                    confirmedFriends: confirmedFriends.length,
-                    filteredOut: totalFriends - confirmedFriends.length
-                });
+        } else {
+            if (!data.friendslist?.friends) {
+                logger.warn('SteamAPI', 'Empty or invalid friends list from key API', { friendslist: data.friendslist });
+                throw ErrorHandler.createError(ERROR_CODES.EMPTY_FRIENDS_LIST);
             }
+            // Filter to only confirmed friends (efriendrelationship: 3) 
+            const confirmedFriends = data.friendslist.friends.filter(f => f.relationship === "friend");
+            friendIds = confirmedFriends.map(f => f.steamid);
 
-            logger.info('SteamAPI', `Retrieved ${friendIds.length} confirmed friends`, { count: friendIds.length });
-            
-            return friendIds;
-        } catch (error) {
-            logger.error('SteamAPI', `getFriendsList error: ${error.message}`, { steam_id, isToken, error });
-            throw error;
+            // DEBUG: Log relationship filtering results
+            const totalFriends = data.friendslist.friends.length;
+            logger.debug('SteamAPI', 'Friend relationship filtering (key API)', {
+                totalFriends,
+                confirmedFriends: confirmedFriends.length,
+                filteredOut: totalFriends - confirmedFriends.length
+            });
         }
+
+        logger.info('SteamAPI', `Retrieved ${friendIds.length} confirmed friends`, { count: friendIds.length });
+
+        return friendIds;
     }
 
     /**
@@ -97,8 +177,6 @@ class SteamAPIClient {
      * @returns {Promise<Object>} - Map of Steam ID to player data
      */
     static async getPlayerSummaries(steamids, auth) {
-        const isToken = SteamAPIUtils.isWebApiToken(auth);
-        
         // Normalize input
         if (!Array.isArray(steamids)) {
             if (typeof steamids === "string" && steamids.length > 0) {
@@ -120,39 +198,44 @@ class SteamAPIClient {
                 const chunk = steamids.slice(i, i + 100).map(String);
                 const chunkIndex = Math.floor(i / 100) + 1;
                 const totalChunks = Math.ceil(steamids.length / 100);
-                
-                let url;
-                if (isToken) {
-                    url = `${API_CONFIG.STEAM_API_BASE}/ISteamUserOAuth/GetUserSummaries/v1/?access_token=${encodeURIComponent(auth)}&steamids=${chunk.join(',')}`;
-                } else {
-                    url = `${API_CONFIG.STEAM_API_BASE}/ISteamUser/GetPlayerSummaries/v2/?key=${encodeURIComponent(auth)}&steamids=${chunk.join(',')}`;
-                }
+
+                const config = {
+                    method: 'GetPlayerSummaries',
+                    key: {
+                        endpoint: '/ISteamUser/GetPlayerSummaries/v2/',
+                        params: {
+                            steamids: chunk.join(',')
+                        }
+                    },
+                    token: {
+                        endpoint: '/ISteamUserOAuth/GetUserSummaries/v1/',
+                        params: {
+                            steamids: chunk.join(',')
+                        }
+                    },
+                    allowFailure: true
+                };
 
                 logger.info('SteamAPI', `Fetching player summaries chunk ${chunkIndex}/${totalChunks} (${chunk.length} players)`);
 
-                const resp = await fetch(url);
-                if (!resp.ok) {
-                    logger.warn('SteamAPI', `GetPlayerSummaries chunk ${chunkIndex} failed with status ${resp.status}`);
+                const data = await this._makeApiRequest(config, auth, {
+                    chunkIndex,
+                    totalChunks,
+                    chunkSize: chunk.length
+                });
+                if (!data) {
+                    logger.warn('SteamAPI', `GetPlayerSummaries chunk ${chunkIndex} failed`);
                     continue;
                 }
 
-                const data = await resp.json();
-                
-                // TRACE: Raw API response
-                logger.trace('SteamAPI', `Raw GetPlayerSummaries chunk ${chunkIndex} response`, {
-                    url: url.replace(/(key|access_token)=[^&]+/g, '$1=***'),
-                    response: data
-                });
-
                 let players = [];
-                if (isToken) {
-                    if (Array.isArray(data.players)) {
-                        players = data.players;
-                    }
-                } else {
-                    if (data.response && Array.isArray(data.response.players)) {
-                        players = data.response.players;
-                    }
+                // Handle different response formats based on auth type
+                if (Array.isArray(data.players)) {
+                    // Token response format
+                    players = data.players;
+                } else if (data.response && Array.isArray(data.response.players)) {
+                    // API key response format
+                    players = data.response.players;
                 }
 
                 logger.info('SteamAPI', `Chunk ${chunkIndex}: received ${players.length} player summaries`);
@@ -192,41 +275,30 @@ class SteamAPIClient {
     static async getFriendsStatuses(friend_ids, auth, avatarsCache = {}) {
         const isToken = SteamAPIUtils.isWebApiToken(auth);
         logger.info('SteamAPI', `Getting friends statuses for ${friend_ids.length} friends`);
-        
+
         if (!friend_ids.length) {
             logger.warn('SteamAPI', 'No friend IDs provided to getFriendsStatuses');
             return [];
-        }
-
-        try {
-            const params = new URLSearchParams();
-            if (isToken) {
-                params.append("access_token", auth);
-            } else {
-                params.append("key", auth);
-            }
-            
-            friend_ids.forEach((sid, idx) => params.append(`steamids[${idx}]`, sid));
-            
-            const url = `${API_CONFIG.STEAM_API_BASE}/IPlayerService/GetPlayerLinkDetails/v1/?${params.toString()}`;
-
-            const resp = await fetch(url);
-            
-            if (!resp.ok) {
-                logger.error('SteamAPI', `GetPlayerLinkDetails failed with status ${resp.status}`, { 
-                    status: resp.status, 
-                    statusText: resp.statusText 
-                });
-                throw ErrorHandler.createError(`API_ERROR_${resp.status}`, `Failed to fetch player link details: ${resp.status} ${resp.statusText}`);
-            }
-
-            const data = await resp.json();
-            
-            // TRACE: Raw API response
-            logger.trace('SteamAPI', 'Raw GetPlayerLinkDetails response', {
-                url: url.replace(/(key|access_token)=[^&]+/g, '$1=***'),
-                response: data
+        } try {
+            // Build special params for this API call
+            const specialParams = {};
+            friend_ids.forEach((sid, idx) => {
+                specialParams[`steamids[${idx}]`] = sid;
             });
+
+            const config = {
+                method: 'GetPlayerLinkDetails',
+                key: {
+                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
+                    params: specialParams
+                },
+                token: {
+                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
+                    params: specialParams
+                }
+            };
+
+            const data = await this._makeApiRequest(config, auth, { friendsCount: friend_ids.length });
 
             const accounts = data.response?.accounts || [];
             logger.info('SteamAPI', `Received ${accounts.length} accounts from ${friend_ids.length} requested friends`);
@@ -240,8 +312,8 @@ class SteamAPIClient {
                 .filter(acc => {
                     const priv = acc.private_data || {};
                     const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv || "");
-                    return richPresence.game_mode === "casual" && 
-                           !["", null, "lobby"].includes(richPresence.game_state);
+                    return richPresence.game_mode === "casual" &&
+                        !["", null, "lobby"].includes(richPresence.game_state);
                 })
                 .map(acc => acc.public_data?.steamid)
                 .filter(Boolean);
@@ -253,7 +325,7 @@ class SteamAPIClient {
             if (casualPlayerSteamIds.length > 0) {
                 // Check if we have cached avatars for these players
                 const missingAvatars = casualPlayerSteamIds.filter(steamid => !avatarsCache[steamid]);
-                
+
                 if (missingAvatars.length > 0) {
                     logger.info('SteamAPI', `Fetching avatars for ${missingAvatars.length} casual players`);
                     const fetchedAvatars = await this.getPlayerSummaries(missingAvatars, auth);
@@ -270,8 +342,8 @@ class SteamAPIClient {
                 allFriends: accounts.map(acc => ({
                     name: acc.public_data?.persona_name || 'Unknown',
                     steamid: acc.public_data?.steamid,
-                    game_name: acc.private_data?.game_id === "730" ? "CS2" : 
-                              acc.private_data?.game_id ? `Game ${acc.private_data.game_id}` : "Not in game"
+                    game_name: acc.private_data?.game_id === "730" ? "CS2" :
+                        acc.private_data?.game_id ? `Game ${acc.private_data.game_id}` : "Not in game"
                 }))
             });
 
@@ -280,16 +352,16 @@ class SteamAPIClient {
                 const priv = acc.private_data || {};
                 const pub = acc.public_data || {};
                 const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv || "");
-                
+
                 const status = richPresence.status || "";
-                const inCasualMode = richPresence.game_mode === "casual" && 
-                                   !["", null, "lobby"].includes(richPresence.game_state);
+                const inCasualMode = richPresence.game_mode === "casual" &&
+                    !["", null, "lobby"].includes(richPresence.game_state);
                 const joinAvailable = inCasualMode && richPresence.connect?.startsWith("+gcconnect");
-                
+
                 const steamid = pub.steamid || "";
-                const avatar = avatarMap[steamid]?.avatarfull || 
-                              avatarMap[steamid]?.avatar || 
-                              avatarMap[steamid]?.avatarmedium || "";
+                const avatar = avatarMap[steamid]?.avatarfull ||
+                    avatarMap[steamid]?.avatar ||
+                    avatarMap[steamid]?.avatarmedium || "";
 
                 return {
                     // Basic friend info
@@ -297,14 +369,14 @@ class SteamAPIClient {
                     personaname: pub.persona_name || "",
                     avatar,
                     status,
-                    
+
                     // Game state info
                     game_mode: richPresence.game_mode,
                     game_state: richPresence.game_state,
                     game_map: richPresence.game_map || "",
                     game_score: richPresence.game_score || "",
                     game_server_id: richPresence.game_server_steam_id || "",
-                    
+
                     // App logic flags
                     in_casual_mode: inCasualMode,
                     join_available: joinAvailable,
@@ -314,7 +386,7 @@ class SteamAPIClient {
 
             const casualFriends = mapped.filter(friend => friend.in_casual_mode);
             const joinableFriends = casualFriends.filter(f => f.join_available);
-            
+
             logger.info('SteamAPI', `Found ${casualFriends.length} friends in casual mode, ${joinableFriends.length} joinable`);
 
             // DEBUG: Show non-casual CS2 friends and why they're not casual
@@ -326,9 +398,9 @@ class SteamAPIClient {
                     game_mode: f.game_mode || 'Unknown',
                     game_state: f.game_state || 'Unknown',
                     reason: !f.game_mode ? 'No game mode' :
-                           f.game_mode !== 'casual' ? `Playing ${f.game_mode}` :
-                           ['', null, 'lobby'].includes(f.game_state) ? `In ${f.game_state || 'lobby'}` :
-                           'Other reason'
+                        f.game_mode !== 'casual' ? `Playing ${f.game_mode}` :
+                            ['', null, 'lobby'].includes(f.game_state) ? `In ${f.game_state || 'lobby'}` :
+                                'Other reason'
                 }))
             });
 
@@ -358,23 +430,27 @@ class SteamAPIClient {
      * @returns {Promise<string|null>} - Connect string or null
      */
     static async getFriendConnectInfo(friend_id, auth) {
-        const isToken = SteamAPIUtils.isWebApiToken(auth);
-
         try {
-            const params = new URLSearchParams();
-            if (isToken) {
-                params.append("access_token", auth);
-            } else {
-                params.append("key", auth);
-            }
-            params.append("steamids[0]", friend_id);
+            const config = {
+                method: 'GetPlayerLinkDetails',
+                key: {
+                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
+                    params: {
+                        'steamids[0]': friend_id
+                    }
+                },
+                token: {
+                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
+                    params: {
+                        'steamids[0]': friend_id
+                    }
+                },
+                allowFailure: true
+            };
 
-            const url = `${API_CONFIG.STEAM_API_BASE}/IPlayerService/GetPlayerLinkDetails/v1/?${params.toString()}`;
-            const resp = await fetch(url);
-            
-            if (!resp.ok) return null;
+            const data = await this._makeApiRequest(config, auth, { friend_id });
 
-            const data = await resp.json();
+            if (!data) return null;
 
             const accounts = data.response?.accounts || [];
             if (!accounts.length) return null;
@@ -401,30 +477,34 @@ class SteamAPIClient {
      * @returns {Promise<string|null>} - Game server Steam ID or null
      */
     static async getUserGameServerSteamId(steam_id, auth) {
-        const isToken = SteamAPIUtils.isWebApiToken(auth);
-
         try {
-            const params = new URLSearchParams();
-            if (isToken) {
-                params.append("access_token", auth);
-            } else {
-                params.append("key", auth);
-            }
-            params.append("steamids[0]", steam_id);
+            const config = {
+                method: 'GetPlayerLinkDetails',
+                key: {
+                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
+                    params: {
+                        'steamids[0]': steam_id
+                    }
+                },
+                token: {
+                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
+                    params: {
+                        'steamids[0]': steam_id
+                    }
+                },
+                allowFailure: true
+            };
 
-            const url = `${API_CONFIG.STEAM_API_BASE}/IPlayerService/GetPlayerLinkDetails/v1/?${params.toString()}`;
-            const resp = await fetch(url);
-            
-            if (!resp.ok) return null;
+            const data = await this._makeApiRequest(config, auth, { steam_id });
 
-            const data = await resp.json();
+            if (!data) return null;
 
             const accounts = data.response?.accounts || [];
             if (!accounts.length) return null;
 
             const priv = accounts[0].private_data || {};
             const rp = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv || "");
-            
+
             return rp.game_server_steam_id || priv.game_server_steam_id || null;
         } catch (error) {
             logger.error('SteamAPI', `getUserGameServerSteamId error: ${error.message}`, { steam_id, error });
@@ -439,23 +519,27 @@ class SteamAPIClient {
      * @returns {Promise<string|null>} - Steam ID or null
      */
     static async resolveVanityUrl(vanityUrl, auth) {
-        const isToken = SteamAPIUtils.isWebApiToken(auth);
-
         try {
-            const params = new URLSearchParams();
-            if (isToken) {
-                params.append("access_token", auth);
-            } else {
-                params.append("key", auth);
-            }
-            params.append("vanityurl", vanityUrl);
+            const config = {
+                method: 'ResolveVanityURL',
+                key: {
+                    endpoint: '/ISteamUser/ResolveVanityURL/v1/',
+                    params: {
+                        vanityurl: vanityUrl
+                    }
+                },
+                token: {
+                    endpoint: '/ISteamUser/ResolveVanityURL/v1/',
+                    params: {
+                        vanityurl: vanityUrl
+                    }
+                },
+                allowFailure: true
+            };
 
-            const url = `${API_CONFIG.STEAM_API_BASE}/ISteamUser/ResolveVanityURL/v1/?${params.toString()}`;
-            const resp = await fetch(url);
-            
-            if (!resp.ok) return null;
+            const data = await this._makeApiRequest(config, auth, { vanityUrl });
 
-            const data = await resp.json();
+            if (!data) return null;
 
             if (data.response?.success === 1) {
                 return data.response.steamid;
