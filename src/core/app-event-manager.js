@@ -38,7 +38,7 @@ class AppEventManager {
         if (steamIdInput && this.inputManager) {
             steamIdInput.addEventListener('input', this.inputManager.validateInputs.bind(this.inputManager));
             steamIdInput.addEventListener('paste', this.inputManager.handleSteamIdPaste.bind(this.inputManager));
-        }        
+        }
         if (authInput && this.inputManager) {
             authInput.addEventListener('input', this.inputManager.handleAuthInput.bind(this.inputManager));
         }
@@ -60,15 +60,14 @@ class AppEventManager {
             });
         }
 
-        // Friend filter input
+        // Friend filter input - use incremental update to preserve animations
         const filterInput = DOMUtils.getElementById('friend-filter-input');
         if (filterInput) {
             filterInput.addEventListener('input', () => {
                 if (UIManager.lastRenderedFriends) {
                     const joinStates = JoinManager.getJoinStates();
+                    // Use the same incremental update as normal rendering
                     UIManager.renderFriendsList(UIManager.lastRenderedFriends, joinStates);
-                    // Re-setup friend listeners after re-render
-                    this.setupFriendListeners();
                 }
             });
         }
