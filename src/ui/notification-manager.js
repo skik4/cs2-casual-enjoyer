@@ -6,7 +6,8 @@ import { NOTIFICATION_TEMPLATES, HELP_TEMPLATES } from './html-templates.js';
  * Notification Manager module
  * Handles all notifications, errors, token information display, and help information
  */
-class NotificationManager {/**
+class NotificationManager {
+    /**
      * Show a notification with close button
      * @param {string} html - HTML content of the notification
      * @param {string} type - Type of notification ('info', 'error', etc.)
@@ -24,7 +25,9 @@ class NotificationManager {/**
                 errorElement.style.display = 'none';
             };
         }
-    }    /**
+    }
+
+    /**
      * Show persistent notification about token (steamid and expiration)
      * @param {{steamid: string, expires: number, expiresDate: Date}} tokenInfo
      */
@@ -37,10 +40,10 @@ class NotificationManager {/**
         const expiresMs = tokenInfo.expires * 1000;
         const expiresStr = tokenInfo.expiresDate.toLocaleString();
         let expired = expiresMs < now;
-        let warnHtml = '';        if (expired) {
+        let warnHtml = ''; if (expired) {
             warnHtml = NOTIFICATION_TEMPLATES.TOKEN_EXPIRED_WARNING;
-        } 
-        
+        }
+
         const html = NOTIFICATION_TEMPLATES.TOKEN_INFO(tokenInfo.steamid, expiresStr, warnHtml);
 
         const infoDiv = document.createElement('div');
@@ -58,7 +61,9 @@ class NotificationManager {/**
         if (infoDiv && infoDiv.parentNode) {
             infoDiv.parentNode.removeChild(infoDiv);
         }
-    }    /**
+    }
+
+    /**
      * Show error to the user
      * @param {string|Error} message - Error message
      * @param {string} steamId - Steam ID for context
@@ -68,7 +73,8 @@ class NotificationManager {/**
 
         if (ErrorHandler.isPrivacyError(message)) {
             this.showUpdateError(steamId);
-        } else {            this.showNotification(
+        } else {
+            this.showNotification(
                 NOTIFICATION_TEMPLATES.ERROR_MESSAGE(errorMessage),
                 'error'
             );
@@ -85,7 +91,9 @@ class NotificationManager {/**
         const linkHtml = privacyUrl ? NOTIFICATION_TEMPLATES.PRIVACY_LINK(privacyUrl) : '';
 
         this.showNotification(this.getPrivacyWarningHtml(linkHtml), 'error');
-    }    /**
+    }
+
+    /**
      * Get HTML for privacy warning
      * @param {string} linkHtml - HTML for privacy settings link
      * @returns {string} - Privacy warning HTML

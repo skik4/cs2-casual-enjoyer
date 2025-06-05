@@ -1,3 +1,5 @@
+import NotificationManager from './notification-manager.js';
+
 /**
  * Tutorial Manager
  * Handles step-by-step tutorial functionality with navigation controls
@@ -320,13 +322,12 @@ class TutorialManager {
      * Open API token notification if not already open
      */
     openAPITokenNotification() {
-        const apiKeyHelp = document.querySelector('#api-key-help');
         const errorElement = document.querySelector('#error');
 
         // Check if notification is not already visible
-        if (apiKeyHelp && (!errorElement || errorElement.style.display === 'none' || !errorElement.style.display)) {
-            // Trigger click on API key help to open notification
-            apiKeyHelp.click();
+        if (!errorElement || errorElement.style.display === 'none' || !errorElement.style.display) {
+            // Use NotificationManager directly instead of simulating click
+            NotificationManager.showApiKeyHelp();
 
             // If we're on step 2, wait for the notification to fully load and then re-highlight
             if (this.currentStep === 2) {
@@ -342,13 +343,8 @@ class TutorialManager {
      * Close API token notification if open
      */
     closeAPITokenNotification() {
-        const errorElement = document.querySelector('#error');
-        const closeBtn = document.querySelector('.notification-close-btn');
-
-        // If notification is visible, close it
-        if (errorElement && errorElement.style.display !== 'none' && closeBtn) {
-            closeBtn.click();
-        }
+        // Use NotificationManager directly instead of simulating button click
+        NotificationManager.hideError();
     }
 
     /**
@@ -367,30 +363,10 @@ class TutorialManager {
             }
         };
 
-        this.handleSteamTokenLinkClick = (event) => {
-            // If on step 2 (Get Steam Web API Token) and user clicks the steam token link
-            if (this.currentStep === 2 && this.isActive) {
-                const target = event.target;
-                // Check if this is the specific Steam API token link by URL
-                if (target.href && target.href.includes('store.steampowered.com/pointssummary/ajaxgetasyncconfig')) {
-                    // Close the notification and advance to step 3 (Enter Your API Token)
-                    this.closeAPITokenNotification();
-                    // Don't auto-advance, let user use Next button to go to step 3
-                    // This prevents skipping step 3 (Enter Your API Token)
-                }
-            }
-        };
-
         const apiKeyHelp = document.querySelector('#api-key-help');
         if (apiKeyHelp) {
             apiKeyHelp.addEventListener('click', this.handleAPIKeyClick);
         }
-
-        // Add event listener to steam token links for tutorial workflow
-        const steamTokenLinks = document.querySelectorAll('.steam-token-link');
-        steamTokenLinks.forEach(link => {
-            link.addEventListener('click', this.handleSteamTokenLinkClick);
-        });
     }
 
     /**
@@ -401,19 +377,13 @@ class TutorialManager {
         if (apiKeyHelp && this.handleAPIKeyClick) {
             apiKeyHelp.removeEventListener('click', this.handleAPIKeyClick);
         }
-
-        const steamTokenLinks = document.querySelectorAll('.steam-token-link');
-        if (this.handleSteamTokenLinkClick) {
-            steamTokenLinks.forEach(link => {
-                link.removeEventListener('click', this.handleSteamTokenLinkClick);
-            });
-        }
     }
 
     /**
      * Wait for UI to be ready and start tutorial automatically
      * Uses requestAnimationFrame to check for UI readiness, then starts tutorial
-     */    waitForUIAndStartTutorial() {
+     */
+    waitForUIAndStartTutorial() {
         const startTutorialWhenReady = () => {
             const tutorialBtn = document.getElementById('tutorial-btn');
 
