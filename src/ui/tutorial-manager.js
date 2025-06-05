@@ -358,9 +358,12 @@ class TutorialManager {
         this.handleAPIKeyClick = (event) => {
             // If on step 1 (Steam Web API Token) and user clicks the help link
             if (this.currentStep === 1 && this.isActive) {
-                // Don't auto-advance - let the user use Next button
-                // Just ensure the notification opens (if not already open)
+                // Auto-advance to step 2 (Get Steam Web API Token)
                 this.openAPITokenNotification();
+                // Use requestAnimationFrame to allow notification to open, then advance
+                requestAnimationFrame(() => {
+                    this.nextStep();
+                });
             }
         };
 
