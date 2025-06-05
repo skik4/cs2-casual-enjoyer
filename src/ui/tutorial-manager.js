@@ -74,8 +74,12 @@ class TutorialManager {
         this.removeTutorialOverlay();
 
         this.createTutorialOverlay();
-        this.showStep(this.currentStep);
-        this.setupEventListeners();
+
+        // Use requestAnimationFrame to prevent flicker during initialization
+        requestAnimationFrame(() => {
+            this.showStep(this.currentStep);
+            this.setupEventListeners();
+        });
     }
 
     /**
@@ -152,9 +156,11 @@ class TutorialManager {
         this.overlay = document.createElement('div');
         this.overlay.className = 'tutorial-overlay';
 
-        // Create modal
+        // Create modal (initially hidden to prevent flicker)
         this.modal = document.createElement('div');
         this.modal.className = 'tutorial-modal';
+        this.modal.style.opacity = '0';
+        this.modal.style.visibility = 'hidden';
 
         document.body.appendChild(this.overlay);
         document.body.appendChild(this.modal);
@@ -212,9 +218,13 @@ class TutorialManager {
                             onclick="tutorialManager.nextStep()">
                         ${this.currentStep === this.steps.length - 1 ? 'Finish ✓' : 'Next →'}
                     </button>
-                </div>
+                    </div>
             </div>
         `;
+
+        // Show modal after content is set (prevent flicker)
+        this.modal.style.opacity = '1';
+        this.modal.style.visibility = 'visible';
     }
 
     /**
@@ -400,14 +410,13 @@ class TutorialManager {
     /**
      * Wait for UI to be ready and start tutorial automatically
      * Uses requestAnimationFrame to check for UI readiness, then starts tutorial
-     */
-    waitForUIAndStartTutorial() {
+     */    waitForUIAndStartTutorial() {
         const startTutorialWhenReady = () => {
             const tutorialBtn = document.getElementById('tutorial-btn');
 
             if (tutorialBtn) {
-                // UI is ready, click the tutorial button to start
-                tutorialBtn.click();
+                // UI is ready, start tutorial directly without button click to prevent flicker
+                this.start();
             } else {
                 // UI not ready yet, try again on next frame
                 requestAnimationFrame(startTutorialWhenReady);
@@ -468,7 +477,8 @@ class TutorialManager {
                 }
             });
 
-            // Use requestAnimationFrame for smoother layout stabilization        } else if (attempts < maxAttempts) {
+            // Use requestAnimationFrame for smoother layout stabilization
+        } else if (attempts < maxAttempts) {
             // Element not found, try again on next frame for faster checking
             requestAnimationFrame(() => {
                 this.waitForElementAndHighlight(selector, attempts + 1);
@@ -480,7 +490,22 @@ class TutorialManager {
     }
 }
 
-// Create global instance
-const tutorialManager = new TutorialManager();
+// Singleton instance
+let tutorialManagerInstance = null;
+
+/**
+ * Get or create the singleton instance of TutorialManager
+ * @returns {TutorialManager} The singleton instance
+ */
+function getTutorialManager() {
+    if (!tutorialManagerInstance) {
+        tutorialManagerInstance = new TutorialManager();
+    }
+    return tutorialManagerInstance;
+}
+
+// Create and export the singleton instance
+const tutorialManager = getTutorialManager();
 
 export default TutorialManager;
+export { tutorialManager, getTutorialManager };

@@ -82,14 +82,13 @@
                 title="Open skik4's Steam profile">skik4</a>
         </span>
     </div>    <!-- Load the new modular application -->
-    <script type="module" src="src/core/app.js"></script>
-    <script type="module">
-        import TutorialManager from './src/ui/tutorial-manager.js';
+    <script type="module" src="src/core/app.js"></script>    <script type="module">
+        import { getTutorialManager } from './src/ui/tutorial-manager.js';
         
-        // Initialize tutorial manager
-        window.tutorialManager = new TutorialManager();
+        // Make tutorial manager globally available for HTML onclick handlers
+        window.tutorialManager = getTutorialManager();
         
-        // Global function to start tutorial
+        // Global function to start tutorial using singleton
         window.startTutorial = function() {
             window.tutorialManager.start();
         };

@@ -1,7 +1,7 @@
 import StatusManager from './status-manager.js';
 import FriendsRenderer from './friends-renderer.js';
 import NotificationManager from './notification-manager.js';
-import TutorialManager from './tutorial-manager.js';
+import { getTutorialManager } from './tutorial-manager.js';
 
 /**
  * UI Manager module
@@ -106,13 +106,12 @@ class UIManager {    /**
     static showApiKeyHelp() {
         return NotificationManager.showApiKeyHelp();
     }
-
-    // Tutorial Methods - delegate to TutorialManager
+  
     /**
      * Start the tutorial
      */
     static startTutorial() {
-        const tutorialManager = new TutorialManager();
+        const tutorialManager = getTutorialManager();
         return tutorialManager.start();
     }
 
@@ -120,9 +119,8 @@ class UIManager {    /**
      * Stop the tutorial
      */
     static stopTutorial() {
-        if (window.tutorialManager) {
-            return window.tutorialManager.stop();
-        }
+        const tutorialManager = getTutorialManager();
+        return tutorialManager.stop();
     }
 }
 

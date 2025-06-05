@@ -1,6 +1,6 @@
 import JoinManager from '../game/join-manager.js';
 import UIManager from '../ui/ui-manager.js';
-import TutorialManager from '../ui/tutorial-manager.js';
+import { getTutorialManager } from '../ui/tutorial-manager.js';
 import AppInputManager from './app-input-manager.js';
 import AppFriendsManager from './app-friends-manager.js';
 import AppEventManager from './app-event-manager.js';
@@ -66,7 +66,7 @@ class App {
             if (isFirstRun) {
                 logger.info('App', 'First run detected - starting tutorial');
                 // Use TutorialManager's method to wait for UI and start tutorial
-                const tutorialManager = new TutorialManager();
+                const tutorialManager = getTutorialManager();
                 tutorialManager.waitForUIAndStartTutorial();
             } else {
                 logger.info('App', 'Settings found - skipping tutorial auto-start');
