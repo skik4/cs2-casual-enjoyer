@@ -5,6 +5,11 @@ node_modules/
 dist/
 build/
 
+# SCSS compiled files (auto-generated from scss/ folder)
+css/unified-buttons.css
+css/unified-buttons.css.map
+css/*.css.map
+
 # Environment variables
 .env
 .env.local
@@ -105,3 +110,11 @@ __tests__/
 # Configuration files (оставляем в репозитории для общего использования)
 jest.config.json
 .babelrc
+
+# SCSS/CSS compiled files - DO NOT COMMIT
+# These are generated automatically from SCSS files
+css/*.css
+css/*.css.map
+
+# Keep only the original SCSS source files in scss/ folder
+# The CSS files will be generated during build/development

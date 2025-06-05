@@ -2,11 +2,15 @@
   "name": "cs2-casual-enjoyer",
   "version": "0.4.0",
   "description": "CS2 Casual Enjoyer Electron App",
-  "main": "src/main/main.js",
-  "scripts": {
-    "start": "electron . --remote-debugging-port=9222",
-    "dev": "electron . --inspect=9223 --remote-debugging-port=9222",
-    "dist": "electron-builder",
+  "main": "src/main/main.js",  "scripts": {
+    "start": "npm run build:css && electron . --remote-debugging-port=9222",
+    "dev": "npm-run-all --parallel watch:css start:electron",
+    "start:electron": "electron . --inspect=9223 --remote-debugging-port=9222",
+    "build:css": "sass scss:css",
+    "watch:css": "sass scss:css --watch",
+    "prebuild": "npm run build:css",
+    "build": "npm run prebuild && electron-builder",
+    "dist": "npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src/ --ext .js",
@@ -36,9 +40,11 @@
     "@babel/preset-env": "^7.27.2",
     "electron": "^29.0.0",
     "electron-builder": "^26.0.12",
+    "eslint": "^8.0.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
-    "eslint": "^8.0.0",
-    "prettier": "^3.0.0"
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.0.0",
+    "sass": "^1.89.1"
   }
 }

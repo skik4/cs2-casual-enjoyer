@@ -1,0 +1,253 @@
+/* Universal Button System - Unified Architecture
+ * Base classes with modifiers to avoid code duplication  
+ * Tutorial button effects (shine + lift) applied to all buttons
+ */
+
+/* ===== BASE BUTTON CLASS ===== */
+.btn {
+    padding: var(--space-sm-px) var(--space-md-px);
+    border: var(--border-width) solid var(--border-color-strong);
+    border-radius: var(--border-radius-md);
+    background: var(--bg-item);
+    color: var(--text-primary);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--anim-duration);
+    min-width: 75px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    box-sizing: border-box;
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs-px);
+
+    /* Shine effect for all buttons */
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: left 0.5s;
+        z-index: 1;
+    }
+
+    /* Base hover state */
+    &:hover:not(:disabled) {
+        background: var(--bg-dark-gradient-light);
+        border-color: var(--border-color);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-light);
+
+        &::before {
+            left: 100%;
+        }
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: none;
+    }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        background: var(--bg-dark);
+        color: var(--gray-600);
+    }
+
+    & > * {
+        position: relative;
+        z-index: 2;
+    }
+}
+
+/* ===== BUTTON VARIANTS ===== */
+.btn-primary {
+    background: linear-gradient(90deg, var(--blue-primary) 60%, var(--blue-dark) 100%);
+    border-color: var(--blue-primary);
+    color: var(--white);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(45, 140, 240, 0.2);
+
+    &:hover:not(:disabled) {
+        background: linear-gradient(90deg, var(--blue-dark) 60%, var(--blue-primary) 100%);
+        border-color: var(--blue-dark);
+        box-shadow: 0 4px 16px rgba(45, 140, 240, 0.4);
+        transform: translateY(-2px);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(45, 140, 240, 0.2);
+    }
+}
+
+.btn-secondary {
+    background: transparent;
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+
+    &:hover:not(:disabled) {
+        background: var(--bg-item);
+        color: var(--text-primary);
+        border-color: var(--border-color-strong);
+    }
+}
+
+.btn-danger {
+    background: var(--red-primary);
+    border-color: var(--red-primary);
+    color: var(--white);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+
+    &:hover:not(:disabled) {
+        background: var(--red-dark);
+        border-color: var(--red-dark);
+        box-shadow: 0 4px 16px rgba(231, 76, 60, 0.4);
+        transform: translateY(-2px);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+    }
+}
+
+/* ===== SIZE MODIFIERS ===== */
+.btn-lg {
+    padding: var(--space-md-px) var(--space-lg-px);
+    min-width: 120px;
+    font-size: var(--font-size-md);
+}
+
+.btn-sm {
+    padding: var(--space-xs-px) var(--space-sm-px);
+    min-width: 60px;
+    font-size: var(--font-size-xs);
+}
+
+/* ===== ICON BUTTONS ===== */
+.btn-icon {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    min-width: 28px;
+    border-radius: var(--border-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-1px);
+    }
+}
+
+/* ===== SPECIAL BUTTON TYPES ===== */
+.btn-window {
+    background: var(--bg-panel);
+    color: var(--text-secondary);
+    font-size: var(--font-size-lg);
+
+    &:hover:not(:disabled) {
+        background: var(--blue-primary);
+        color: var(--white);
+    }
+
+    &.close:hover:not(:disabled) {
+        background: var(--red-primary);
+        color: var(--white);
+    }
+}
+
+.btn-help {
+    background: var(--bg-panel);
+    color: var(--text-secondary);
+    height: 28px;
+    padding: 0 var(--space-sm-px);
+    margin-right: var(--space-sm-px);
+    -webkit-app-region: no-drag;
+    gap: 4px;
+
+    &:hover:not(:disabled) {
+        background: linear-gradient(90deg, var(--blue-primary) 60%, var(--blue-dark) 100%);
+        color: var(--white);
+        border-color: var(--blue-primary);
+        box-shadow: 0 2px 8px rgba(45, 140, 240, 0.3);
+    }
+}
+
+// Use @extend to create convenient aliases
+.action-btn {
+    @extend .btn;
+    @extend .btn-primary;
+    @extend .btn-lg;
+}
+
+.cancel-btn {
+    @extend .btn;
+    @extend .btn-danger;
+}
+
+.window-btn {
+    @extend .btn;
+    @extend .btn-icon;
+    @extend .btn-window;
+}
+
+.tutorial-btn {
+    @extend .btn;
+}
+
+.tutorial-btn-primary {
+    @extend .btn;
+    @extend .btn-primary;
+}
+
+.tutorial-btn-secondary {
+    @extend .btn;
+    @extend .btn-secondary;
+}
+
+.tutorial-btn-help {
+    @extend .btn;
+    @extend .btn-help;
+}
+
+/* Notification close button - minimal styling, no shine effect */
+.notification-close-btn {
+    position: absolute;
+    top: var(--position-sm);
+    right: var(--position-md);
+    font-size: var(--font-size-xl);
+    font-weight: bold;
+    color: var(--gray-300);
+    opacity: var(--opacity-medium);
+    background: transparent;
+    border: none;
+    z-index: 2;
+    transition: color var(--anim-duration), opacity var(--anim-duration);
+    line-height: 1;
+    padding: 0 4px;
+    border-radius: var(--border-radius-sm);
+    user-select: none;
+    margin-left: auto;
+    cursor: pointer;
+    width: auto;
+    height: auto;
+    min-width: auto;
+
+    &:hover:not(:disabled) {
+        opacity: var(--opacity-high);
+        color: var(--white);
+        background: none;
+    }
+}
