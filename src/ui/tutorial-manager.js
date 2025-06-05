@@ -445,16 +445,15 @@ class TutorialManager {
 
     /**
      * Wait for element to appear and then highlight it
+     * Uses requestAnimationFrame for smoother DOM checking and layout stability
      * @param {string} selector - CSS selector of target element
      * @param {number} attempts - Current attempt number
      */
     waitForElementAndHighlight(selector, attempts) {
         const maxAttempts = 50; // Increased attempts for more persistence
-        const element = document.querySelector(selector);
-
-        if (element) {
-            // Element found, wait a bit more for layout to stabilize, then highlight it
-            setTimeout(() => {
+        const element = document.querySelector(selector); if (element) {
+            // Element found, wait for next frame for layout to stabilize, then highlight it
+            requestAnimationFrame(() => {
                 // Double-check element is still there and visible
                 const checkElement = document.querySelector(selector);
                 if (checkElement && checkElement.offsetParent !== null) {
@@ -467,12 +466,13 @@ class TutorialManager {
                         this.positionModalNearTarget(null);
                     }
                 }
-            }, 50); // Reduced wait time to 50ms for faster layout stabilization
-        } else if (attempts < maxAttempts) {
-            // Element not found, try again after 25ms for faster checking
-            setTimeout(() => {
+            });
+
+            // Use requestAnimationFrame for smoother layout stabilization        } else if (attempts < maxAttempts) {
+            // Element not found, try again on next frame for faster checking
+            requestAnimationFrame(() => {
                 this.waitForElementAndHighlight(selector, attempts + 1);
-            }, 25);
+            });
         } else {
             // Element not found after max attempts, position modal in center
             this.positionModalNearTarget(null);
