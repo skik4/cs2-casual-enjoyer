@@ -398,6 +398,27 @@ class TutorialManager {
     }
 
     /**
+     * Wait for UI to be ready and start tutorial automatically
+     * Uses requestAnimationFrame to check for UI readiness, then starts tutorial
+     */
+    waitForUIAndStartTutorial() {
+        const startTutorialWhenReady = () => {
+            const tutorialBtn = document.getElementById('tutorial-btn');
+
+            if (tutorialBtn) {
+                // UI is ready, click the tutorial button to start
+                tutorialBtn.click();
+            } else {
+                // UI not ready yet, try again on next frame
+                requestAnimationFrame(startTutorialWhenReady);
+            }
+        };
+
+        // Start checking on next frame
+        requestAnimationFrame(startTutorialWhenReady);
+    }
+
+    /**
      * Wait for element to appear and then highlight it immediately
      * @param {string} selector - CSS selector of target element
      */

@@ -1,5 +1,6 @@
 import JoinManager from '../game/join-manager.js';
 import UIManager from '../ui/ui-manager.js';
+import TutorialManager from '../ui/tutorial-manager.js';
 import AppInputManager from './app-input-manager.js';
 import AppFriendsManager from './app-friends-manager.js';
 import AppEventManager from './app-event-manager.js';
@@ -60,6 +61,17 @@ class App {
 
             appStateManager.setState('savedSettings', savedSettings);
 
+            // Check if this is the first run (no saved settings) and start tutorial
+            const isFirstRun = !savedSettings;
+            if (isFirstRun) {
+                logger.info('App', 'First run detected - starting tutorial');
+                // Use TutorialManager's method to wait for UI and start tutorial
+                const tutorialManager = new TutorialManager();
+                tutorialManager.waitForUIAndStartTutorial();
+            } else {
+                logger.info('App', 'Settings found - skipping tutorial auto-start');
+            }
+
             if (savedSettings) {
                 // Fill inputs with saved data
                 const steamIdInput = DOMUtils.getElementById('steam-id');
@@ -82,7 +94,6 @@ class App {
 
             // Call validateInputs at the end to set proper status and UI state
             this.inputManager.validateInputs();
-
             this.initialized = true;
         } catch (error) {
             logger.error('App', 'Error during app initialization: ' + error.message);
