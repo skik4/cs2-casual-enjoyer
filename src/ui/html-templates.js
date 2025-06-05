@@ -12,7 +12,7 @@ export const NOTIFICATION_TEMPLATES = {
      * Close button for notifications
      */
     CLOSE_BUTTON: `<div class="notification-header"><span class="notification-close-btn" title="Close">&times;</span></div>`,
-    
+
     /**
      * Warning for expired token
      */
@@ -22,7 +22,7 @@ export const NOTIFICATION_TEMPLATES = {
             <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="privacy-link" target="_self">Get a new one</a><br>
         </div>
     `,
-    
+
     /**
      * Token information display
      * @param {string} steamid - Steam ID
@@ -40,7 +40,7 @@ export const NOTIFICATION_TEMPLATES = {
             ${warnHtml}
         </div>
     `,
-    
+
     /**
      * Error message display
      * @param {string} errorMessage - Error message
@@ -49,7 +49,7 @@ export const NOTIFICATION_TEMPLATES = {
     ERROR_MESSAGE: (errorMessage) => `
         <div class="notification-main-text" style="color:#ff4444;font-weight:500;">${errorMessage}</div>
     `,
-    
+
     /**
      * Privacy settings link
      * @param {string} privacyUrl - Privacy settings URL
@@ -59,7 +59,7 @@ export const NOTIFICATION_TEMPLATES = {
         <a href="${privacyUrl}" class="privacy-link" style="color:#2d8cf0;text-decoration:underline;" 
             title="Open privacy settings in Steam">Open your Steam privacy settings</a>
     `,
-    
+
     /**
      * Privacy warning with instructions
      * @param {string} linkHtml - Privacy link HTML
@@ -133,12 +133,12 @@ export const HELP_TEMPLATES = {
             <div style="margin-bottom:15px;">
                 <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
                     Option 1: Token (Recommended)
-                </div>
+                </div>                
                 <div style="margin-bottom:8px;">
                     <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="privacy-link" target="_self" style="font-weight:600;text-decoration:underline;">Get your Steam Web API Token in the Steam client.</a>
                 </div>                    
                 <div style="margin-bottom:8px;color:#f3f6fa;">
-                    On the opened page, press <strong>Ctrl+A</strong> (select all), then <strong>Ctrl+C</strong> (copy), and <strong>Ctrl+V</strong> to paste it into the Steam Web API Token / Key field.
+                    On the opened page (may appear blank / black), press <strong>Ctrl+A</strong> then <strong>Ctrl+C</strong> to copy, and <strong>Ctrl+V</strong> to paste into the Token field.
                 </div>
                 <div style="color:#bfc9d8;font-size:0.95em;margin-left:10px;">
                     • The app will extract your token and SteamID automatically<br>
