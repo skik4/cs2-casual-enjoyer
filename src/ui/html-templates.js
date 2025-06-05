@@ -19,7 +19,7 @@ export const NOTIFICATION_TEMPLATES = {
     TOKEN_EXPIRED_WARNING: `
         <div style="color:#ff4444;font-weight:500;margin-top:8px;">
             Your token has expired.<br>
-            <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="privacy-link" target="_self">Get a new one</a><br>
+            <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self">Get a new one</a><br>
         </div>
     `,
 
@@ -45,8 +45,7 @@ export const NOTIFICATION_TEMPLATES = {
      * Error message display
      * @param {string} errorMessage - Error message
      * @returns {string} Error message HTML
-     */
-    ERROR_MESSAGE: (errorMessage) => `
+     */    ERROR_MESSAGE: (errorMessage) => `
         <div class="notification-main-text" style="color:#ff4444;font-weight:500;">${errorMessage}</div>
     `,
 
@@ -56,8 +55,7 @@ export const NOTIFICATION_TEMPLATES = {
      * @returns {string} Privacy link HTML
      */
     PRIVACY_LINK: (privacyUrl) => `
-        <a href="${privacyUrl}" class="privacy-link" style="color:#2d8cf0;text-decoration:underline;" 
-            title="Open privacy settings in Steam">Open your Steam privacy settings</a>
+        <a href="${privacyUrl}" class="privacy-link" target="_self" title="Open privacy settings in Steam">Open your Steam privacy settings</a>
     `,
 
     /**
@@ -94,9 +92,9 @@ export const HELP_TEMPLATES = {
             <div style="margin-bottom:15px;">
                 <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
                     Option 1: Quick Link (Recommended)
-                </div>
+                </div>                  
                 <div style="margin-bottom:8px;">
-                    <a href="steam://url/SteamIDMyProfile" class="privacy-link" target="_self" style="font-weight:600;text-decoration:underline;">Open your Steam profile in the Steam client.</a>
+                    <a href="steam://url/SteamIDMyProfile" class="steam-profile-link" target="_self" title="Open your Steam profile in the Steam client.">Open your Steam profile in the Steam client.</a>
                 </div>
                 <div style="margin-bottom:8px;color:#f3f6fa;">
                     Your profile will open in the Steam client. Click on the URL in the address bar at the top of the Steam window - this automatically copies it to your clipboard. Then paste it into the <strong>SteamID64</strong> field below.
@@ -130,13 +128,12 @@ export const HELP_TEMPLATES = {
             🔑 How to Get Your Steam API Token or Key
         </div>
         <div style="margin:10px 0;text-align:left;">
-            <div style="margin-bottom:15px;">
-                <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
+            <div style="margin-bottom:15px;">                <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
                     Option 1: Token (Recommended)
-                </div>                
+                </div>                  
                 <div style="margin-bottom:8px;">
-                    <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="privacy-link" target="_self" style="font-weight:600;text-decoration:underline;">Get your Steam Web API Token in the Steam client.</a>
-                </div>                    
+                    <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="Get your Steam Web API Token in the Steam client.">Get your Steam Web API Token in the Steam client.</a>
+                </div>
                 <div style="margin-bottom:8px;color:#f3f6fa;">
                     On the opened page (may appear blank / black), press <strong>Ctrl+A</strong> then <strong>Ctrl+C</strong> to copy, and <strong>Ctrl+V</strong> to paste into the Token field.
                 </div>
@@ -150,9 +147,9 @@ export const HELP_TEMPLATES = {
             <div>
                 <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
                     Option 2: API Key
-                </div>
+                </div>                  
                 <div style="margin-bottom:8px;">
-                    <a href="steam://openurl/https://steamcommunity.com/dev/apikey" class="privacy-link" target="_self" style="font-weight:600;text-decoration:underline;">Get your Steam Web API Key in the Steam client.</a>
+                    <a href="steam://openurl/https://steamcommunity.com/dev/apikey" class="steam-apikey-link" target="_self" title="Get your Steam Web API Key in the Steam client.">Get your Steam Web API Key in the Steam client.</a>
                 </div>
                 <div style="margin-bottom:8px;color:#f3f6fa;">
                     Register a new API key by entering <strong>localhost</strong> as your domain, accept the terms, and copy your key.
