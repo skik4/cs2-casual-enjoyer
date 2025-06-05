@@ -28,7 +28,7 @@ class TutorialManager {
             {
                 title: "Enter Your API Token",
                 content: "Now paste your Steam Web API Token into this field. Once you have copied the token from Steam, paste it here to continue.",
-                target: "#api-key-input",
+                target: "#auth",
                 icon: "📝"
             },
             {
@@ -95,14 +95,14 @@ class TutorialManager {
      * Go to next step
      */
     nextStep() {
-        // Special handling for step 1 (Steam Web API Token step)
-        if (this.currentStep === 1) {
-            this.openAPITokenNotification();
-        }
-
         if (this.currentStep < this.steps.length - 1) {
             this.currentStep++;
             this.showStep(this.currentStep);
+
+            // Special handling for step 2 (Get Steam Web API Token step)
+            if (this.currentStep === 2) {
+                this.openAPITokenNotification();
+            }
         } else {
             this.stop();
         }
@@ -121,9 +121,7 @@ class TutorialManager {
             this.currentStep--;
             this.showStep(this.currentStep);
         }
-    }
-
-    /**
+    }    /**
      * Show a specific step
      * @param {number} stepIndex - Index of the step to show
      */
@@ -137,7 +135,13 @@ class TutorialManager {
 
         // Update content immediately without animations
         this.updateModal(step);
-        this.highlightTarget(step.target);
+
+        // Special handling for step 2 (Get Steam Web API Token) - use immediate method
+        if (stepIndex === 2 && step.target === '.steam-token-link') {
+            this.waitForElementAndHighlightImmediate(step.target);
+        } else {
+            this.highlightTarget(step.target);
+        }
     }
 
     /**
@@ -211,7 +215,9 @@ class TutorialManager {
                 </div>
             </div>
         `;
-    }    /**
+    }
+
+    /**
      * Highlight target element
      * @param {string|null} selector - CSS selector of target element
      */
@@ -256,7 +262,9 @@ class TutorialManager {
         const highlighted = document.querySelectorAll('.tutorial-highlight');
         highlighted.forEach(el => el.classList.remove('tutorial-highlight'));
         this.removeSpotlight();
-    }    /**
+    }
+
+    /**
      * Position modal near target element
      * @param {HTMLElement} targetElement - The target element to position near
      */
@@ -296,7 +304,9 @@ class TutorialManager {
         } this.modal.style.top = `${top}px`;
         this.modal.style.left = `${left}px`;
         this.modal.style.transform = 'none';
-    }    /**
+    }
+
+    /**
      * Open API token notification if not already open
      */
     openAPITokenNotification() {
@@ -307,6 +317,14 @@ class TutorialManager {
         if (apiKeyHelp && (!errorElement || errorElement.style.display === 'none' || !errorElement.style.display)) {
             // Trigger click on API key help to open notification
             apiKeyHelp.click();
+
+            // If we're on step 2, wait for the notification to fully load and then re-highlight
+            if (this.currentStep === 2) {
+                this.waitForElementAndHighlightImmediate('.steam-token-link');
+            }
+        } else if (this.currentStep === 2) {
+            // Notification is already open, re-highlight the element immediately
+            this.waitForElementAndHighlightImmediate('.steam-token-link');
         }
     }
 
@@ -321,16 +339,18 @@ class TutorialManager {
         if (errorElement && errorElement.style.display !== 'none' && closeBtn) {
             closeBtn.click();
         }
-    }    /**
+    }
+
+    /**
      * Setup event listeners for tutorial interactions
      */
     setupEventListeners() {
         this.handleAPIKeyClick = (event) => {
             // If on step 1 (Steam Web API Token) and user clicks the help link
             if (this.currentStep === 1 && this.isActive) {
-                // Auto-advance to step 2 (Get Steam Web API Token) immediately
-                this.currentStep = 2;
-                this.showStep(this.currentStep);
+                // Don't auto-advance - let the user use Next button
+                // Just ensure the notification opens (if not already open)
+                this.openAPITokenNotification();
             }
         };
 
@@ -342,11 +362,13 @@ class TutorialManager {
                 if (target.href && target.href.includes('store.steampowered.com/pointssummary/ajaxgetasyncconfig')) {
                     // Close the notification and advance to step 3 (Enter Your API Token)
                     this.closeAPITokenNotification();
-                    this.currentStep = 3;
-                    this.showStep(this.currentStep);
+                    // Don't auto-advance, let user use Next button to go to step 3
+                    // This prevents skipping step 3 (Enter Your API Token)
                 }
             }
-        }; const apiKeyHelp = document.querySelector('#api-key-help');
+        };
+
+        const apiKeyHelp = document.querySelector('#api-key-help');
         if (apiKeyHelp) {
             apiKeyHelp.addEventListener('click', this.handleAPIKeyClick);
         }
@@ -372,6 +394,67 @@ class TutorialManager {
             steamTokenLinks.forEach(link => {
                 link.removeEventListener('click', this.handleSteamTokenLinkClick);
             });
+        }
+    }
+
+    /**
+     * Wait for element to appear and then highlight it immediately
+     * @param {string} selector - CSS selector of target element
+     */
+    waitForElementAndHighlightImmediate(selector) {
+        const element = document.querySelector(selector);
+
+        if (element && element.offsetParent !== null) {
+            // Element is immediately available and visible
+            this.highlightTarget(selector);
+        } else {
+            // Use requestAnimationFrame for smoother checking
+            const checkElement = () => {
+                const elem = document.querySelector(selector);
+                if (elem && elem.offsetParent !== null) {
+                    this.highlightTarget(selector);
+                } else {
+                    // Try again on next frame
+                    requestAnimationFrame(checkElement);
+                }
+            };
+            requestAnimationFrame(checkElement);
+        }
+    }
+
+    /**
+     * Wait for element to appear and then highlight it
+     * @param {string} selector - CSS selector of target element
+     * @param {number} attempts - Current attempt number
+     */
+    waitForElementAndHighlight(selector, attempts) {
+        const maxAttempts = 50; // Increased attempts for more persistence
+        const element = document.querySelector(selector);
+
+        if (element) {
+            // Element found, wait a bit more for layout to stabilize, then highlight it
+            setTimeout(() => {
+                // Double-check element is still there and visible
+                const checkElement = document.querySelector(selector);
+                if (checkElement && checkElement.offsetParent !== null) {
+                    this.highlightTarget(selector);
+                } else {
+                    // Element disappeared or not visible, try again
+                    if (attempts < maxAttempts) {
+                        this.waitForElementAndHighlight(selector, attempts + 1);
+                    } else {
+                        this.positionModalNearTarget(null);
+                    }
+                }
+            }, 50); // Reduced wait time to 50ms for faster layout stabilization
+        } else if (attempts < maxAttempts) {
+            // Element not found, try again after 25ms for faster checking
+            setTimeout(() => {
+                this.waitForElementAndHighlight(selector, attempts + 1);
+            }, 25);
+        } else {
+            // Element not found after max attempts, position modal in center
+            this.positionModalNearTarget(null);
         }
     }
 }
