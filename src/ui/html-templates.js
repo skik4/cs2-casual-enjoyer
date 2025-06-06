@@ -205,11 +205,110 @@ export const FRIENDS_TEMPLATES = {
 };
 
 // =============================================================================
+// TUTORIAL MANAGER TEMPLATES
+// =============================================================================
+
+export const TUTORIAL_TEMPLATES = {
+    /**
+     * Tutorial steps data
+     */
+    STEPS: [
+        {
+            title: "Welcome to CS2 Casual Enjoyer",
+            content: "This tutorial will guide you through the basic features of the application. You can navigate using the buttons below or skip the tutorial entirely.",
+            target: null,
+            icon: "🎮"
+        },
+        {
+            title: "Steam Web API Token",
+            content: "First, you need to enter your Steam Web API Token. Click on the underlined text to learn how to get your token from Steam. This token allows the app to access your Steam friends list.",
+            target: "#api-key-help",
+            icon: "🔑"
+        },
+        {
+            title: "Get Steam Web API Token",
+            content: "Click on 'Get your Steam Web API Token in the Steam client' link to open Steam and get your API token. Follow the instructions there to generate your token.",
+            target: ".steam-token-link",
+            icon: "🌐"
+        },
+        {
+            title: "Enter Your API Token",
+            content: "Now paste your Steam Web API Token into this field. Once you have copied the token from Steam, paste it here to continue.",
+            target: "#auth",
+            icon: "📝"
+        },
+        {
+            title: "Update Friends List",
+            content: "Once you've entered your API token, click this button to load your friends list from Steam. This will fetch all your Steam friends and their current game status.",
+            target: "#update-friends-btn",
+            icon: "🔄"
+        },
+        {
+            title: "Filter Friends",
+            content: "Use this search box to filter your friends by nickname. This helps you quickly find specific friends when you have a large friends list.",
+            target: "#friend-filter-input",
+            icon: "🔍"
+        },
+        {
+            title: "Tutorial Complete",
+            content: "You're all set! The friends list will appear below once loaded. You can join your friends' CS2 games directly from the list by clicking the join button next to their name.",
+            target: "#friends",
+            icon: "✅"
+        }
+    ],
+    /**
+     * Tutorial modal content
+     * @param {string} icon - Tutorial step icon
+     * @param {string} title - Tutorial step title
+     * @param {number} currentStepNumber - Current step number (1-based)
+     * @param {number} totalSteps - Total number of steps
+     * @param {string} content - Tutorial step content
+     * @param {boolean} isFirstStep - Whether this is the first step
+     * @param {boolean} isLastStep - Whether this is the last step
+     * @returns {string} Tutorial modal HTML
+     */
+    MODAL_CONTENT: (icon, title, currentStepNumber, totalSteps, content, isFirstStep, isLastStep) => `
+        <div class="tutorial-header">
+            <h3 class="tutorial-title">
+                <span class="tutorial-icon">${icon || '📖'}</span>
+                ${title}
+            </h3>
+            <div class="tutorial-progress">
+                <span class="tutorial-step-counter">${currentStepNumber} of ${totalSteps}</span>
+                <div class="tutorial-progress-bar">
+                    <div class="tutorial-progress-fill" style="width: ${(currentStepNumber / totalSteps) * 100}%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="tutorial-content">
+            <p>${content}</p>
+        </div>
+        <div class="tutorial-controls">
+            <button class="tutorial-btn tutorial-btn-secondary" onclick="tutorialManager.stop()">
+                Skip Tutorial
+            </button>
+            <div class="tutorial-nav-buttons">
+                <button class="tutorial-btn tutorial-btn-secondary" 
+                        onclick="tutorialManager.previousStep()" 
+                        ${isFirstStep ? 'disabled' : ''}>
+                    ← Previous
+                </button>
+                <button class="tutorial-btn tutorial-btn-primary" 
+                        onclick="tutorialManager.nextStep()">
+                    ${isLastStep ? 'Finish ✓' : 'Next →'}
+                </button>
+                </div>
+        </div>
+    `
+};
+
+// =============================================================================
 // EXPORT ALL TEMPLATES
 // =============================================================================
 
 export default {
     NOTIFICATION_TEMPLATES,
     HELP_TEMPLATES,
-    FRIENDS_TEMPLATES
+    FRIENDS_TEMPLATES,
+    TUTORIAL_TEMPLATES
 };
