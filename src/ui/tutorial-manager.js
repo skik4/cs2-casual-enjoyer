@@ -233,24 +233,58 @@ class TutorialManager {
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
 
-        let top = rect.bottom + 30;
+        const verticalSpacing = 10;
+        const horizontalPadding = 20;
+
+        let top = rect.bottom + verticalSpacing;
         let left = rect.left + (rect.width / 2) - (modalRect.width / 2);
 
         // Adjust if modal would go off screen horizontally
-        if (left + modalRect.width > viewportWidth - 20) {
-            left = viewportWidth - modalRect.width - 20;
+        if (left + modalRect.width > viewportWidth - horizontalPadding) {
+            left = viewportWidth - modalRect.width - horizontalPadding;
         }
-        if (left < 20) {
-            left = 20;
+        if (left < horizontalPadding) {
+            left = horizontalPadding;
         }
 
-        // Adjust if modal would go off screen vertically
-        if (top + modalRect.height > viewportHeight - 20) {
-            top = rect.top - modalRect.height - 30;
+        // Check if modal fits below the target
+        const fitsBelow = (top + modalRect.height) <= (viewportHeight - horizontalPadding);
+
+        if (!fitsBelow) {
+            // Try positioning above the target
+            const topAbove = rect.top - modalRect.height - verticalSpacing;
+            const fitsAbove = topAbove >= horizontalPadding;
+
+            if (fitsAbove) {
+                top = topAbove;
+            } else {
+                // If doesn't fit above or below, position beside the target
+                const centerY = rect.top + (rect.height / 2) - (modalRect.height / 2);
+
+                // Try positioning to the right
+                const leftRight = rect.right + verticalSpacing;
+                const fitsRight = (leftRight + modalRect.width) <= (viewportWidth - horizontalPadding);
+
+                if (fitsRight) {
+                    left = leftRight;
+                    top = Math.max(horizontalPadding, Math.min(centerY, viewportHeight - modalRect.height - horizontalPadding));
+                } else {
+                    // Try positioning to the left
+                    const leftLeft = rect.left - modalRect.width - verticalSpacing;
+                    const fitsLeft = leftLeft >= horizontalPadding;
+
+                    if (fitsLeft) {
+                        left = leftLeft;
+                        top = Math.max(horizontalPadding, Math.min(centerY, viewportHeight - modalRect.height - horizontalPadding));
+                    } else {
+                        // As last resort, center vertically and ensure it's visible
+                        top = Math.max(horizontalPadding, Math.min(centerY, viewportHeight - modalRect.height - horizontalPadding));
+                    }
+                }
+            }
         }
-        if (top < 20) {
-            top = 20;
-        } this.modal.style.top = `${top}px`;
+
+        this.modal.style.top = `${top}px`;
         this.modal.style.left = `${left}px`;
         this.modal.style.transform = 'none';
     }
