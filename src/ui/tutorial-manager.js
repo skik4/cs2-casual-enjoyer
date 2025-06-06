@@ -322,10 +322,10 @@ class TutorialManager {
      * Open API token notification if not already open
      */
     openAPITokenNotification() {
-        const errorElement = document.querySelector('#error');
+        const notificationElement = document.querySelector('#notifications');
 
         // Check if notification is not already visible
-        if (!errorElement || errorElement.style.display === 'none' || !errorElement.style.display) {
+        if (!notificationElement || notificationElement.style.display === 'none' || !notificationElement.style.display) {
             // Use NotificationManager directly instead of simulating click
             NotificationManager.showApiKeyHelp();
 
@@ -344,7 +344,7 @@ class TutorialManager {
      */
     closeAPITokenNotification() {
         // Use NotificationManager directly instead of simulating button click
-        NotificationManager.hideError();
+        NotificationManager.hideNotification();
     }
 
     /**

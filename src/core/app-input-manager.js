@@ -91,9 +91,8 @@ class AppInputManager {
 
             try {
                 const steamId = await SteamAPI.resolveVanityUrl(urlValidation.value, auth);
-                if (steamId) {
-                    steamIdInput.value = steamId;
-                    UIManager.hideError();
+                if (steamId) {                    steamIdInput.value = steamId;
+                    UIManager.hideNotification();
                 } else {
                     steamIdInput.value = originalValue;
                     UIManager.showError("Could not resolve vanity URL. Please enter SteamID64 manually.");

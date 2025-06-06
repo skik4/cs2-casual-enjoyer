@@ -16,7 +16,8 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 
-<body>    <div class="window-bar">
+<body>
+    <div class="window-bar">
         <span class="window-bar-title">CS2 Casual Enjoyer</span>
         <div class="window-bar-btns">
             <button class="tutorial-btn-help" id="tutorial-btn" title="Show Tutorial" onclick="startTutorial()">
@@ -31,7 +32,7 @@
     <div class="main-content">
         <div class="app-viewport">
             <div class="container">
-                <div id="error"></div>
+                <div id="notifications"></div>
                 <h1 style="display:none;">CS2 Casual Enjoyer</h1>
                 <div class="param-fields-container">
                     <div class="param-label-row" style="margin-bottom:0.1em;">
@@ -58,12 +59,14 @@
                             <input id="steam-id" autocomplete="off" />
                         </div>
                     </div>
-                </div>                  <div class="center-row">
+                </div>
+                <div class="center-row">
                     <button id="update-friends-btn" class="action-btn"
                         title="Update the complete list of friends from Steam API">Update Friends List</button>
                 </div>
                 <div class="center-row">
-                    <div id="update-hint" class="update-hint">Click "Update Friends List" to load your friends and start auto-refresh</div>
+                    <div id="update-hint" class="update-hint">Click "Update Friends List" to load your friends and start
+                        auto-refresh</div>
                 </div>
                 <div class="center-row" id="friend-filter-row" style="margin-bottom:0.7em;">
                     <input id="friend-filter-input" type="text" placeholder="Filter by friend nickname..."
@@ -81,15 +84,16 @@
                 style="color:#7fa7d9;text-decoration:underline dotted;cursor:pointer;"
                 title="Open skik4's Steam profile">skik4</a>
         </span>
-    </div>    <!-- Load the new modular application -->
-    <script type="module" src="src/core/app.js"></script>    <script type="module">
+    </div> <!-- Load the new modular application -->
+    <script type="module" src="src/core/app.js"></script>
+    <script type="module">
         import { getTutorialManager } from './src/ui/tutorial-manager.js';
-        
+
         // Make tutorial manager globally available for HTML onclick handlers
         window.tutorialManager = getTutorialManager();
-        
+
         // Global function to start tutorial using singleton
-        window.startTutorial = function() {
+        window.startTutorial = function () {
             window.tutorialManager.start();
         };
     </script>

@@ -89,8 +89,8 @@ class UIManager {    /**
     /**
      * Hide notification
      */
-    static hideError() {
-        return NotificationManager.hideError();
+    static hideNotification() {
+        return NotificationManager.hideNotification();
     }
 
     /**
@@ -106,7 +106,7 @@ class UIManager {    /**
     static showApiKeyHelp() {
         return NotificationManager.showApiKeyHelp();
     }
-  
+
     /**
      * Start the tutorial
      */

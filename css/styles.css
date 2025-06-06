@@ -667,9 +667,9 @@ hr,
     opacity: var(--opacity-low);
 }
 
-#error {
+#notifications {
     background: var(--bg-panel);
-    color: var(--red-light);
+    color: var(--text-primary);
     border-radius: var(--border-radius-md);
     padding: 1em 1.5em 1em 1.2em;
     padding-top: 0.5em;

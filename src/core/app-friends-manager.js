@@ -111,7 +111,7 @@ class AppFriendsManager {
             let allFriendIds = [];
             try {
                 allFriendIds = await SteamAPI.getFriendsList(steam_id, auth);
-                UIManager.hideError();
+                UIManager.hideNotification();
             } catch (err) {
                 UIManager.showError(err, steam_id);
                 return;

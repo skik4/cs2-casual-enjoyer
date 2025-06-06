@@ -10,19 +10,19 @@ class NotificationManager {
     /**
      * Show a notification with close button
      * @param {string} html - HTML content of the notification
-     * @param {string} type - Type of notification ('info', 'error', etc.)
+     * @param {string} type - Type of notification ('info', 'error')
      */
     static showNotification(html, type = 'info') {
-        const errorElement = DOMUtils.getElementById('error');
-        if (!errorElement) return;
+        const notificationElement = DOMUtils.getElementById('notifications');
+        if (!notificationElement) return;
 
-        errorElement.innerHTML = NOTIFICATION_TEMPLATES.CLOSE_BUTTON + `<div class="notification-content ${type}">${html}</div>`;
-        errorElement.style.display = 'block';
+        notificationElement.innerHTML = NOTIFICATION_TEMPLATES.CLOSE_BUTTON + `<div class="notification-content ${type}">${html}</div>`;
+        notificationElement.style.display = 'block';
 
-        const closeBtn = errorElement.querySelector('.notification-close-btn');
+        const closeBtn = notificationElement.querySelector('.notification-close-btn');
         if (closeBtn) {
             closeBtn.onclick = () => {
-                errorElement.style.display = 'none';
+                notificationElement.style.display = 'none';
             };
         }
     }
@@ -33,8 +33,8 @@ class NotificationManager {
      */
     static showTokenInfoNotification(tokenInfo) {
         this.hideTokenInfoNotification();
-        const errorElement = DOMUtils.getElementById('error');
-        if (!errorElement) return;
+        const notificationElement = DOMUtils.getElementById('notifications');
+        if (!notificationElement) return;
 
         const now = Date.now();
         const expiresMs = tokenInfo.expires * 1000;
@@ -50,7 +50,7 @@ class NotificationManager {
         infoDiv.id = 'token-info-notification';
         infoDiv.innerHTML = html;
         infoDiv.style.marginBottom = '8px';
-        errorElement.parentNode.insertBefore(infoDiv, errorElement);
+        notificationElement.parentNode.insertBefore(infoDiv, notificationElement);
     }
 
     /**
@@ -105,10 +105,10 @@ class NotificationManager {
     /**
      * Hide notification
      */
-    static hideError() {
-        const errorElement = DOMUtils.getElementById('error');
-        if (errorElement) {
-            errorElement.style.display = 'none';
+    static hideNotification() {
+        const notificationElement = DOMUtils.getElementById('notifications');
+        if (notificationElement) {
+            notificationElement.style.display = 'none';
         }
     }
 
