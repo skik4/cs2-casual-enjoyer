@@ -721,6 +721,20 @@ hr,
     color: var(--red-light);
 }
 
+/* Notification list styles */
+.notification-content ul {
+    margin: 0;
+    text-align: left;
+}
+
+.notification-content li {
+    margin-bottom: 4px;
+}
+
+.notification-content li:last-child {
+    margin-bottom: 0;
+}
+
 .note {
     color: var(--gray-500);
     font-size: var(--font-size-xs);
@@ -824,6 +838,12 @@ hr,
 }
 
 .tutorial-icon {
+    font-size: 1.2em;
+    display: inline-block;
+    animation: tutorialIconBounce 2s ease-in-out infinite;
+}
+
+.notification-emoji {
     font-size: 1.2em;
     display: inline-block;
     animation: tutorialIconBounce 2s ease-in-out infinite;
