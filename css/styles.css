@@ -728,10 +728,10 @@ hr,
 }
 
 /* Steam link styles - unified styling for all Steam-related links */
-.steam-link, 
-.privacy-link, 
-.steam-token-link, 
-.steam-profile-link, 
+.steam-link,
+.privacy-link,
+.steam-token-link,
+.steam-profile-link,
 .steam-apikey-link {
     color: var(--blue-primary) !important;
     text-decoration: underline !important;
@@ -739,10 +739,10 @@ hr,
     transition: color var(--anim-duration);
 }
 
-.steam-link:hover, 
-.privacy-link:hover, 
-.steam-token-link:hover, 
-.steam-profile-link:hover, 
+.steam-link:hover,
+.privacy-link:hover,
+.steam-token-link:hover,
+.steam-profile-link:hover,
 .steam-apikey-link:hover {
     color: var(--blue-dark) !important;
 }
@@ -778,6 +778,7 @@ hr,
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -829,12 +830,19 @@ hr,
 }
 
 @keyframes tutorialIconBounce {
-    0%, 20%, 50%, 80%, 100% {
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
         transform: translateY(0);
     }
+
     40% {
         transform: translateY(-3px);
     }
+
     60% {
         transform: translateY(-1px);
     }
@@ -901,27 +909,28 @@ hr,
 .tutorial-highlight {
     position: relative;
     z-index: 9997;
-    box-shadow: 
-        0 0 0 3px rgba(45, 140, 240, 0.6),
-        0 0 0 6px rgba(45, 140, 240, 0.3),
-        0 0 20px rgba(45, 140, 240, 0.4),
-        var(--shadow-medium);
     border-radius: var(--border-radius-md);
-    animation: tutorialHighlightPulse 2.5s infinite ease-in-out;
+    animation: tutorialHighlightGlow 3s infinite ease-in-out;
+    transition: all var(--anim-duration);
+    display: inline-block;
 }
 
-@keyframes tutorialHighlightPulse {
-    0%, 100% {
-        box-shadow: 
-            0 0 0 3px rgba(45, 140, 240, 0.6),
-            0 0 0 6px rgba(45, 140, 240, 0.3),
-            0 0 20px rgba(45, 140, 240, 0.4),
-            var(--shadow-medium);
+@keyframes tutorialHighlightGlow {
+
+    0%,
+    100% {
+        box-shadow:
+            0 0 0 2px rgba(45, 140, 240, 0.4),
+            0 2px 16px rgba(45, 140, 240, 0.25),
+            var(--shadow-light);
+        transform: scale(1);
     }
+
     50% {
-        box-shadow: 
-            0 0 0 5px rgba(45, 140, 240, 0.8),
-            0 0 0 10px rgba(45, 140, 240, 0.2),
-            0 0 30px rgba(45, 140, 240, 0.5),
-            var(--shadow-medium);    }
+        box-shadow:
+            0 0 0 2px rgba(45, 140, 240, 0.6),
+            0 4px 24px rgba(45, 140, 240, 0.35),
+            var(--shadow-medium);
+        transform: scale(1.03);
+    }
 }
