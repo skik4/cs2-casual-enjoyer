@@ -347,19 +347,16 @@ export const TUTORIAL_TEMPLATES = {
         </div>
         <div class="tutorial-content">
             <p>${content}</p>
-        </div>
-        <div class="tutorial-controls">
-            <button class="tutorial-btn tutorial-btn-secondary" onclick="tutorialManager.stop()">
+        </div>        <div class="tutorial-controls">
+            <button class="tutorial-btn tutorial-btn-secondary">
                 Skip Tutorial
             </button>
             <div class="tutorial-nav-buttons">
                 <button class="tutorial-btn tutorial-btn-secondary" 
-                        onclick="tutorialManager.previousStep()" 
                         ${isFirstStep ? 'disabled' : ''}>
                     ← Previous
                 </button>
-                <button class="tutorial-btn tutorial-btn-primary" 
-                        onclick="tutorialManager.nextStep()">
+                <button class="tutorial-btn tutorial-btn-primary">
                     ${isLastStep ? 'Finish ✓' : 'Next →'}
                 </button>
                 </div>

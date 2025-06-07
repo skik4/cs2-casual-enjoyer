@@ -1,7 +1,7 @@
 import StatusManager from './status-manager.js';
 import FriendsRenderer from './friends-renderer.js';
 import NotificationManager from './notification-manager.js';
-import { getTutorialManager } from './tutorial-manager.js';
+import { getTutorialManager } from './tutorial/tutorial-manager.js';
 
 /**
  * UI Manager module

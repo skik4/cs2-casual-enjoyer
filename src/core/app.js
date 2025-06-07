@@ -1,6 +1,6 @@
 import JoinManager from '../game/join-manager.js';
 import UIManager from '../ui/ui-manager.js';
-import { getTutorialManager } from '../ui/tutorial-manager.js';
+import { getTutorialManager } from '../ui/tutorial/tutorial-manager.js';
 import AppInputManager from './app-input-manager.js';
 import AppFriendsManager from './app-friends-manager.js';
 import AppEventManager from './app-event-manager.js';
