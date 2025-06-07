@@ -217,47 +217,110 @@ export const TUTORIAL_TEMPLATES = {
     STEPS: [
         {
             title: "Welcome to CS2 Casual Enjoyer",
-            content: "This tutorial will guide you through the basic features of the application. You can navigate using the buttons below or skip the tutorial entirely.",
+            content: `
+                Quick tutorial on main features.<br>
+                Use buttons below to navigate.
+                <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                    Press Enter for next step, Esc to skip.
+                </div>
+            `,
             target: null,
             icon: "🎮"
         },
         {
-            title: "Steam Web API Token",
-            content: "First, you need to enter your Steam Web API Token. Click on the underlined text to learn how to get your token from Steam. This token allows the app to access your Steam friends list.",
+            title: "Steam Web API Token / Key",
+            content: "Click the highlighted text to open help with Steam link for token.",
             target: "#api-key-help",
             icon: "🔑"
         },
         {
             title: "Get Steam Web API Token",
-            content: "Click on 'Get your Steam Web API Token in the Steam client' link to open Steam and get your API token. Follow the instructions there to generate your token.",
+            content: `
+                Click highlighted text to open Steam.<br>
+                It may appear black - press Ctrl+A then Ctrl+C to copy token.
+            `,
             target: ".steam-token-link",
             icon: "🌐"
         },
         {
-            title: "Enter Your API Token",
-            content: "Now paste your Steam Web API Token into this field. Once you have copied the token from Steam, paste it here to continue.",
+            title: "Paste Token",
+            content: `
+                Paste token into highlighted field.<br>
+                Token expires in 24 hours, get new one when needed.
+            `,
             target: "#auth",
-            icon: "📝"
+            icon: "📋"
         },
         {
             title: "Update Friends List",
-            content: "Once you've entered your API token, click this button to load your friends list from Steam. This will fetch all your Steam friends and their current game status.",
+            content: "Click highlighted button to load friends from Steam with game status.",
             target: "#update-friends-btn",
             icon: "🔄"
         },
         {
             title: "Filter Friends",
-            content: "Use this search box to filter your friends by nickname. This helps you quickly find specific friends when you have a large friends list.",
+            content: "Type in highlighted box to filter friends by nickname.",
             target: "#friend-filter-input",
             icon: "🔍"
         },
         {
-            title: "Tutorial Complete",
-            content: "You're all set! The friends list will appear below once loaded. You can join your friends' CS2 games directly from the list by clicking the join button next to their name.",
+            title: "Friends List Display",
+            content: "Friends currently playing Casual or Deathmatch modes will appear in this list.",
             target: "#friends",
-            icon: "✅"
+            icon: "👥"
+        },
+        {
+            title: "Join to Friend Game",
+            content: `
+                For example, your best friend <strong>Gabe Newell</strong> is playing Casual on Dust 2.<br>
+                Click 'Join' to automatically connect to his match!
+            `,
+            target: ".friend .action-btn",
+            icon: "🚀"
+        }, {
+            title: "Connection Process",
+            content: `
+                Red dot = no slots available, Yellow = attempting to connect, Green = successfully connected.
+                <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                    Yellow may stay for a while.<br>
+                    Will change to red or green once server responds.<br>
+                    Meanwhile, CS2 will show connection error dialogs (this is normal) - hold ESC to dismiss them all.
+                </div>
+            `,
+            target: ".status-dot",
+            icon: "🟡"
+        },
+        {
+            title: "Tutorial Complete!",
+            content: `
+                Congratulations! You've completed the tutorial and learned all the main features.                
+                <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                    Enjoy using CS2 Casual Enjoyer!<br>
+                    If you like it, please share with your friends.
+                </div>
+                <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                    <span style='color:#2d8cf0;cursor:pointer;text-decoration:underline;'
+                        onclick='
+                            navigator.clipboard.writeText("https://github.com/skik4/cs2-casual-enjoyer/releases");
+                            const originalText = this.innerHTML;
+                            this.style.color="#4caf50"; 
+                            this.style.textDecoration="none";
+                            this.innerHTML="📋 Copied to clipboard!";
+                            setTimeout(() => {
+                                this.style.color="#2d8cf0";
+                                this.style.textDecoration="underline";
+                                this.innerHTML=originalText;
+                            }, 2000);
+                          '>
+                        GitHub Releases
+                    </span>
+                </div>
+            `,
+            target: null,
+            icon: "🎉"
         }
     ],
+
     /**
      * Tutorial modal content
      * @param {string} icon - Tutorial step icon

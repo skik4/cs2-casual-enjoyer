@@ -909,6 +909,7 @@ hr,
     line-height: 1.6;
     font-size: var(--font-size-sm);
     opacity: var(--opacity-high);
+    text-align: center;
 }
 
 .tutorial-controls {
