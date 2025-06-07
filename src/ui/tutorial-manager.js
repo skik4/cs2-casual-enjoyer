@@ -30,6 +30,11 @@ class TutorialManager {
         this.spotlight = null;
         this.handleAPIKeyClick = null;
         this.handleSteamTokenLinkClick = null;
+        
+        // Position tracking
+        this.positionUpdateRAF = null;
+        this.currentTarget = null;
+        this.currentForcedPosition = null;
     }
 
     /**
@@ -53,8 +58,8 @@ class TutorialManager {
             this.showStep(this.currentStep);
             this.setupEventListeners();
         });
-    }
-
+    }    
+    
     /**
      * Stop the tutorial
      */
@@ -62,6 +67,10 @@ class TutorialManager {
         if (!this.isActive) return;
 
         this.isActive = false;
+        
+        // Stop position updates
+        this.stopPositionUpdates();
+        
         this.removeTutorialOverlay();
         this.removeHighlight();
         this.removeSpotlight();
@@ -199,8 +208,8 @@ class TutorialManager {
         // Show modal after content is set (prevent flicker)
         this.modal.style.opacity = '1';
         this.modal.style.visibility = 'visible';
-    }
-
+    }    
+    
     /**
      * Highlight target element
      * @param {string|null} selector - CSS selector of target element
@@ -211,9 +220,14 @@ class TutorialManager {
         this.removeHighlight();
         this.removeSpotlight();
 
+        // Store current target and position for continuous updates
+        this.currentTarget = selector;
+        this.currentForcedPosition = forcedPosition;
+
         if (!selector) {
             // No target element - position modal in center and return
             this.positionModalNearTarget(null, forcedPosition);
+            this.startPositionUpdates();
             return;
         }
 
@@ -221,6 +235,7 @@ class TutorialManager {
         if (!element) {
             // Element not found - position modal in center and return
             this.positionModalNearTarget(null, forcedPosition);
+            this.startPositionUpdates();
             return;
         }
 
@@ -228,6 +243,9 @@ class TutorialManager {
 
         // Position modal near the target element
         this.positionModalNearTarget(element, forcedPosition);
+        
+        // Start continuous position updates
+        this.startPositionUpdates();
     }
 
     /**
@@ -238,8 +256,8 @@ class TutorialManager {
             this.spotlight.remove();
             this.spotlight = null;
         }
-    }
-
+    }    
+    
     /**
      * Remove highlight from all elements
      */
@@ -247,6 +265,9 @@ class TutorialManager {
         const highlighted = document.querySelectorAll('.tutorial-highlight');
         highlighted.forEach(el => el.classList.remove('tutorial-highlight'));
         this.removeSpotlight();
+        
+        // Clear current target info but don't stop position updates 
+        // (they might still be needed for center positioning)
     }
 
     /**
@@ -507,6 +528,10 @@ class TutorialManager {
      * @param {string|null} forcedPosition - Forced position ('top', 'bottom', 'left', 'right', 'center')
      */
     waitForElementAndHighlightImmediate(selector, forcedPosition = null) {
+        // Store target info for continuous updates
+        this.currentTarget = selector;
+        this.currentForcedPosition = forcedPosition;
+        
         const element = document.querySelector(selector);
 
         if (element && element.offsetParent !== null) {
@@ -525,7 +550,9 @@ class TutorialManager {
             };
             requestAnimationFrame(checkElement);
         }
-    }    /**
+    }
+    
+    /**
      * Wait for element to appear and then highlight it
      * Uses requestAnimationFrame for smoother DOM checking and layout stability
      * @param {string} selector - CSS selector of target element
@@ -534,7 +561,14 @@ class TutorialManager {
      */
     waitForElementAndHighlight(selector, attempts, forcedPosition = null) {
         const maxAttempts = 50; // Increased attempts for more persistence
-        const element = document.querySelector(selector); if (element) {
+        
+        // Store target info for continuous updates
+        this.currentTarget = selector;
+        this.currentForcedPosition = forcedPosition;
+        
+        const element = document.querySelector(selector);
+        
+        if (element) {
             // Element found, wait for next frame for layout to stabilize, then highlight it
             requestAnimationFrame(() => {
                 // Double-check element is still there and visible
@@ -546,7 +580,10 @@ class TutorialManager {
                     if (attempts < maxAttempts) {
                         this.waitForElementAndHighlight(selector, attempts + 1, forcedPosition);
                     } else {
+                        this.currentTarget = null;
+                        this.currentForcedPosition = forcedPosition;
                         this.positionModalNearTarget(null);
+                        this.startPositionUpdates();
                     }
                 }
             });
@@ -559,7 +596,48 @@ class TutorialManager {
             });
         } else {
             // Element not found after max attempts, position modal in center
+            this.currentTarget = null;
+            this.currentForcedPosition = forcedPosition;
             this.positionModalNearTarget(null);
+            this.startPositionUpdates();
+        }
+    }
+
+    /**
+     * Start continuous position updates using requestAnimationFrame
+     */
+    startPositionUpdates() {
+        // Stop any existing position updates
+        this.stopPositionUpdates();
+        
+        const updatePosition = () => {
+            if (!this.isActive || !this.modal) {
+                return;
+            }
+
+            // Update position based on current target
+            if (this.currentTarget) {
+                const element = document.querySelector(this.currentTarget);
+                this.positionModalNearTarget(element, this.currentForcedPosition);
+            } else {
+                this.positionModalNearTarget(null, this.currentForcedPosition);
+            }
+
+            // Schedule next update
+            this.positionUpdateRAF = requestAnimationFrame(updatePosition);
+        };
+
+        // Start the update loop
+        this.positionUpdateRAF = requestAnimationFrame(updatePosition);
+    }
+
+    /**
+     * Stop continuous position updates
+     */
+    stopPositionUpdates() {
+        if (this.positionUpdateRAF) {
+            cancelAnimationFrame(this.positionUpdateRAF);
+            this.positionUpdateRAF = null;
         }
     }
 }
