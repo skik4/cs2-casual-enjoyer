@@ -1,0 +1,195 @@
+/* Tutorial Component Styles */
+
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 9998;
+    pointer-events: none;
+    animation: tutorialOverlayFadeIn 0.3s ease-out;
+}
+
+@keyframes tutorialOverlayFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.tutorial-modal {
+    position: fixed;
+    background: var(--panel-bg-gradient);
+    border: var(--border-width) solid var(--panel-outline);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--panel-shadow);
+    z-index: 9999;
+    max-width: 420px;
+    min-width: 380px;
+    padding: 0;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    pointer-events: auto;
+    /* Default center position */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.tutorial-header {
+    padding: var(--space-lg) var(--space-lg) var(--space-md);
+    border-bottom: var(--border-width) solid var(--border-color-strong);
+    background: linear-gradient(135deg, var(--bg-panel) 0%, var(--bg-dark-gradient-light) 100%);
+}
+
+.tutorial-title {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.tutorial-icon {
+    font-size: 1.2em;
+    display: inline-block;
+    animation: tutorialIconBounce 2s ease-in-out infinite;
+}
+
+.notification-emoji {
+    font-size: 1.2em;
+    display: inline-block;
+    animation: tutorialIconBounce 2s ease-in-out infinite;
+}
+
+@keyframes tutorialIconBounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-3px);
+    }
+    60% {
+        transform: translateY(-1px);
+    }
+}
+
+.tutorial-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.tutorial-step-counter {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    font-weight: 500;
+    opacity: 0.85;
+}
+
+.tutorial-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-dark);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.tutorial-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue-primary) 0%, var(--purple-primary) 100%);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 8px rgba(45, 140, 240, 0.4);
+}
+
+.tutorial-content {
+    padding: var(--space-lg);
+    background: var(--bg-panel);
+}
+
+.tutorial-content p {
+    margin: 0;
+    color: var(--text-primary);
+    line-height: 1.6;
+    font-size: var(--font-size-sm);
+    opacity: 1;
+    text-align: center;
+}
+
+.tutorial-controls {
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
+    border-top: var(--border-width) solid var(--border-color-strong);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-panel);
+    gap: var(--space-sm);
+}
+
+.tutorial-nav-buttons {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.tutorial-highlight {
+    position: relative;
+    z-index: 9997;
+    border-radius: var(--border-radius-md);
+    animation: tutorialHighlightGlow 3s infinite ease-in-out;
+    transition: all var(--anim-duration);
+    display: inline-block;
+}
+
+@keyframes tutorialHighlightGlow {
+    0%, 100% {
+        box-shadow:
+            0 0 0 2px rgba(45, 140, 240, 0.4),
+            0 2px 16px rgba(45, 140, 240, 0.25),
+            var(--shadow-light);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow:
+            0 0 0 2px rgba(45, 140, 240, 0.6),
+            0 4px 24px rgba(45, 140, 240, 0.35),
+            var(--shadow-medium);
+        transform: scale(1.03);
+    }
+}
+
+/* Fix for tutorial blur issue on first step */
+.tutorial-modal,
+.tutorial-modal *,
+.tutorial-overlay,
+.tutorial-overlay * {
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Ensure all elements in tutorial have clear rendering */
+.tutorial-modal .tutorial-header,
+.tutorial-modal .tutorial-content,
+.tutorial-modal .tutorial-controls,
+.tutorial-modal button,
+.tutorial-modal .tutorial-icon,
+.tutorial-modal .tutorial-title,
+.tutorial-modal .tutorial-progress,
+.tutorial-modal p {
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    opacity: 1 !important;
+}

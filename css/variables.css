@@ -1,0 +1,162 @@
+/* CSS Variables - Design Tokens */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap&subset=cyrillic,latin');
+
+:root {
+    /* ===== BASE COLORS ===== */
+    --white: #fff;
+    --black: #000;
+
+    /* ===== GRAYSCALE PALETTE ===== */
+    --gray-100: #f3f6fa;
+    /* Lightest */
+    --gray-200: #e6e9ed;
+    --gray-300: #ccc;
+    --gray-400: #bfc9d8;
+    --gray-500: #aaa;
+    --gray-600: #888;
+    --gray-700: #666;
+    --gray-800: #353a40;
+    --gray-900: #222;
+    /* Darkest */
+
+    /* Modern CSS approach using color-mix() function
+     * Usage: color-mix(in srgb, var(--any-color) var(--opacity-30), transparent)
+     * Benefits: Works with any color, shorter syntax, better browser support
+     */
+    --opacity-5: 5%;
+    /* Ultra light */
+    --opacity-10: 10%;
+    /* Very light */
+    --opacity-20: 20%;
+    /* Light */
+    --opacity-30: 30%;
+    /* Medium light */
+    --opacity-40: 40%;
+    /* Medium */
+    --opacity-50: 50%;
+    /* Half */
+    --opacity-60: 60%;
+    /* Medium strong */
+    --opacity-70: 70%;
+    /* Strong */
+    --opacity-80: 80%;
+    /* Very strong */
+    --opacity-85: 85%;
+    /* Almost opaque */
+
+    /* ===== BRAND COLORS ===== */
+    /* Blue */
+    --blue-primary: #2d8cf0;
+    --blue-dark: #1a6ed8;
+
+    /* Red */
+    --red-primary: #e74c3c;
+    --red-dark: #c0392b;
+    --red-light: #ff4444;
+
+    /* Green */
+    --green-primary: #2ecc40;
+
+    /* Yellow */
+    --yellow-primary: #f1c40f;
+
+    /* Purple */
+    --purple-primary: #a259f7;
+
+    /* ===== WARNING COLORS ===== */
+    --warning-bg: #fffbe6;
+    --warning-text: #b26a00;
+    --warning-border: #ffe58f;
+
+    /* ===== BACKGROUND COLORS ===== */
+    --bg-dark: #181c20;
+    --bg-panel: #23272b;
+    --bg-item: #202328;
+    --bg-dark-gradient-light: #232b32;
+
+    /* ===== TEXT COLORS ===== */
+    --text-primary: var(--gray-100);
+    --text-secondary: var(--gray-400);
+
+    /* ===== BORDER COLORS ===== */
+    --border-color: var(--gray-800);
+    --border-color-strong: #23272e;
+    --panel-outline: #23272e;
+
+    /* ===== INPUT COLORS ===== */
+    --input-bg: #181b20;
+    --input-border: #23272e;
+    --input-border-focus: var(--blue-primary);
+    --input-border-invalid: var(--red-primary);
+
+    /* ===== COMPLEX STYLES ===== */
+    --panel-bg-gradient: linear-gradient(135deg, var(--bg-panel) 0%, var(--bg-dark) 100%);
+    --panel-shadow: 0 2px 24px 0 color-mix(in srgb, var(--black) var(--opacity-80), transparent), 0 1.5px 0 0 var(--border-color-strong);
+
+    /* ===== SHADOWS ===== */
+    --shadow-light: 0 2px 12px color-mix(in srgb, var(--black) var(--opacity-20), transparent);
+    --shadow-medium: 0 6px 24px color-mix(in srgb, var(--black) var(--opacity-40), transparent);
+    --shadow-dark: 0 6px 32px color-mix(in srgb, var(--black) var(--opacity-80), transparent);
+
+    /* ===== ANIMATIONS ===== */
+    --anim-duration: 0.18s;
+    --anim-duration-slow: 0.5s;
+
+    /* ===== SPACING SYSTEM ===== */
+    --space-xxs: 0.25rem;
+    /* 4px */
+    --space-xs: 0.5rem;
+    /* 8px */
+    --space-sm: 0.75rem;
+    /* 12px */
+    --space-md: 1rem;
+    /* 16px */
+    --space-lg: 1.5rem;
+    /* 24px */
+    --space-xl: 2rem;
+    /* 32px */
+    --space-xxl: 3rem;
+    /* 48px */
+
+    /* ===== TYPOGRAPHY SCALE ===== */
+    --font-size-xs: 0.9em;
+    /* ~14px */
+    --font-size-sm: 0.97em;
+    /* ~15px */
+    --font-size-md: 1.08em;
+    /* ~17px */
+    --font-size-lg: 1.18em;
+    /* ~19px */
+    --font-size-xl: 1.3em;
+    /* ~21px */
+    --font-size-xxl: 1.6em;
+    /* ~26px */
+
+    /* ===== POSITIONING ===== */
+    --position-sm: 0.375rem;
+    /* 6px */
+    --position-md: 0.625rem;
+    /* 10px */
+    --position-lg: 1.125rem;
+    /* 18px */
+
+    /* ===== DIMENSIONS ===== */
+    --border-width: 0.094rem;
+    /* 1.5px */
+
+    /* ===== BORDER RADIUS ===== */
+    --border-radius-sm: 0.188rem;
+    /* 3px */
+    --border-radius-md: 0.25rem;
+    /* 4px */
+    --border-radius-lg: 0.375rem;
+    /* 6px */
+    --border-radius-xl: 0.5rem;
+    /* 8px */
+
+    /* ===== COMPONENT HEIGHTS ===== */
+    --height-window-bar: 2.375rem;
+    /* 38px */
+    --height-footer: 2.25rem;
+    /* 36px */
+}

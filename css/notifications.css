@@ -1,0 +1,188 @@
+/* Notifications Component */
+
+#notifications {
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    border-radius: var(--border-radius-md);
+    padding: 1em 1.5em 1em 1.2em;
+    padding-top: 0.5em;
+    margin-bottom: 0.7em;
+    font-size: var(--font-size-sm);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--black) var(--opacity-20), transparent);
+    position: relative;
+}
+
+/* Warning Notifications */
+.warning {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border: 1px solid var(--warning-border);
+    border-radius: var(--border-radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+}
+
+/* CS2 Launch Notification Overlay */
+.cs2-launch-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: color-mix(in srgb, var(--bg-dark) var(--opacity-85), transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.cs2-launch-content {
+    background: var(--panel-bg-gradient);
+    border: var(--border-width) solid var(--panel-outline);
+    border-radius: var(--border-radius-xl);
+    padding: var(--space-xl);
+    text-align: center;
+    max-width: 420px;
+    min-width: 380px;
+    box-shadow: var(--panel-shadow);
+    animation: cs2NotificationShow 0.3s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.cs2-launch-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--blue-primary) 0%, var(--purple-primary) 100%);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--blue-primary) var(--opacity-40), transparent);
+}
+
+.cs2-launch-title {
+    color: var(--text-primary);
+    margin: 0 0 var(--space-lg) 0;
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.cs2-launch-message {
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-xl) 0;
+    line-height: 1.6;
+    font-size: var(--font-size-sm);
+}
+
+.cs2-launch-hint {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    margin: var(--space-lg) 0 0 0;
+    opacity: 0.85;
+    font-style: italic;
+}
+
+.cs2-launch-buttons {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@keyframes cs2NotificationShow {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Additional Notification Styles */
+.notification-content {
+    border: var(--border-width) solid var(--blue-primary);
+    border-radius: var(--border-radius-md);
+    padding: 1em 1.2em 1em 1.2em;
+    background: transparent;
+    text-align: center;
+    margin-bottom: var(--space-xxs);
+    position: relative;
+    min-height: 32px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    z-index: 1;
+    display: none;
+    transition: opacity var(--anim-duration);
+}
+
+.notification-content.error {
+    border-color: var(--red-primary);
+}
+
+.notification-content.info {
+    border-color: var(--blue-primary);
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 1.5em;
+    margin-bottom: 0.2em;
+}
+
+.notification-main-text {
+    color: var(--blue-primary);
+    font-weight: 500;
+    margin-bottom: 0.4em;
+}
+
+.notification-content.error .notification-main-text {
+    color: var(--red-light);
+}
+
+/* Notification list styles */
+.notification-content ul {
+    margin: 0;
+    text-align: left;
+}
+
+.notification-content li {
+    margin-bottom: var(--space-xxs);
+}
+
+.notification-content li:last-child {
+    margin-bottom: 0;
+}
+
+.note {
+    color: var(--gray-500);
+    font-size: var(--font-size-xs);
+    margin-bottom: 2px;
+}
+
+/* Update Hints */
+.update-hint {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    opacity: 0.85;
+    transition: opacity var(--anim-duration);
+    display: none;
+}
+
+.update-hint.show {
+    display: block;
+}
+
+.update-hint-container.hide {
+    display: none;
+}

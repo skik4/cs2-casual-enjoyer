@@ -1,0 +1,175 @@
+/* Form Components */
+
+input {
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: var(--border-width) solid var(--input-border);
+    border-radius: var(--border-radius-md);
+    padding: 0.6em 1.1em;
+    margin: 0;
+    font-size: var(--font-size-md);
+    font-family: inherit;
+    outline: none;
+    transition: border var(--anim-duration);
+    width: 100%;
+    box-sizing: border-box;
+    box-shadow: none;
+    text-align: center;
+}
+
+input:focus {
+    border: var(--border-width) solid var(--input-border-focus);
+    background: var(--bg-panel);
+}
+
+input[type="password"] {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    letter-spacing: 0.15em;
+}
+
+/* Input States */
+.valid-input {
+    border: var(--border-width) solid var(--green-primary) !important;
+    background-color: rgba(46, 204, 64, 0.05) !important;
+}
+
+.valid-input:focus {
+    border: var(--border-width) solid #1e8e2e !important;
+    background-color: rgba(30, 142, 46, 0.08) !important;
+}
+
+.valid-input:placeholder-shown {
+    border: var(--border-width) solid var(--input-border) !important;
+    background-color: var(--input-bg) !important;
+}
+
+.invalid-input {
+    border: var(--border-width) solid var(--red-primary) !important;
+    background-color: rgba(231, 76, 60, 0.05) !important;
+}
+
+.invalid-input:focus {
+    border: var(--border-width) solid var(--red-dark) !important;
+    background-color: rgba(192, 57, 43, 0.08) !important;
+}
+
+.expired-token-input {
+    border: 1px solid var(--yellow-primary) !important;
+    background-color: var(--yellow-primary-30) !important;
+}
+
+/* Input Rows and Parameter Fields */
+.input-row {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+    border-radius: var(--border-radius-md);
+    border: none;
+}
+
+.input-row label {
+    flex: 1;
+    margin-bottom: 0;
+    position: relative;
+}
+
+.input-row input {
+    font-size: var(--font-size-sm);
+    padding: 0.5em 0.7em;
+}
+
+.input-row a.param-link {
+    color: var(--text-secondary);
+    text-decoration: underline dotted;
+    cursor: pointer;
+    transition: color var(--anim-duration);
+}
+
+.input-row a.param-link:hover {
+    color: var(--blue-primary);
+}
+
+.input-row input[type="number"]::-webkit-inner-spin-button,
+.input-row input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.input-row input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Parameter Fields Container */
+.param-fields-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    margin-bottom: 1.5em;
+    width: 100%;
+}
+
+.param-label-row {
+    display: flex;
+    flex-direction: row;
+    gap: 1.5em;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 0.1em !important;
+}
+
+.param-label-cell {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    min-width: 0;
+    padding-bottom: 0 !important;
+}
+
+.param-label-text {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-right: 0.3em;
+    text-align: center;
+    white-space: nowrap;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.param-icon-link:hover {
+    color: var(--blue-dark);
+    opacity: 1;
+}
+
+.param-input-row {
+    display: flex;
+    flex-direction: row;
+    gap: 1.5em;
+    justify-content: center;
+    align-items: center;
+}
+
+.param-input-cell {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+}
+
+/* Special Input Styles */
+#friend-filter-input {
+    border: var(--border-width) solid var(--input-border) !important;
+    border-radius: var(--border-radius-md) !important;
+    background: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    transition: border var(--anim-duration);
+}
+
+#friend-filter-input:focus {
+    border: var(--border-width) solid var(--input-border-focus) !important;
+    background: var(--bg-panel) !important;
+}

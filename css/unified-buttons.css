@@ -1,0 +1,186 @@
+/* Universal Button System - Unified Architecture
+ * Base classes with modifiers to avoid code duplication  
+ * Tutorial button effects (lift) applied to all buttons
+ */
+/* ===== BASE BUTTON CLASS ===== */
+.btn, .tutorial-btn-help, .tutorial-btn-secondary, .tutorial-btn-primary, .tutorial-btn, .window-btn, .cancel-btn, .action-btn {
+  padding: var(--space-sm) var(--space-md);
+  border: var(--border-width) solid var(--border-color-strong);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-item);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--anim-duration);
+  min-width: 75px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  box-sizing: border-box;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  /* Base hover state */
+}
+.btn:hover:not(:disabled), .tutorial-btn-help:hover:not(:disabled), .tutorial-btn-secondary:hover:not(:disabled), .tutorial-btn-primary:hover:not(:disabled), .tutorial-btn:hover:not(:disabled), .window-btn:hover:not(:disabled), .cancel-btn:hover:not(:disabled), .action-btn:hover:not(:disabled) {
+  background: var(--bg-dark-gradient-light);
+  border-color: var(--border-color);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-light);
+}
+.btn:active:not(:disabled), .tutorial-btn-help:active:not(:disabled), .tutorial-btn-secondary:active:not(:disabled), .tutorial-btn-primary:active:not(:disabled), .tutorial-btn:active:not(:disabled), .window-btn:active:not(:disabled), .cancel-btn:active:not(:disabled), .action-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.btn:disabled, .tutorial-btn-help:disabled, .tutorial-btn-secondary:disabled, .tutorial-btn-primary:disabled, .tutorial-btn:disabled, .window-btn:disabled, .cancel-btn:disabled, .action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--bg-dark);
+  color: var(--gray-600);
+}
+.btn > *, .tutorial-btn-help > *, .tutorial-btn-secondary > *, .tutorial-btn-primary > *, .tutorial-btn > *, .window-btn > *, .cancel-btn > *, .action-btn > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* ===== BUTTON VARIANTS ===== */
+.btn-primary, .tutorial-btn-primary, .action-btn {
+  background: linear-gradient(90deg, var(--blue-primary) 60%, var(--blue-dark) 100%);
+  border-color: var(--blue-primary);
+  color: var(--white);
+  font-weight: 600;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--blue-primary) var(--opacity-20), transparent);
+}
+.btn-primary:hover:not(:disabled), .tutorial-btn-primary:hover:not(:disabled), .action-btn:hover:not(:disabled) {
+  background: linear-gradient(90deg, var(--blue-dark) 60%, var(--blue-primary) 100%);
+  border-color: var(--blue-dark);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--blue-primary) var(--opacity-40), transparent);
+  transform: translateY(-2px);
+}
+.btn-primary:active:not(:disabled), .tutorial-btn-primary:active:not(:disabled), .action-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--blue-primary) var(--opacity-20), transparent);
+}
+
+.btn-secondary, .tutorial-btn-secondary {
+  background: transparent;
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+.btn-secondary:hover:not(:disabled), .tutorial-btn-secondary:hover:not(:disabled) {
+  background: var(--bg-item);
+  color: var(--text-primary);
+  border-color: var(--border-color-strong);
+}
+
+.btn-danger, .cancel-btn {
+  background: var(--red-primary);
+  border-color: var(--red-primary);
+  color: var(--white);
+  font-weight: 600;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--red-primary) var(--opacity-20), transparent);
+}
+.btn-danger:hover:not(:disabled), .cancel-btn:hover:not(:disabled) {
+  background: var(--red-dark);
+  border-color: var(--red-dark);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--red-primary) var(--opacity-40), transparent);
+  transform: translateY(-2px);
+}
+.btn-danger:active:not(:disabled), .cancel-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--red-primary) var(--opacity-20), transparent);
+}
+
+/* ===== SIZE MODIFIERS ===== */
+.btn-lg, .action-btn {
+  padding: var(--space-md) var(--space-lg);
+  min-width: 120px;
+  font-size: var(--font-size-md);
+}
+
+.btn-sm {
+  padding: var(--space-xs) var(--space-sm);
+  min-width: 60px;
+  font-size: var(--font-size-xs);
+}
+
+/* ===== ICON BUTTONS ===== */
+.btn-icon, .window-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  min-width: 28px;
+  border-radius: var(--border-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon:hover:not(:disabled), .window-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* ===== SPECIAL BUTTON TYPES ===== */
+.btn-window, .window-btn {
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+}
+.btn-window:hover:not(:disabled), .window-btn:hover:not(:disabled) {
+  background: var(--blue-primary);
+  color: var(--white);
+}
+.btn-window.close:hover:not(:disabled), .close.window-btn:hover:not(:disabled) {
+  background: var(--red-primary);
+  color: var(--white);
+}
+
+.btn-help, .tutorial-btn-help {
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  height: 28px;
+  padding: 0 var(--space-sm);
+  margin-right: var(--space-sm);
+  -webkit-app-region: no-drag;
+  gap: 4px;
+}
+.btn-help:hover:not(:disabled), .tutorial-btn-help:hover:not(:disabled) {
+  background: linear-gradient(90deg, var(--blue-primary) 60%, var(--blue-dark) 100%);
+  color: var(--white);
+  border-color: var(--blue-primary);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--blue-primary) var(--opacity-30), transparent);
+}
+
+/* Notification close button - minimal styling */
+.notification-close-btn {
+  position: absolute;
+  top: var(--position-sm);
+  right: var(--position-md);
+  font-size: var(--font-size-xl);
+  font-weight: bold;
+  color: var(--gray-300);
+  opacity: 0.4;
+  background: transparent;
+  border: none;
+  z-index: 2;
+  transition: color var(--anim-duration), opacity var(--anim-duration);
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: var(--border-radius-sm);
+  user-select: none;
+  margin-left: auto;
+  cursor: pointer;
+  width: auto;
+  height: auto;
+  min-width: auto;
+}
+.notification-close-btn:hover:not(:disabled) {
+  opacity: 0.8;
+  color: var(--white);
+  background: none;
+}
+
+/*# sourceMappingURL=unified-buttons.css.map */

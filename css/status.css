@@ -1,0 +1,108 @@
+/* Status Indicators and Animations */
+
+.status-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5em;
+    box-shadow: 0 0 8px color-mix(in srgb, var(--black) var(--opacity-50), transparent);
+    border: var(--border-width) solid var(--panel-outline);
+    transition: background var(--anim-duration-slow), box-shadow var(--anim-duration-slow);
+}
+
+.dot-waiting {
+    background: var(--red-primary);
+    animation: pulse-red 1.2s infinite;
+}
+
+.dot-connecting {
+    background: var(--yellow-primary);
+    animation: pulse-yellow 1.2s infinite;
+}
+
+.dot-joined {
+    background: var(--green-primary);
+    animation: pulse-green 1.2s infinite;
+}
+
+.dot-cancelled {
+    background: var(--gray-600);
+}
+
+.dot-missing {
+    background: var(--purple-primary);
+    animation: pulse-purple 1.2s infinite;
+}
+
+.dot-inactive {
+    background: var(--gray-600);
+    opacity: 0.5;
+}
+
+/* Pulse Animations */
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--red-primary) var(--opacity-30), transparent);
+    }
+    70% {
+        box-shadow: 0 0 0 10px transparent;
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+@keyframes pulse-yellow {
+    0% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--yellow-primary) var(--opacity-30), transparent);
+    }
+    70% {
+        box-shadow: 0 0 0 10px transparent;
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+@keyframes pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-primary) var(--opacity-30), transparent);
+    }
+    70% {
+        box-shadow: 0 0 0 10px transparent;
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+@keyframes pulse-purple {
+    0% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--purple-primary) var(--opacity-30), transparent);
+    }
+    70% {
+        box-shadow: 0 0 0 10px transparent;
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--text-secondary);
+    border-radius: 50%;
+    border-top-color: var(--blue-primary);
+    animation: spin 1s ease-in-out infinite;
+    margin-right: var(--space-xs);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
