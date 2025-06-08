@@ -254,12 +254,11 @@ body {
     padding: 0;
     -webkit-app-region: drag;
     user-select: none;
-    box-shadow: var(--shadow-dark);
-    position: fixed;
+    box-shadow: var(--shadow-dark);    position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 10;
+    z-index: 10000;
     border-bottom: var(--border-width) solid var(--panel-outline);
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     box-shadow: 0 2px 12px color-mix(in srgb, var(--black) var(--opacity-40), transparent);
@@ -1082,6 +1081,33 @@ hr,
             var(--shadow-medium);
         transform: scale(1.03);
     }
+}
+
+/* Fix for tutorial blur issue on first step */
+.tutorial-modal,
+.tutorial-modal *,
+.tutorial-overlay,
+.tutorial-overlay * {
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Ensure all elements in tutorial have clear rendering */
+.tutorial-modal .tutorial-header,
+.tutorial-modal .tutorial-content,
+.tutorial-modal .tutorial-controls,
+.tutorial-modal button,
+.tutorial-modal .tutorial-icon,
+.tutorial-modal .tutorial-title,
+.tutorial-modal .tutorial-progress,
+.tutorial-modal p {
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    opacity: 1 !important;
 }
 
 /* ===== CS2 LAUNCH NOTIFICATION OVERLAY ===== */
