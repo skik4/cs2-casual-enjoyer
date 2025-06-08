@@ -128,10 +128,20 @@ export class TutorialUIManager {
         if (!this.modal) return;
 
         if (!targetElement) {
-            // Default center position if no target - use CSS defaults
-            this.modal.style.top = '50%';
-            this.modal.style.left = '50%';
-            this.modal.style.transform = 'translate(-50%, -50%)';
+            // Default center position if no target - calculate absolute position
+            // Use requestAnimationFrame to ensure modal dimensions are available
+            requestAnimationFrame(() => {
+                const modalRect = this.modal.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                const left = (viewportWidth / 2) - (modalRect.width / 2);
+                const top = (viewportHeight / 2) - (modalRect.height / 2);
+
+                this.modal.style.top = `${top}px`;
+                this.modal.style.left = `${left}px`;
+                this.modal.style.transform = 'none';
+            });
             return;
         }
 
@@ -164,10 +174,21 @@ export class TutorialUIManager {
                     left = rect.right + verticalSpacing;
                     top = rect.top + (rect.height / 2) - (modalRect.height / 2);
                     break;
+
                 case 'center':
-                    this.modal.style.top = '50%';
-                    this.modal.style.left = '50%';
-                    this.modal.style.transform = 'translate(-50%, -50%)';
+                    // Use requestAnimationFrame to ensure modal dimensions are available
+                    requestAnimationFrame(() => {
+                        const centerModalRect = this.modal.getBoundingClientRect();
+                        const centerViewportWidth = window.innerWidth;
+                        const centerViewportHeight = window.innerHeight;
+
+                        const centerLeft = (centerViewportWidth / 2) - (centerModalRect.width / 2);
+                        const centerTop = (centerViewportHeight / 2) - (centerModalRect.height / 2);
+
+                        this.modal.style.top = `${centerTop}px`;
+                        this.modal.style.left = `${centerLeft}px`;
+                        this.modal.style.transform = 'none';
+                    });
                     return;
                 default:
                     // Fall through to automatic positioning
