@@ -205,11 +205,11 @@ class NotificationManager {
                         });
 
                         if (cs2Manager && !isResolved) {
-                            const isInCS2 = await cs2Manager.checkUserInCS2();
-                            logger.info('NotificationManager', 'CS2 status check completed', { isInCS2 });
+                            const isInCS2AndLobby = await cs2Manager.checkUserInCS2AndLobby();
+                            logger.info('NotificationManager', 'CS2 and lobby status check completed', { isInCS2AndLobby });
 
-                            if (isInCS2 && !isResolved) {
-                                logger.info('NotificationManager', 'User detected in CS2, closing notification');
+                            if (isInCS2AndLobby && !isResolved) {
+                                logger.info('NotificationManager', 'User detected in CS2 and lobby, closing notification');
 
                                 // Set resolved flag immediately to prevent multiple executions
                                 isResolved = true;
@@ -226,10 +226,10 @@ class NotificationManager {
                                 this.hideCS2LaunchNotification();
                                 cleanup();
                                 resolve(true);
-                            } else if (isInCS2) {
-                                logger.debug('NotificationManager', 'User in CS2 but already resolved');
+                            } else if (isInCS2AndLobby) {
+                                logger.debug('NotificationManager', 'User in CS2 and lobby but already resolved');
                             } else {
-                                logger.debug('NotificationManager', 'User not yet in CS2, continuing to wait');
+                                logger.debug('NotificationManager', 'User not yet in CS2 and lobby, continuing to wait');
                             }
                         } else if (!cs2Manager) {
                             logger.error('NotificationManager', 'CS2Manager is null/undefined during status check');

@@ -186,11 +186,13 @@ class SteamAPIResponseProcessor {
      * Process player link details response to check if player is in CS2
      * @param {Object} rawData - Raw response from Steam API
      * @param {string} steam_id - Steam ID being checked (for logging)
-     * @returns {boolean} - True if player is playing CS2
+     * @param {boolean} requireLobby - Whether to require lobby state (default: false)
+     * @returns {boolean} - True if player is playing CS2 (and in lobby if required)
      */
-    static processPlayerCS2StatusResponse(rawData, steam_id) {
+    static processPlayerCS2StatusResponse(rawData, steam_id, requireLobby = false) {
         logger.debug('SteamAPIResponseProcessor', 'Processing player CS2 status response', {
             steam_id,
+            requireLobby,
             hasData: !!rawData,
             hasResponse: !!(rawData && rawData.response),
             hasAccounts: !!(rawData && rawData.response && rawData.response.accounts),
@@ -221,6 +223,17 @@ class SteamAPIResponseProcessor {
             return false;
         }
 
+        // If lobby state is not required, return true if just in CS2
+        if (!requireLobby) {
+            logger.info('SteamAPIResponseProcessor', `Player ${steam_id} CS2 status: playing (lobby check not required)`, {
+                steam_id,
+                game_id: priv.game_id,
+                isInCS2: true,
+                requireLobby: false
+            });
+            return true;
+        }
+
         // Parse rich presence to check if user is in lobby
         const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv || "");
         const isInLobby = richPresence.game_state === "lobby";
@@ -231,10 +244,11 @@ class SteamAPIResponseProcessor {
             game_state: richPresence.game_state,
             isInCS2,
             isInLobby,
+            requireLobby: true,
             richPresenceData: richPresence
         });
 
-        // Return true only if player is in CS2 AND in lobby
+        // Return true if player is in CS2 AND in lobby (when lobby is required)
         return isInCS2 && isInLobby;
     }
 

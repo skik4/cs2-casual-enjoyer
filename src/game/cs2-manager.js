@@ -59,6 +59,44 @@ class CS2Manager {
     }
 
     /**
+     * Check if the current user is playing CS2 and in lobby
+     * @returns {Promise<boolean>} - Whether the user is playing CS2 and in lobby
+     */
+    async checkUserInCS2AndLobby() {
+        if (!this.isInitialized || !this.appInputManager) {
+            logger.warn('CS2Manager', 'Not initialized or missing appInputManager for lobby check', {
+                isInitialized: this.isInitialized,
+                hasAppInputManager: !!this.appInputManager
+            });
+            return false;
+        }
+
+        try {
+            const steamId = this.appInputManager.getSteamId();
+            const auth = this.appInputManager.getAuth();
+
+            logger.debug('CS2Manager', 'Checking CS2 and lobby status for user', { steamId });
+
+            if (!steamId || !auth) {
+                logger.warn('CS2Manager', 'Missing steamId or auth for lobby check', {
+                    hasSteamId: !!steamId,
+                    hasAuth: !!auth
+                });
+                return false;
+            }
+
+            const extractedAuth = Validators.extractApiKeyOrToken(auth);
+            const result = await SteamAPI.isPlayerInCS2(steamId, extractedAuth, true); // requireLobby = true
+
+            logger.info('CS2Manager', 'CS2 and lobby status result', { steamId, result });
+            return result;
+        } catch (error) {
+            logger.error('CS2Manager', 'Error checking CS2 and lobby status', { error: error.message });
+            return false;
+        }
+    }
+
+    /**
      * Launch CS2 using Steam protocol
      */
     launchCS2() {

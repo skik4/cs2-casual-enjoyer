@@ -8,7 +8,7 @@ import SteamAPIUtils from './steam-api-utils.js';
  */
 class SteamAPI {
     // ===== UTILITY METHODS (delegated to SteamAPIUtils) =====
-    
+
     /**
      * Parse Rich Presence data from Steam
      * @param {string} kv - Key-value string from Steam rich presence
@@ -84,10 +84,11 @@ class SteamAPI {
      * Check if a player is currently playing CS2
      * @param {string} steam_id - Steam ID to check
      * @param {string} auth - API key or token
-     * @returns {Promise<boolean>} - Whether the player is playing CS2
+     * @param {boolean} requireLobby - Whether to require lobby state (default: false)
+     * @returns {Promise<boolean>} - Whether the player is playing CS2 (and in lobby if required)
      */
-    static async isPlayerInCS2(steam_id, auth) {
-        return SteamAPIClient.isPlayerInCS2(steam_id, auth);
+    static async isPlayerInCS2(steam_id, auth, requireLobby = false) {
+        return SteamAPIClient.isPlayerInCS2(steam_id, auth, requireLobby);
     }
 }
 

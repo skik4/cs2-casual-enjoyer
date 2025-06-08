@@ -154,16 +154,18 @@ class SteamAPIClient {
      * Check if a player is currently playing CS2
      * @param {string} steam_id - Steam ID to check
      * @param {string} auth - API key or token
-     * @returns {Promise<boolean>} - True if player is playing CS2
+     * @param {boolean} requireLobby - Whether to require lobby state (default: false)
+     * @returns {Promise<boolean>} - True if player is playing CS2 (and in lobby if required)
      */
-    static async isPlayerInCS2(steam_id, auth) {
+    static async isPlayerInCS2(steam_id, auth, requireLobby = false) {
         try {
             const data = await this._getPlayerLinkDetails(steam_id, auth, {
                 steam_id,
-                checkingCS2: true
+                checkingCS2: true,
+                requireLobby
             });
 
-            return SteamAPIResponseProcessor.processPlayerCS2StatusResponse(data, steam_id);
+            return SteamAPIResponseProcessor.processPlayerCS2StatusResponse(data, steam_id, requireLobby);
         } catch (error) {
             SteamAPILogger.logError('isPlayerInCS2', error, { steam_id });
             return false;
