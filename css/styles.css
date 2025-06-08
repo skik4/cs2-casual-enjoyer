@@ -2,9 +2,13 @@
 @import url('./unified-buttons.css');
 
 :root {
+    /* ===== BASE COLORS ===== */
     --white: #fff;
     --black: #000;
+
+    /* ===== GRAYSCALE PALETTE ===== */
     --gray-100: #f3f6fa;
+    /* Lightest */
     --gray-200: #e6e9ed;
     --gray-300: #ccc;
     --gray-400: #bfc9d8;
@@ -13,81 +17,133 @@
     --gray-700: #666;
     --gray-800: #353a40;
     --gray-900: #222;
-    --alpha-05: rgba(0, 0, 0, 0.05);
-    --alpha-10: rgba(0, 0, 0, 0.1);
-    --alpha-20: rgba(0, 0, 0, 0.2);
-    --alpha-30: rgba(0, 0, 0, 0.3);
-    --alpha-40: rgba(0, 0, 0, 0.4);
-    --alpha-50: rgba(0, 0, 0, 0.5);
-    --alpha-60: rgba(0, 0, 0, 0.6);
-    --alpha-80: rgba(0, 0, 0, 0.8);
+    /* Darkest */    /* ===== LEGACY ALPHA VALUES (for rgba compatibility) ===== */
+        /* ===== ALPHA (TRANSPARENCY) VALUES ===== */
+    /* Modern CSS approach using color-mix() function
+     * Usage: color-mix(in srgb, var(--any-color) var(--opacity-30), transparent)
+     * Benefits: Works with any color, shorter syntax, better browser support
+     */    --opacity-5: 5%;    /* Ultra light */
+    --opacity-10: 10%;  /* Very light */
+    --opacity-20: 20%;  /* Light */
+    --opacity-30: 30%;  /* Medium light */
+    --opacity-40: 40%;  /* Medium */
+    --opacity-50: 50%;  /* Half */
+    --opacity-60: 60%;  /* Medium strong */
+    --opacity-70: 70%;  /* Strong */
+    --opacity-80: 80%;  /* Very strong */
+    --opacity-85: 85%;  /* Almost opaque */    /* Legacy rgba() support removed - use color-mix() with --opacity-* values */
+
+    /* ===== BRAND COLORS ===== */
+    /* Blue */
     --blue-primary: #2d8cf0;
     --blue-dark: #1a6ed8;
-    --green-primary: #2ecc40;
-    --yellow-primary: #f1c40f;
+
+    /* Red */
     --red-primary: #e74c3c;
     --red-dark: #c0392b;
     --red-light: #ff4444;
-    --red-primary-30: rgba(231, 76, 60, 0.3);
-    --red-primary-0: rgba(231, 76, 60, 0);
-    --yellow-primary-30: rgba(241, 196, 15, 0.3);
-    --yellow-primary-0: rgba(241, 196, 15, 0);
-    --green-primary-30: rgba(46, 204, 64, 0.3);
-    --green-primary-0: rgba(46, 204, 64, 0);
+
+    /* Green */
+    --green-primary: #2ecc40;
+
+    /* Yellow */
+    --yellow-primary: #f1c40f;
+
+    /* Purple */
     --purple-primary: #a259f7;
-    --purple-primary-30: rgba(162, 89, 247, 0.3);
-    --purple-primary-0: rgba(162, 89, 247, 0);
+
+    /* ===== WARNING COLORS ===== */
     --warning-bg: #fffbe6;
     --warning-text: #b26a00;
     --warning-border: #ffe58f;
+
+    /* ===== BACKGROUND COLORS ===== */
     --bg-dark: #181c20;
     --bg-panel: #23272b;
     --bg-item: #202328;
     --bg-dark-gradient-light: #232b32;
+
+    /* ===== TEXT COLORS ===== */
     --text-primary: var(--gray-100);
     --text-secondary: var(--gray-400);
+
+    /* ===== BORDER COLORS ===== */
     --border-color: var(--gray-800);
     --border-color-strong: #23272e;
     --panel-outline: #23272e;
+
+    /* ===== INPUT COLORS ===== */
     --input-bg: #181b20;
     --input-border: #23272e;
     --input-border-focus: var(--blue-primary);
-    --input-border-invalid: var(--red-primary);
+    --input-border-invalid: var(--red-primary);    /* ===== COMPLEX STYLES ===== */
     --panel-bg-gradient: linear-gradient(135deg, var(--bg-panel) 0%, var(--bg-dark) 100%);
-    --panel-shadow: 0 2px 24px 0 var(--alpha-80), 0 1.5px 0 0 var(--border-color-strong);
+    --panel-shadow: 0 2px 24px 0 color-mix(in srgb, var(--black) var(--opacity-80), transparent), 0 1.5px 0 0 var(--border-color-strong);
+
+    /* ===== SHADOWS ===== */
+    --shadow-light: 0 2px 12px color-mix(in srgb, var(--black) var(--opacity-20), transparent);
+    --shadow-medium: 0 6px 24px color-mix(in srgb, var(--black) var(--opacity-40), transparent);
+    --shadow-dark: 0 6px 32px color-mix(in srgb, var(--black) var(--opacity-80), transparent);
+
+    /* ===== ANIMATIONS ===== */
     --anim-duration: 0.18s;
     --anim-duration-slow: 0.5s;
-    --shadow-light: 0 2px 12px var(--alpha-20);
-    --shadow-medium: 0 6px 24px var(--alpha-40);
-    --shadow-dark: 0 6px 32px var(--alpha-80);
 
-    /* Unified spacing system - use rem for consistency and scalability */
+    /* ===== SPACING SYSTEM ===== */
     --space-xxs: 0.25rem;
+    /* 4px */
     --space-xs: 0.5rem;
+    /* 8px */
     --space-sm: 0.75rem;
+    /* 12px */
     --space-md: 1rem;
+    /* 16px */
     --space-lg: 1.5rem;
+    /* 24px */
     --space-xl: 2rem;
+    /* 32px */
     --space-xxl: 3rem;
+    /* 48px */
+
+    /* ===== TYPOGRAPHY SCALE ===== */
     --font-size-xs: 0.9em;
+    /* ~14px */
     --font-size-sm: 0.97em;
+    /* ~15px */
     --font-size-md: 1.08em;
+    /* ~17px */
     --font-size-lg: 1.18em;
+    /* ~19px */
     --font-size-xl: 1.3em;
+    /* ~21px */
     --font-size-xxl: 1.6em;
+    /* ~26px */
+
+    /* ===== POSITIONING ===== */
     --position-sm: 0.375rem;
+    /* 6px */
     --position-md: 0.625rem;
+    /* 10px */
     --position-lg: 1.125rem;
+    /* 18px */
+
+    /* ===== DIMENSIONS ===== */
     --border-width: 0.094rem;
-    --opacity-low: 0.7;
-    --opacity-medium: 0.85;
-    --opacity-high: 1;
+    /* 1.5px */    /* ===== BORDER RADIUS ===== */
     --border-radius-sm: 0.188rem;
+    /* 3px */
     --border-radius-md: 0.25rem;
+    /* 4px */
     --border-radius-lg: 0.375rem;
+    /* 6px */
     --border-radius-xl: 0.5rem;
+    /* 8px */
+
+    /* ===== COMPONENT HEIGHTS ===== */
     --height-window-bar: 2.375rem;
+    /* 38px */
     --height-footer: 2.25rem;
+    /* 36px */
 }
 
 /* Vertical Spacing Utilities - Use only margin-bottom for consistency */
@@ -192,7 +248,7 @@ body {
     z-index: 10;
     border-bottom: var(--border-width) solid var(--panel-outline);
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-    box-shadow: 0 2px 12px var(--alpha-40);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--black) var(--opacity-40), transparent);
 }
 
 .window-bar-title-container {
@@ -436,7 +492,7 @@ input[type="password"] {
 
 .param-icon-link:hover {
     color: var(--blue-dark);
-    opacity: var(--opacity-high);
+    opacity: 1;
 }
 
 .param-input-row {
@@ -484,7 +540,7 @@ input[type="password"] {
 }
 
 .friend:hover {
-    box-shadow: 0 2px 12px var(--alpha-60);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--black) var(--opacity-60), transparent);
     background: var(--bg-panel);
     border-color: var(--blue-primary);
 }
@@ -503,7 +559,7 @@ input[type="password"] {
     border-radius: var(--border-radius-lg);
     object-fit: cover;
     margin-right: 0.7em;
-    box-shadow: 0 2px 8px var(--alpha-30);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--black) var(--opacity-30), transparent);
     background: var(--gray-900);
     flex-shrink: 0;
     border: var(--border-width) solid var(--panel-outline);
@@ -545,7 +601,7 @@ input[type="password"] {
     border-radius: 50%;
     display: inline-block;
     margin-right: 0.5em;
-    box-shadow: 0 0 8px var(--alpha-50);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--black) var(--opacity-50), transparent);
     border: var(--border-width) solid var(--panel-outline);
     transition: background var(--anim-duration-slow), box-shadow var(--anim-duration-slow);
 }
@@ -581,57 +637,57 @@ input[type="password"] {
 
 @keyframes pulse-red {
     0% {
-        box-shadow: 0 0 0 0 var(--red-primary-30);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--red-primary) var(--opacity-30), transparent);
     }
 
     70% {
-        box-shadow: 0 0 0 10px var(--red-primary-0);
+        box-shadow: 0 0 0 10px transparent;
     }
 
     100% {
-        box-shadow: 0 0 0 0 var(--red-primary-0);
+        box-shadow: 0 0 0 0 transparent;
     }
 }
 
 @keyframes pulse-yellow {
     0% {
-        box-shadow: 0 0 0 0 var(--yellow-primary-30);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--yellow-primary) var(--opacity-30), transparent);
     }
 
     70% {
-        box-shadow: 0 0 0 10px var(--yellow-primary-0);
+        box-shadow: 0 0 0 10px transparent;
     }
 
     100% {
-        box-shadow: 0 0 0 0 var(--yellow-primary-0);
+        box-shadow: 0 0 0 0 transparent;
     }
 }
 
 @keyframes pulse-green {
     0% {
-        box-shadow: 0 0 0 0 var(--green-primary-30);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-primary) var(--opacity-30), transparent);
     }
 
     70% {
-        box-shadow: 0 0 0 10px var(--green-primary-0);
+        box-shadow: 0 0 0 10px transparent;
     }
 
     100% {
-        box-shadow: 0 0 0 0 var(--green-primary-0);
+        box-shadow: 0 0 0 0 transparent;
     }
 }
 
 @keyframes pulse-purple {
     0% {
-        box-shadow: 0 0 0 0 var(--purple-primary-30);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--purple-primary) var(--opacity-30), transparent);
     }
 
     70% {
-        box-shadow: 0 0 0 10px var(--purple-primary-0);
+        box-shadow: 0 0 0 10px transparent;
     }
 
     100% {
-        box-shadow: 0 0 0 0 var(--purple-primary-0);
+        box-shadow: 0 0 0 0 transparent;
     }
 }
 
@@ -717,7 +773,7 @@ hr,
     height: 100%;
     line-height: var(--height-footer);
     gap: var(--space-sm);
-    opacity: var(--opacity-low);
+    opacity: 0.7;
 }
 
 #notifications {
@@ -728,7 +784,7 @@ hr,
     padding-top: 0.5em;
     margin-bottom: 0.7em;
     font-size: var(--font-size-sm);
-    box-shadow: 0 2px 8px var(--alpha-20);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--black) var(--opacity-20), transparent);
     position: relative;
     min-height: 32px;
     max-width: 700px;
@@ -816,10 +872,9 @@ hr,
 }
 
 .update-hint {
-    text-align: center;
-    color: var(--text-secondary);
+    text-align: center;    color: var(--text-secondary);
     font-size: var(--font-size-sm);
-    opacity: var(--opacity-medium);
+    opacity: 0.85;
     transition: opacity var(--anim-duration);
     display: none;
 }
@@ -937,7 +992,7 @@ hr,
     color: var(--text-secondary);
     white-space: nowrap;
     font-weight: 500;
-    opacity: var(--opacity-medium);
+    opacity: 0.85;
 }
 
 .tutorial-progress-bar {
@@ -966,7 +1021,7 @@ hr,
     color: var(--text-primary);
     line-height: 1.6;
     font-size: var(--font-size-sm);
-    opacity: var(--opacity-high);
+    opacity: 1;
     text-align: center;
 }
 
