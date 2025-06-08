@@ -1,4 +1,5 @@
 import SteamAPI from '../steam/steam-api.js';
+import Validators from '../utils/validators.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -44,10 +45,9 @@ class CS2Manager {
                     hasSteamId: !!steamId,
                     hasAuth: !!auth
                 });
-                return false;
-            }
+                return false;            }
 
-            const extractedAuth = SteamAPI.extractApiKeyOrToken(auth);
+            const extractedAuth = Validators.extractApiKeyOrToken(auth);
             const result = await SteamAPI.isPlayerInCS2(steamId, extractedAuth);
 
             logger.info('CS2Manager', 'CS2 status result', { steamId, result });

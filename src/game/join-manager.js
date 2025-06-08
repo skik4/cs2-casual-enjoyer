@@ -1,5 +1,6 @@
 import { API_CONFIG, STATUS_TYPES } from '../shared/constants.js';
 import SteamAPI from '../steam/steam-api.js';
+import Validators from '../utils/validators.js';
 import ErrorHandler from '../utils/error-handler.js';
 import DOMUtils from '../utils/dom-utils.js';
 
@@ -61,15 +62,13 @@ class JoinManager {
 
             if (!steamIdInput || !authInput) {
                 throw new Error('Required input elements not found');
-            }
-
-            const steam_id = steamIdInput.value.trim();
+            }            const steam_id = steamIdInput.value.trim();
             const auth_raw = authInput.value.trim();
-            const auth = SteamAPI.extractApiKeyOrToken ? SteamAPI.extractApiKeyOrToken(auth_raw) : auth_raw;
+            const auth = Validators.extractApiKeyOrToken(auth_raw);
 
             if (!steam_id || !auth) {
                 throw new Error('Steam ID and API auth are required');
-            } this.joinStates[friend_id] = {
+            }this.joinStates[friend_id] = {
                 status: STATUS_TYPES.WAITING,
                 cancelled: false,
                 interval: null

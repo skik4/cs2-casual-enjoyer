@@ -3,6 +3,7 @@ import SteamAPIConfig from './api-config.js';
 import SteamAPILogger from './api-logger.js';
 import SteamAPIResponseProcessor from './steam-api-response-processor.js';
 import SteamAPIUtils from './steam-api-utils.js';
+import Validators from '../utils/validators.js';
 
 /**
  * Steam API client with proper separation of concerns
@@ -20,35 +21,35 @@ class SteamAPIClient {
      */
     static async _makeRequest(method, params, auth, options = {}) {
         const { allowFailure = false, context = {} } = options;
-        
+
         try {
             // Build URL using config manager
             const url = SteamAPIConfig.buildUrl(method, params, auth);
-            
+
             // Log request
             SteamAPILogger.logRequest(method, url, context);
-              // Make HTTP request
+            // Make HTTP request
             const response = await SteamAPIHttpClient.makeRequest(url);
-            
+
             // Handle HTTP errors
-            const errorHandlers = SteamAPIUtils.getMethodErrorHandlers(method);
-            const isOk = SteamAPIUtils.handleHttpResponse(response, {
+            const errorHandlers = await SteamAPIUtils.getMethodErrorHandlers(method);
+            const isOk = await SteamAPIUtils.handleHttpResponse(response, {
                 method,
                 allowFailure,
                 errorHandlers
             });
-            
+
             if (!isOk) {
                 SteamAPILogger.logHttpError(method, response.status, response.statusText, context);
                 return null;
             }
-            
+
             // Parse response
             const data = await SteamAPIHttpClient.parseJsonResponse(response);
-            
+
             // Log response
             SteamAPILogger.logResponse(method, data, url);
-            
+
             return data;
         } catch (error) {
             SteamAPILogger.logError(method, error, context);
@@ -67,8 +68,8 @@ class SteamAPIClient {
         const data = await this._makeRequest('GetFriendsList', params, auth, {
             context: { steam_id }
         });
-        
-        const isToken = SteamAPIUtils.isWebApiToken(auth);
+
+        const isToken = Validators.isWebApiToken(auth);
         return SteamAPIResponseProcessor.processFriendsListResponse(data, isToken);
     }
 
@@ -134,7 +135,7 @@ class SteamAPIClient {
     static async _getPlayerLinkDetails(steamids, auth, context = {}) {
         // Build special params for this API call
         const params = {};
-        
+
         if (Array.isArray(steamids)) {
             steamids.forEach((sid, idx) => {
                 params[`steamids[${idx}]`] = sid;
@@ -157,11 +158,11 @@ class SteamAPIClient {
      */
     static async isPlayerInCS2(steam_id, auth) {
         try {
-            const data = await this._getPlayerLinkDetails(steam_id, auth, { 
-                steam_id, 
-                checkingCS2: true 
+            const data = await this._getPlayerLinkDetails(steam_id, auth, {
+                steam_id,
+                checkingCS2: true
             });
-            
+
             return SteamAPIResponseProcessor.processPlayerCS2StatusResponse(data, steam_id);
         } catch (error) {
             SteamAPILogger.logError('isPlayerInCS2', error, { steam_id });
@@ -182,8 +183,8 @@ class SteamAPIClient {
         }
 
         try {
-            const data = await this._getPlayerLinkDetails(friend_ids, auth, { 
-                friendsCount: friend_ids.length 
+            const data = await this._getPlayerLinkDetails(friend_ids, auth, {
+                friendsCount: friend_ids.length
             });
 
             // Create callback for fetching additional avatars
@@ -211,9 +212,9 @@ class SteamAPIClient {
     static async getFriendConnectInfo(friend_id, auth) {
         try {
             const data = await this._getPlayerLinkDetails(friend_id, auth, { friend_id });
-            
+
             if (!data) return null;
-            
+
             return SteamAPIResponseProcessor.processConnectInfoResponse(data);
         } catch (error) {
             SteamAPILogger.logError('getFriendConnectInfo', error, { friend_id });
@@ -230,9 +231,9 @@ class SteamAPIClient {
     static async getUserGameServerSteamId(steam_id, auth) {
         try {
             const data = await this._getPlayerLinkDetails(steam_id, auth, { steam_id });
-            
+
             if (!data) return null;
-            
+
             return SteamAPIResponseProcessor.processGameServerSteamIdResponse(data);
         } catch (error) {
             SteamAPILogger.logError('getUserGameServerSteamId', error, { steam_id });

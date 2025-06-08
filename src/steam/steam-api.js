@@ -10,42 +10,6 @@ class SteamAPI {
     // ===== UTILITY METHODS (delegated to SteamAPIUtils) =====
     
     /**
-     * Check if the string is a JWT-like webapi_token
-     * @param {string} keyOrToken - String to check
-     * @returns {boolean} - Whether it's a Web API token
-     */
-    static isWebApiToken(keyOrToken) {
-        return SteamAPIUtils.isWebApiToken(keyOrToken);
-    }
-
-    /**
-     * Extract webapi_token from input (JSON or token string)
-     * @param {string} authInput - Auth input to parse
-     * @returns {string|null} - Extracted token or null
-     */
-    static extractTokenIfAny(authInput) {
-        return SteamAPIUtils.extractTokenIfAny(authInput);
-    }
-
-    /**
-     * Extract API key or token from input (JSON, token, or key)
-     * @param {string} authInput - Auth input to parse
-     * @returns {string} - Extracted auth value
-     */
-    static extractApiKeyOrToken(authInput) {
-        return SteamAPIUtils.extractApiKeyOrToken(authInput);
-    }
-
-    /**
-     * Parse JWT webapi_token for steamid and expiry
-     * @param {string} token - Token to parse
-     * @returns {import('../shared/types.js').TokenInfo|null} - Parsed token info or null
-     */
-    static parseWebApiToken(token) {
-        return SteamAPIUtils.parseWebApiToken(token);
-    }
-
-    /**
      * Parse Rich Presence data from Steam
      * @param {string} kv - Key-value string from Steam rich presence
      * @returns {Object} - Parsed rich presence fields

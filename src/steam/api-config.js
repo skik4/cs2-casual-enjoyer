@@ -1,5 +1,5 @@
 import { API_CONFIG } from '../shared/constants.js';
-import SteamAPIUtils from './steam-api-utils.js';
+import Validators from '../utils/validators.js';
 
 /**
  * Configuration manager for Steam API endpoints
@@ -64,9 +64,9 @@ class SteamAPIConfig {
      * @returns {string} - Complete URL
      */
     static buildUrl(method, params, auth) {
-        const isToken = SteamAPIUtils.isWebApiToken(auth);
+        const isToken = Validators.isWebApiToken(auth);
         const endpointConfig = this.getEndpointConfig(method, isToken);
-        
+
         const url = `${API_CONFIG.STEAM_API_BASE}${endpointConfig.endpoint}`;
         const urlParams = new URLSearchParams();
 

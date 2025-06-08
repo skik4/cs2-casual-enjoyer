@@ -49,11 +49,10 @@ class AppInputManager {
     /**
      * Get API auth from input
      * @returns {string} - API auth value
-     */
-    getAuth() {
+     */    getAuth() {
         const authInput = this.getAuthInput();
         if (!authInput) return '';
-        return SteamAPI.extractApiKeyOrToken(authInput.value.trim());
+        return Validators.extractApiKeyOrToken(authInput.value.trim());
     }
 
     /**
@@ -91,7 +90,8 @@ class AppInputManager {
 
             try {
                 const steamId = await SteamAPI.resolveVanityUrl(urlValidation.value, auth);
-                if (steamId) {                    steamIdInput.value = steamId;
+                if (steamId) {
+                    steamIdInput.value = steamId;
                     UIManager.hideNotification();
                 } else {
                     steamIdInput.value = originalValue;
@@ -115,13 +115,13 @@ class AppInputManager {
         if (!authInput) return;
 
         const val = authInput.value.trim();
-        const token = SteamAPI.extractTokenIfAny(val);
+        const token = Validators.extractTokenIfAny(val);
 
         // Reset join states when auth changes
         joinManager.resetAll();
 
         if (token) {
-            const info = SteamAPI.parseWebApiToken(token);
+            const info = Validators.parseWebApiToken(token);
             if (info && info.steamid) {
                 const steamIdInput = this.getSteamIdInput();
                 if (steamIdInput && (!steamIdInput.value || steamIdInput.value !== info.steamid)) {
@@ -155,18 +155,17 @@ class AppInputManager {
         let isTokenExpired = false;
         const authInput = DOMUtils.getElementById('auth');
         const val = authInput ? authInput.value.trim() : '';
-        const token = SteamAPI.extractTokenIfAny(val);
+        const token = Validators.extractTokenIfAny(val);
 
         // Also check saved settings for token expiration
         let savedToken = null;
         if (!token && savedSettings && savedSettings.auth) {
-            savedToken = SteamAPI.extractTokenIfAny(savedSettings.auth);
+            savedToken = Validators.extractTokenIfAny(savedSettings.auth);
         }
 
         const tokenToCheck = token || savedToken;
-
         if (tokenToCheck) {
-            const info = SteamAPI.parseWebApiToken(tokenToCheck);
+            const info = Validators.parseWebApiToken(tokenToCheck);
             if (info) {
                 const now = Date.now();
                 const expiresMs = info.expires * 1000;

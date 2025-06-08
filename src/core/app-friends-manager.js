@@ -81,7 +81,7 @@ class AppFriendsManager {
             if (!auth && savedSettings.auth) auth = savedSettings.auth;
         }
 
-        auth = SteamAPI.extractApiKeyOrToken(auth);
+        auth = Validators.extractApiKeyOrToken(auth);
 
         if (!steam_id || !auth) {
             UIManager.showError("Please enter your SteamID64 and API Key");

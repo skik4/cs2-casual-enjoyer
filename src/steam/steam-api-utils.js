@@ -1,73 +1,11 @@
 import { VALIDATION_PATTERNS, API_CONFIG, ERROR_CODES } from '../shared/constants.js';
+import Validators from '../utils/validators.js';
 
 /**
  * Steam API utilities and parsers
  * Contains helper functions for parsing and validating Steam data
  */
 class SteamAPIUtils {
-    /**
-     * Check if the string is a JWT-like webapi_token
-     * @param {string} keyOrToken - String to check
-     * @returns {boolean} - Whether it's a Web API token
-     */
-    static isWebApiToken(keyOrToken) {
-        return VALIDATION_PATTERNS.WEB_API_TOKEN.test(keyOrToken);
-    }
-
-    /**
-     * Extract webapi_token from input (JSON or token string)
-     * @param {string} authInput - Auth input to parse
-     * @returns {string|null} - Extracted token or null
-     */
-    static extractTokenIfAny(authInput) {
-        try {
-            const parsed = JSON.parse(authInput);
-            if (parsed?.data?.webapi_token) return parsed.data.webapi_token;
-        } catch {
-            // Not JSON, continue
-        }
-        
-        if (this.isWebApiToken(authInput)) return authInput;
-        return null;
-    }
-
-    /**
-     * Extract API key or token from input (JSON, token, or key)
-     * @param {string} authInput - Auth input to parse
-     * @returns {string} - Extracted auth value
-     */
-    static extractApiKeyOrToken(authInput) {
-        try {
-            const parsed = JSON.parse(authInput);
-            if (parsed?.data?.webapi_token) return parsed.data.webapi_token;
-        } catch {
-            // Not JSON, continue
-        }
-        
-        return authInput;
-    }
-
-    /**
-     * Parse JWT webapi_token for steamid and expiry
-     * @param {string} token - Token to parse
-     * @returns {import('../shared/types.js').TokenInfo|null} - Parsed token info or null
-     */
-    static parseWebApiToken(token) {
-        const parts = token.split('.');
-        if (parts.length !== 3) return null;
-
-        try {
-            const payload = JSON.parse(atob(parts[1]));
-            return {
-                steamid: payload.sub,
-                expires: payload.exp,
-                expiresDate: new Date(payload.exp * 1000)
-            };
-        } catch {
-            return null;
-        }
-    }
-
     /**
      * Parse Rich Presence data from Steam
      * @param {string} kv - Key-value string from Steam rich presence
@@ -78,7 +16,7 @@ class SteamAPIUtils {
             const re = new RegExp('"' + key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '"\\s+"([^"]+)"');
             const m = kv.match(re);
             return m ? m[1] : null;
-        }        return {
+        } return {
             status: extract("status"),
             game_state: extract("game:state"),
             game_mode: extract("game:mode"),
@@ -96,8 +34,8 @@ class SteamAPIUtils {
      * @returns {string} - Complete URL with parameters
      */
     static buildApiUrl(config, auth) {
-        const isToken = this.isWebApiToken(auth);
-        
+        const isToken = Validators.isWebApiToken(auth);
+
         // Handle unified configuration (when key and token use same endpoint/params)
         let authConfig;
         if (config.unified) {
@@ -191,7 +129,7 @@ class SteamAPIUtils {
             // API key response format
             return rawData.response.players;
         }
-        
+
         return [];
     }
 
@@ -211,7 +149,7 @@ class SteamAPIUtils {
      */
     static isInSupportedMode(richPresence) {
         return (richPresence.game_mode === "casual" || richPresence.game_mode === "deathmatch") &&
-               !["", null, "lobby"].includes(richPresence.game_state);
+            !["", null, "lobby"].includes(richPresence.game_state);
     }
 
     /**
@@ -220,8 +158,8 @@ class SteamAPIUtils {
      * @returns {boolean} - True if join is available
      */
     static isJoinAvailable(richPresence) {
-        return this.isInSupportedMode(richPresence) && 
-               richPresence.connect?.startsWith("+gcconnect");
+        return this.isInSupportedMode(richPresence) &&
+            richPresence.connect?.startsWith("+gcconnect");
     }
 
     /**
@@ -230,10 +168,10 @@ class SteamAPIUtils {
      * @returns {string} - Avatar URL or empty string
      */
     static extractBestAvatar(playerData) {
-        return playerData?.avatarfull || 
-               playerData?.avatar || 
-               playerData?.avatarmedium || 
-               "";
+        return playerData?.avatarfull ||
+            playerData?.avatar ||
+            playerData?.avatarmedium ||
+            "";
     }
 
     /**
@@ -255,25 +193,27 @@ class SteamAPIUtils {
         const pub = account.public_data || {};
         const priv = account.private_data || {};
         const richPresence = this.parseRichPresence(priv.rich_presence_kv || "");
-        
+
         return {
             name: pub.persona_name || 'Unknown',
             steamid: pub.steamid,
             game_name: priv.game_id === "730" ? "CS2" :
-                      priv.game_id ? `Game ${priv.game_id}` : "Not in game",
+                priv.game_id ? `Game ${priv.game_id}` : "Not in game",
             game_mode: richPresence.game_mode || 'Unknown',
             game_state: richPresence.game_state || 'Unknown',
             in_supported_mode: this.isInSupportedMode(richPresence)
         };
-    }    /**
+    }
+
+    /**
      * Handle HTTP response status and errors
      * @param {Response} response - Fetch response object
      * @param {Object} config - Request configuration
      * @param {Object} context - Additional context for logging
-     * @returns {boolean} - True if response is OK, false if handled error with allowFailure
+     * @returns {Promise<boolean>} - True if response is OK, false if handled error with allowFailure
      * @throws {Error} - For unhandled errors or custom error handlers
      */
-    static handleHttpResponse(response, config, context = {}) {
+    static async handleHttpResponse(response, config, context = {}) {
         if (response.ok) {
             return true;
         }
@@ -281,30 +221,28 @@ class SteamAPIUtils {
         // Check for custom error handlers first
         if (config.errorHandlers && config.errorHandlers[response.status]) {
             throw config.errorHandlers[response.status]();
-        }
-
-        // Handle allowFailure cases
+        }        // Handle allowFailure cases
         if (config.allowFailure) {
             return false;
         }
 
         // Import here to avoid circular dependency
-        const ErrorHandler = require('../utils/error-handler.js').default;
-        
+        const { default: ErrorHandler } = await import('../utils/error-handler.js');
+
         // Default error handling
-        throw ErrorHandler.createError(`API_ERROR_${response.status}`, 
+        throw ErrorHandler.createError(`API_ERROR_${response.status}`,
             `${config.method} failed: ${response.status} ${response.statusText}`);
     }
 
     /**
      * Get error handlers for specific API methods
      * @param {string} method - API method name
-     * @returns {Object} - Error handlers map
+     * @returns {Promise<Object>} - Error handlers map
      */
-    static getMethodErrorHandlers(method) {
+    static async getMethodErrorHandlers(method) {
         // Import here to avoid circular dependency
-        const ErrorHandler = require('../utils/error-handler.js').default;
-        
+        const { default: ErrorHandler } = await import('../utils/error-handler.js');
+
         const errorHandlers = {
             GetFriendsList: {
                 401: () => ErrorHandler.createError(ERROR_CODES.PRIVATE_FRIENDS_LIST)
