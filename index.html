@@ -6,11 +6,11 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <style>
         body {
-            background: #181c20 !important;
+            background: var(--bg-dark) !important;
         }
 
         html {
-            background: #181c20 !important;
+            background: var(--bg-dark) !important;
         }
     </style>
     <link rel="stylesheet" href="css/styles.css">
@@ -35,18 +35,18 @@
                 <div id="notifications" class="mb-md"></div>
                 <h1 class="mb-lg" style="display:none;">CS2 Casual Enjoyer</h1>
                 <div class="param-fields-container mb-lg">
-                    <div class="param-label-row" style="margin-bottom:0.1em;">
-                        <div class="param-label-cell" style="padding-bottom:0;">
+                    <div class="param-label-row" style="margin-bottom: var(--space-xs);">
+                        <div class="param-label-cell" style="padding-bottom: 0;">
                             <span id="api-key-help" title="Get your Steam Web API Token / Key in Steam"
                                 class="param-label-text"
-                                style="text-decoration:underline; color:inherit; cursor:pointer; margin-bottom:0; padding-bottom:0;">
+                                style="text-decoration: underline; color: inherit; cursor: pointer; margin-bottom: 0; padding-bottom: 0;">
                                 Steam Web API Token / Key
                             </span>
                         </div>
-                        <div class="param-label-cell" style="padding-bottom:0;">
+                        <div class="param-label-cell" style="padding-bottom: 0;">
                             <a id="steam-id-help" href="steam://url/SteamIDMyProfile" target="_self"
                                 title="Open your profile in Steam" class="param-label-text"
-                                style="text-decoration:underline; color:inherit; cursor:pointer; margin-bottom:0; padding-bottom:0;">
+                                style="text-decoration: underline; color: inherit; cursor: pointer; margin-bottom: 0; padding-bottom: 0;">
                                 SteamID64
                             </a>
                         </div>
@@ -70,7 +70,7 @@
                 </div>
                 <div class="center-row mb-sm" id="friend-filter-row">
                     <input id="friend-filter-input" type="text" placeholder="Filter by friend nickname..."
-                        style="width: 320px; max-width: 100%; font-size: 1em; padding: 0.5em 1em;">
+                        style="width: 320px; max-width: 100%; font-size: var(--font-size-md); padding: var(--space-xs) var(--space-md);">
                 </div>
                 <div id="cs2-launch-notification" class="cs2-launch-overlay" style="display: none;">
                 </div>
@@ -78,12 +78,11 @@
             </div>
         </div>
     </div>
-    <div class="custom-footer-bar">
-        <span class="footer-app-title">
+    <div class="custom-footer-bar"> <span class="footer-app-title">
             <span id="app-version"></span>
             by
             <a href="steam://openurl/https://steamcommunity.com/id/skik4"
-                style="color:#7fa7d9;text-decoration:underline dotted;cursor:pointer;"
+                style="color: var(--blue-primary); text-decoration: underline dotted; cursor: pointer;"
                 title="Open skik4's Steam profile">skik4</a>
         </span>
     </div> <!-- Load the new modular application -->
