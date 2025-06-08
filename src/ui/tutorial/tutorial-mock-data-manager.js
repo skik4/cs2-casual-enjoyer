@@ -1,4 +1,5 @@
 import NotificationManager from '../notification-manager.js';
+import appStateManager from '../../core/app-state-manager.js';
 
 /**
  * Tutorial mock friend data for demonstration purposes
@@ -54,44 +55,42 @@ export class TutorialMockDataManager {
     closeAPITokenNotification() {
         // Use NotificationManager directly instead of simulating button click
         NotificationManager.hideNotification();
-    }
-
-    /**
-     * Add tutorial mock friend to the friends list for demonstration
+    }    /**
+     * Add tutorial mock friend to the application state
      */
     addTutorialMockFriend() {
-        const friendsContainer = document.querySelector('#friends');
-        if (!friendsContainer) return;
-
-        // Check if mock friend already exists
-        const existingMockFriend = document.querySelector(`#friend-${TUTORIAL_MOCK_FRIEND.steamid}`);
-        if (existingMockFriend) return;
-
-        // Import FriendsRenderer dynamically to avoid circular dependencies
-        import('../friends-renderer.js').then(({ default: FriendsRenderer }) => {
-            const mockFriendElement = FriendsRenderer.createFriendElement(
-                TUTORIAL_MOCK_FRIEND,
-                null, // no join state
-                false, // not missing
-                TUTORIAL_MOCK_FRIEND.avatarfull
-            );
-
-            // Add mock friend to the beginning of the list
-            if (friendsContainer.firstChild) {
-                friendsContainer.insertBefore(mockFriendElement, friendsContainer.firstChild);
-            } else {
-                friendsContainer.appendChild(mockFriendElement);
-            }
-        });
+        // Set flag in app state that tutorial mock friend should be displayed
+        appStateManager.setState('showTutorialMockFriend', true);
+        
+        // Immediately re-render friends list to show mock friend
+        this.rerenderFriendsList();
     }
 
     /**
-     * Remove tutorial mock friend from the friends list
+     * Remove tutorial mock friend from the application state
      */
     removeTutorialMockFriend() {
-        const mockFriendElement = document.querySelector(`#friend-${TUTORIAL_MOCK_FRIEND.steamid}`);
-        if (mockFriendElement) {
-            mockFriendElement.remove();
+        // Remove flag from app state
+        appStateManager.setState('showTutorialMockFriend', false);
+        
+        // Immediately re-render friends list to hide mock friend
+        this.rerenderFriendsList();
+    }
+
+    /**
+     * Re-render the friends list with current data
+     */
+    rerenderFriendsList() {
+        // Get current friends data from app state
+        const friendsData = appStateManager.getState('friendsData');
+        if (friendsData && Array.isArray(friendsData)) {
+            // Dynamically import to avoid circular dependencies
+            import('../../game/join-manager.js').then(({ default: joinManager }) => {
+                const joinStates = joinManager.getJoinStates();
+                import('../friends-renderer.js').then(({ default: FriendsRenderer }) => {
+                    FriendsRenderer.renderFriendsList(friendsData, joinStates);
+                });
+            });
         }
     }
 

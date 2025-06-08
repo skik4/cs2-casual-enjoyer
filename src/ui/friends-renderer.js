@@ -1,6 +1,8 @@
 import { STATUS_TYPES } from '../shared/constants.js';
 import DOMUtils from '../utils/dom-utils.js';
 import { FRIENDS_TEMPLATES } from './html-templates.js';
+import appStateManager from '../core/app-state-manager.js';
+import { TUTORIAL_MOCK_FRIEND } from './tutorial/tutorial-mock-data-manager.js';
 
 /**
  * Friends Renderer module
@@ -9,6 +11,7 @@ import { FRIENDS_TEMPLATES } from './html-templates.js';
 class FriendsRenderer {
     // Cache for last rendered friends (for re-rendering on filter)
     static lastRenderedFriends = [];
+
 
     /**
      * Render the list of friends in the UI
@@ -19,14 +22,37 @@ class FriendsRenderer {
         const friendsContainer = DOMUtils.getElementById('friends');
         if (!friendsContainer) return;
 
-        FriendsRenderer.lastRenderedFriends = Array.isArray(friends) ? [...friends] : [];
+        // Check if we should show tutorial mock friend
+        const showTutorialMockFriend = appStateManager.getState('showTutorialMockFriend');
+        let friendsToRender = Array.isArray(friends) ? [...friends] : [];
 
-        // Sort friends alphabetically
-        let sortedFriends = [...friends].sort((a, b) => {
-            const nameA = (a.personaname || '').toLowerCase();
-            const nameB = (b.personaname || '').toLowerCase();
-            return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
-        });
+        // Add tutorial mock friend at the beginning if tutorial is active
+        if (showTutorialMockFriend) {
+            // Remove existing mock friend if present (to avoid duplicates)
+            friendsToRender = friendsToRender.filter(f => f.steamid !== TUTORIAL_MOCK_FRIEND.steamid);
+            // Add mock friend at the beginning
+            friendsToRender.unshift(TUTORIAL_MOCK_FRIEND);
+        } FriendsRenderer.lastRenderedFriends = friendsToRender;
+
+        // Sort friends alphabetically, but keep tutorial mock friend at the top
+        let sortedFriends;
+        if (showTutorialMockFriend && friendsToRender.length > 0 && friendsToRender[0].steamid === TUTORIAL_MOCK_FRIEND.steamid) {
+            // Keep mock friend at the top, sort the rest
+            const mockFriend = friendsToRender[0];
+            const otherFriends = friendsToRender.slice(1).sort((a, b) => {
+                const nameA = (a.personaname || '').toLowerCase();
+                const nameB = (b.personaname || '').toLowerCase();
+                return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+            });
+            sortedFriends = [mockFriend, ...otherFriends];
+        } else {
+            // Normal sorting
+            sortedFriends = [...friendsToRender].sort((a, b) => {
+                const nameA = (a.personaname || '').toLowerCase();
+                const nameB = (b.personaname || '').toLowerCase();
+                return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+            });
+        }
 
         // Apply filter
         const filterInput = DOMUtils.getElementById('friend-filter-input');
