@@ -1,6 +1,7 @@
 /* Notifications Component */
 
 #notifications {
+    display: none;
     background: var(--bg-panel);
     color: var(--text-primary);
     border-radius: var(--border-radius-md);
@@ -119,7 +120,7 @@
     margin-left: auto;
     margin-right: auto;
     z-index: 1;
-    display: none;
+    display: block;
     transition: opacity var(--anim-duration);
 }
 
