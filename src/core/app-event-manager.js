@@ -1,5 +1,5 @@
 import UIManager from '../ui/ui-manager.js';
-import JoinManager from '../game/join-manager.js';
+import joinManager from '../game/join-manager.js';
 import DOMUtils from '../utils/dom-utils.js';
 
 /**
@@ -65,7 +65,7 @@ class AppEventManager {
         if (filterInput) {
             filterInput.addEventListener('input', () => {
                 if (UIManager.lastRenderedFriends) {
-                    const joinStates = JoinManager.getJoinStates();
+                    const joinStates = joinManager.getJoinStates();
                     // Use the same incremental update as normal rendering
                     UIManager.renderFriendsList(UIManager.lastRenderedFriends, joinStates);
                 }
@@ -94,12 +94,12 @@ class AppEventManager {
             if (!button) return;
 
             const steamId = button.id.replace('join-btn-', '');
-            if (!steamId) return;
-
+            if (!steamId) return; 
+            
             if (button.classList.contains('cancel-btn')) {
-                JoinManager.cancelJoin(steamId);
+                joinManager.cancelJoin(steamId);
             } else {
-                JoinManager.startJoin(steamId);
+                joinManager.startJoin(steamId);
             }
         };
 

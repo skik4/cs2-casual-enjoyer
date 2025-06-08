@@ -94,6 +94,25 @@ class UIManager {    /**
     }
 
     /**
+     * Show CS2 launch notification
+     * @param {string} friendId - Steam ID of the friend being joined
+     * @param {Function} onLaunch - Callback for launch CS2 action
+     * @param {CS2Manager} cs2Manager - CS2Manager instance for checking game status
+     * @returns {Promise<boolean>} - True if user chooses to launch CS2, false if cancelled
+     */
+    static showCS2LaunchNotification(friendId, onLaunch, cs2Manager) {
+        return NotificationManager.showCS2LaunchNotification(friendId, onLaunch, cs2Manager);
+    }
+
+    /**
+     * Hide CS2 launch notification
+     */
+    static hideCS2LaunchNotification() {
+        return NotificationManager.hideCS2LaunchNotification();
+    }
+
+    // Help Methods - delegate to NotificationManager
+    /**
      * Show help notification for Steam ID
      */
     static showSteamIdHelp() {

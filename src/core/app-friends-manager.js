@@ -1,6 +1,6 @@
 import SteamAPI from '../steam/steam-api.js';
 import UIManager from '../ui/ui-manager.js';
-import JoinManager from '../game/join-manager.js';
+import joinManager from '../game/join-manager.js';
 import Validators from '../utils/validators.js';
 import ErrorHandler from '../utils/error-handler.js';
 import DOMUtils from '../utils/dom-utils.js';
@@ -50,7 +50,7 @@ class AppFriendsManager {
             const supportedFriends = allStatuses.filter(friend => friend.in_casual_mode);
 
             appStateManager.setState('friendsData', supportedFriends);
-            const joinStates = keepStates ? JoinManager.getJoinStates() : {};
+            const joinStates = keepStates ? joinManager.getJoinStates() : {};
             UIManager.renderFriendsList(supportedFriends, joinStates);
 
             // Setup friend listeners after rendering
@@ -144,11 +144,11 @@ class AppFriendsManager {
             });
 
             // Reset join states
-            JoinManager.resetAll();
+            joinManager.resetAll();
 
             // Render friends
             appStateManager.setState('friendsData', supportedFriends);
-            const joinStates = JoinManager.getJoinStates();
+            const joinStates = joinManager.getJoinStates();
             UIManager.renderFriendsList(supportedFriends, joinStates);
 
             // Setup friend listeners after rendering

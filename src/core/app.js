@@ -1,4 +1,5 @@
-import JoinManager from '../game/join-manager.js';
+import joinManager from '../game/join-manager.js';
+import CS2Manager from '../game/cs2-manager.js';
 import UIManager from '../ui/ui-manager.js';
 import { getTutorialManager } from '../ui/tutorial/tutorial-manager.js';
 import AppInputManager from './app-input-manager.js';
@@ -23,6 +24,7 @@ class App {
         this.friendsManager = new AppFriendsManager();
         this.eventManager = new AppEventManager();
         this.validationManager = new AppValidationManager();
+        this.cs2Manager = new CS2Manager();
 
         // Set up cross-references
         this.inputManager.setValidationManager(this.validationManager);
@@ -46,10 +48,25 @@ class App {
             this.eventManager.setupEventListeners();
 
             // Setup JoinManager UI callbacks
-            JoinManager.setUICallbacks(
+            joinManager.setUICallbacks(
                 (friendId, status) => UIManager.updateDot(friendId, status),
                 (friendId, status) => UIManager.updateJoinButton(friendId, status)
             );
+
+            // Set CS2Manager for JoinManager
+            joinManager.setCS2Manager(this.cs2Manager);
+
+            // Set CS2 launch callback
+            joinManager.setCS2LaunchCallback(async (friendId) => {
+                return UIManager.showCS2LaunchNotification(friendId, () => {
+                    this.cs2Manager.launchCS2();
+                },
+
+                    this.cs2Manager);
+            });
+
+            // Initialize CS2Manager
+            this.cs2Manager.initialize(this.inputManager);
 
             // Load settings
             const savedSettings = await window.electronAPI.settings.load();

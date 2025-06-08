@@ -78,7 +78,9 @@ class NotificationManager {
                 'error'
             );
         }
-    }    /**
+    }
+
+    /**
      * Show error updating friends list
      * @param {string} steamId - Steam ID
      */
@@ -123,6 +125,163 @@ class NotificationManager {
      */
     static showApiKeyHelp() {
         this.showNotification(HELP_TEMPLATES.API_KEY_HELP, 'info');
+    }
+
+    /**
+     * Show CS2 launch notification
+     * @param {string} friendId - Steam ID of the friend being joined
+     * @param {Function} onLaunch - Callback for launch CS2 action
+     * @param {CS2Manager} cs2Manager - CS2Manager instance for checking game status
+     * @returns {Promise<boolean>} - True if user chooses to launch CS2, false if cancelled
+     */
+
+    static showCS2LaunchNotification(friendId, onLaunch, cs2Manager) {
+        return new Promise((resolve) => {
+            const overlay = DOMUtils.getElementById('cs2-launch-notification');
+
+            if (!overlay) {
+                console.error('CS2 notification overlay not found');
+                resolve(false);
+                return;
+            }
+
+            // Create dynamic content using template
+            overlay.innerHTML = NOTIFICATION_TEMPLATES.CS2_LAUNCH.FULL_TEMPLATE();
+
+            // Get elements after creating content
+            const launchBtn = DOMUtils.getElementById('launch-cs2-btn');
+            const cancelBtn = DOMUtils.getElementById('cancel-cs2-launch');
+
+            if (!launchBtn || !cancelBtn) {
+                console.error('CS2 notification buttons not found after template creation');
+                resolve(false);
+                return;
+            }
+
+            let checkInterval = null;
+            let isLaunching = false;
+            let isResolved = false; // Flag to prevent multiple resolutions
+
+            // Show overlay
+            overlay.style.display = 'flex';
+
+            // Handle launch button click
+            const handleLaunch = () => {
+                if (isLaunching) return; // Prevent multiple clicks
+
+                isLaunching = true;
+
+                // Update UI to launching state using templates
+                const title = overlay.querySelector('.cs2-launch-title');
+                const message = overlay.querySelector('.cs2-launch-message');
+                const hint = overlay.querySelector('.cs2-launch-hint');
+
+                if (title) title.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING.title;
+                if (message) message.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING.message;
+                if (hint) hint.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING.hint;
+
+                // Update button to loading state
+                launchBtn.disabled = true;
+                launchBtn.innerHTML = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING.launchButton;
+
+                // Disable cancel button
+                cancelBtn.disabled = true;
+                cancelBtn.style.opacity = '0.5';
+
+                // Launch CS2
+                if (onLaunch) {
+                    onLaunch();
+                }
+
+                // Start checking CS2 status periodically
+                checkInterval = setInterval(async () => {
+                    try {
+                        if (cs2Manager && !isResolved) {
+                            console.log('Checking CS2 status...');
+                            const isInCS2 = await cs2Manager.checkUserInCS2();
+                            console.log('CS2 status check result:', isInCS2);
+
+                            if (isInCS2 && !isResolved) {
+                                console.log('User detected in CS2, closing notification...');
+
+                                // Set resolved flag immediately to prevent multiple executions
+                                isResolved = true;
+
+                                // Clear the interval immediately to prevent further checks
+                                if (checkInterval) {
+                                    clearInterval(checkInterval);
+                                    checkInterval = null;
+                                }
+
+                                // User is now in CS2, wait 2 more seconds then close
+                                setTimeout(() => {
+                                    console.log('Hiding CS2 launch notification...');
+                                    this.hideCS2LaunchNotification();
+                                    cleanup();
+                                    resolve(true);
+                                }, 2000);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error checking CS2 status:', error);
+                    }
+                }, 3000); // Check every 3 seconds
+            };
+
+            // Handle cancel button click
+            const handleCancel = () => {
+                if (isLaunching || isResolved) return; // Can't cancel during launch or if already resolved
+
+                isResolved = true; // Set resolved flag to prevent race conditions
+                this.hideCS2LaunchNotification();
+                cleanup();
+                resolve(false);
+            };
+
+            // Cleanup function to remove event listeners and intervals
+            const cleanup = () => {
+                launchBtn.removeEventListener('click', handleLaunch);
+                cancelBtn.removeEventListener('click', handleCancel);
+
+                if (checkInterval) {
+                    clearInterval(checkInterval);
+                    checkInterval = null;
+                }
+
+                // Reset UI to initial state using templates
+                const title = overlay.querySelector('.cs2-launch-title');
+                const message = overlay.querySelector('.cs2-launch-message');
+                const hint = overlay.querySelector('.cs2-launch-hint');
+
+                if (title) title.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.title;
+                if (message) message.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.message;
+                if (hint) hint.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.hint;
+
+                // Reset button states
+                launchBtn.disabled = false;
+                launchBtn.innerHTML = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.launchButton;
+                cancelBtn.disabled = false;
+                cancelBtn.style.opacity = '1';
+            };
+
+            // Add event listeners
+            launchBtn.addEventListener('click', handleLaunch);
+            cancelBtn.addEventListener('click', handleCancel);
+        });
+    }
+
+    /**
+     * Hide CS2 launch notification
+     */
+    static hideCS2LaunchNotification() {
+        console.log('hideCS2LaunchNotification called');
+        const overlay = DOMUtils.getElementById('cs2-launch-notification');
+        if (overlay) {
+            console.log('Hiding CS2 notification overlay');
+            overlay.style.display = 'none';
+        } else {
+            console.log('CS2 notification overlay not found');
+        }
     }
 }
 

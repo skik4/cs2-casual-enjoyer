@@ -1,6 +1,6 @@
 import SteamAPI from '../steam/steam-api.js';
 import UIManager from '../ui/ui-manager.js';
-import JoinManager from '../game/join-manager.js';
+import joinManager from '../game/join-manager.js';
 import Validators from '../utils/validators.js';
 import DOMUtils from '../utils/dom-utils.js';
 
@@ -118,7 +118,7 @@ class AppInputManager {
         const token = SteamAPI.extractTokenIfAny(val);
 
         // Reset join states when auth changes
-        JoinManager.resetAll();
+        joinManager.resetAll();
 
         if (token) {
             const info = SteamAPI.parseWebApiToken(token);

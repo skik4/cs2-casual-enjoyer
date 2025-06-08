@@ -73,7 +73,50 @@ export const NOTIFICATION_TEMPLATES = {
         <div class="note" style="color:#aaa;font-size:0.95em;margin-bottom:2px;margin-top:15px;border-top:1px solid #353a40;padding-top:10px;">
             After setting your friends list to public, click "Update Friend List", then you can set it back to private.
         </div>
-    `
+    `,
+
+    /**
+     * CS2 Launch notification templates
+     */
+    CS2_LAUNCH: {
+        /**
+         * Initial state when asking user to launch CS2
+         */
+        INITIAL: {
+            title: 'Launch CS2 First',
+            message: 'You need to launch Counter-Strike 2 before joining your friend\'s game.',
+            hint: 'Wait for the game to fully load before trying to join again.',
+            launchButton: 'Launch CS2',
+            cancelButton: 'Cancel'
+        },
+
+        /**
+         * Loading state when CS2 is being launched
+         */
+        LAUNCHING: {
+            title: 'Launching CS2...',
+            message: 'Starting Counter-Strike 2. Please wait for the game to fully load.',
+            hint: 'The notification will close automatically when CS2 is detected.',
+            launchButton: '<span class="loading-spinner"></span> Launching...',
+            cancelButton: 'Cancel'
+        },
+
+        /**
+         * Complete CS2 launch notification HTML template
+         * @returns {string} Complete CS2 notification HTML
+         */
+        FULL_TEMPLATE: () => `
+            <div class="cs2-launch-content">
+                <div class="cs2-launch-title">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.title}</div>
+                <div class="cs2-launch-message">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.message}</div>
+                <div class="cs2-launch-buttons">
+                    <button id="launch-cs2-btn" class="action-btn btn-primary">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.launchButton}</button>
+                    <button id="cancel-cs2-launch" class="action-btn">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.cancelButton}</button>
+                </div>
+                <div class="cs2-launch-hint">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.hint}</div>
+            </div>
+        `
+    }
 };
 
 // =============================================================================

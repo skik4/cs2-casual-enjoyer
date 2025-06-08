@@ -20,7 +20,14 @@ class SteamAPIClient {
      */
     static async _makeApiRequest(config, auth, context = {}) {
         const isToken = SteamAPIUtils.isWebApiToken(auth);
-        const authConfig = isToken ? config.token : config.key;
+
+        // Handle unified configuration (when key and token use same endpoint/params)
+        let authConfig;
+        if (config.unified) {
+            authConfig = config.unified;
+        } else {
+            authConfig = isToken ? config.token : config.key;
+        }
 
         if (!authConfig) {
             throw new Error(`No ${isToken ? 'token' : 'key'} configuration provided for ${config.method}`);
@@ -127,7 +134,9 @@ class SteamAPIClient {
             errorHandlers: {
                 401: () => ErrorHandler.createError(ERROR_CODES.PRIVATE_FRIENDS_LIST)
             }
-        };        const data = await this._makeApiRequest(config, auth, { steam_id });
+        };
+
+        const data = await this._makeApiRequest(config, auth, { steam_id });
         const isToken = SteamAPIUtils.isWebApiToken(auth);
 
         return SteamAPIResponseProcessor.processFriendsListResponse(data, isToken);
@@ -179,7 +188,9 @@ class SteamAPIClient {
                     allowFailure: true
                 };
 
-                logger.info('SteamAPI', `Fetching player summaries chunk ${chunkIndex}/${totalChunks} (${chunk.length} players)`);                const data = await this._makeApiRequest(config, auth, {
+                logger.info('SteamAPI', `Fetching player summaries chunk ${chunkIndex}/${totalChunks} (${chunk.length} players)`);
+
+                const data = await this._makeApiRequest(config, auth, {
                     chunkIndex,
                     totalChunks,
                     chunkSize: chunk.length
@@ -206,6 +217,76 @@ class SteamAPIClient {
     }
 
     /**
+     * Private method to get player link details
+     * @param {string|string[]} steamids - Steam ID(s) to get details for
+     * @param {string} auth - API key or token
+     * @param {Object} [context] - Additional context for logging
+     * @returns {Promise<Object|null>} - Player link details response
+     * @private
+     */
+    static async _getPlayerLinkDetails(steamids, auth, context = {}) {
+        try {
+            // Build special params for this API call
+            const specialParams = {};
+
+            if (Array.isArray(steamids)) {
+                steamids.forEach((sid, idx) => {
+                    specialParams[`steamids[${idx}]`] = sid;
+                });
+            } else {
+                specialParams['steamids[0]'] = steamids;
+            }
+
+            const config = {
+                method: 'GetPlayerLinkDetails',
+                unified: {
+                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
+                    params: specialParams
+                },
+                allowFailure: true
+            };
+
+            return await this._makeApiRequest(config, auth, context);
+        } catch (error) {
+            logger.error('SteamAPI', `_getPlayerLinkDetails error: ${error.message}`, { steamids, error });
+            return null;
+        }
+    }
+
+    /**
+     * Check if a player is currently playing CS2 (game_id: 730)
+     * @param {string} steam_id - Steam ID to check
+     * @param {string} auth - API key or token
+     * @returns {Promise<boolean>} - True if player is playing CS2
+     */
+    static async isPlayerInCS2(steam_id, auth) {
+        try {
+            logger.info('SteamAPI', `Checking if player ${steam_id} is in CS2`);
+
+            const data = await this._getPlayerLinkDetails(steam_id, auth, { steam_id, checkingCS2: true });
+
+            if (!data || !data.response || !data.response.accounts || !data.response.accounts.length) {
+                logger.debug('SteamAPI', `No player data found for ${steam_id}`);
+                return false;
+            }
+
+            const account = data.response.accounts[0];
+            const isInCS2 = account.game_id === "730";
+
+            logger.info('SteamAPI', `Player ${steam_id} CS2 status: ${isInCS2 ? 'playing' : 'not playing'}`, {
+                steam_id,
+                game_id: account.game_id,
+                isInCS2
+            });
+
+            return isInCS2;
+        } catch (error) {
+            logger.error('SteamAPI', `isPlayerInCS2 error: ${error.message}`, { steam_id, error });
+            return false;
+        }
+    }
+
+    /**
      * Get details about friends including their game status and avatars
      * @param {string[]} friend_ids - Array of friend Steam IDs
      * @param {string} auth - API key or token
@@ -226,17 +307,7 @@ class SteamAPIClient {
                 specialParams[`steamids[${idx}]`] = sid;
             });
 
-            const config = {
-                method: 'GetPlayerLinkDetails',
-                key: {
-                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
-                    params: specialParams
-                },
-                token: {
-                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
-                    params: specialParams
-                }
-            };            const data = await this._makeApiRequest(config, auth, { friendsCount: friend_ids.length });
+            const data = await this._getPlayerLinkDetails(friend_ids, auth, { friendsCount: friend_ids.length });
 
             // Create callback for fetching additional avatars
             const getPlayerSummariesCallback = async (steamids) => {
@@ -244,8 +315,8 @@ class SteamAPIClient {
             };
 
             return await SteamAPIResponseProcessor.processFriendsStatusesResponse(
-                data, 
-                avatarsCache, 
+                data,
+                avatarsCache,
                 getPlayerSummariesCallback
             );
         } catch (error) {
@@ -262,22 +333,7 @@ class SteamAPIClient {
      */
     static async getFriendConnectInfo(friend_id, auth) {
         try {
-            const config = {
-                method: 'GetPlayerLinkDetails',
-                key: {
-                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
-                    params: {
-                        'steamids[0]': friend_id
-                    }
-                },
-                token: {
-                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
-                    params: {
-                        'steamids[0]': friend_id
-                    }
-                },
-                allowFailure: true
-            };            const data = await this._makeApiRequest(config, auth, { friend_id });
+            const data = await this._getPlayerLinkDetails(friend_id, auth, { friend_id });
 
             if (!data) return null;
 
@@ -296,22 +352,7 @@ class SteamAPIClient {
      */
     static async getUserGameServerSteamId(steam_id, auth) {
         try {
-            const config = {
-                method: 'GetPlayerLinkDetails',
-                key: {
-                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
-                    params: {
-                        'steamids[0]': steam_id
-                    }
-                },
-                token: {
-                    endpoint: '/IPlayerService/GetPlayerLinkDetails/v1/',
-                    params: {
-                        'steamids[0]': steam_id
-                    }
-                },
-                allowFailure: true
-            };            const data = await this._makeApiRequest(config, auth, { steam_id });
+            const data = await this._getPlayerLinkDetails(steam_id, auth, { steam_id });
 
             if (!data) return null;
 
@@ -332,20 +373,16 @@ class SteamAPIClient {
         try {
             const config = {
                 method: 'ResolveVanityURL',
-                key: {
-                    endpoint: '/ISteamUser/ResolveVanityURL/v1/',
-                    params: {
-                        vanityurl: vanityUrl
-                    }
-                },
-                token: {
+                unified: {
                     endpoint: '/ISteamUser/ResolveVanityURL/v1/',
                     params: {
                         vanityurl: vanityUrl
                     }
                 },
                 allowFailure: true
-            };            const data = await this._makeApiRequest(config, auth, { vanityUrl });
+            };
+
+            const data = await this._makeApiRequest(config, auth, { vanityUrl });
 
             if (!data) return null;
 

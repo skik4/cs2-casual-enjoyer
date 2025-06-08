@@ -17,21 +17,33 @@
     --gray-700: #666;
     --gray-800: #353a40;
     --gray-900: #222;
-    /* Darkest */    /* ===== LEGACY ALPHA VALUES (for rgba compatibility) ===== */
-        /* ===== ALPHA (TRANSPARENCY) VALUES ===== */
+    /* Darkest */
+
+
     /* Modern CSS approach using color-mix() function
      * Usage: color-mix(in srgb, var(--any-color) var(--opacity-30), transparent)
      * Benefits: Works with any color, shorter syntax, better browser support
-     */    --opacity-5: 5%;    /* Ultra light */
-    --opacity-10: 10%;  /* Very light */
-    --opacity-20: 20%;  /* Light */
-    --opacity-30: 30%;  /* Medium light */
-    --opacity-40: 40%;  /* Medium */
-    --opacity-50: 50%;  /* Half */
-    --opacity-60: 60%;  /* Medium strong */
-    --opacity-70: 70%;  /* Strong */
-    --opacity-80: 80%;  /* Very strong */
-    --opacity-85: 85%;  /* Almost opaque */    /* Legacy rgba() support removed - use color-mix() with --opacity-* values */
+     */
+    --opacity-5: 5%;
+    /* Ultra light */
+    --opacity-10: 10%;
+    /* Very light */
+    --opacity-20: 20%;
+    /* Light */
+    --opacity-30: 30%;
+    /* Medium light */
+    --opacity-40: 40%;
+    /* Medium */
+    --opacity-50: 50%;
+    /* Half */
+    --opacity-60: 60%;
+    /* Medium strong */
+    --opacity-70: 70%;
+    /* Strong */
+    --opacity-80: 80%;
+    /* Very strong */
+    --opacity-85: 85%;
+    /* Almost opaque */
 
     /* ===== BRAND COLORS ===== */
     /* Blue */
@@ -76,7 +88,8 @@
     --input-bg: #181b20;
     --input-border: #23272e;
     --input-border-focus: var(--blue-primary);
-    --input-border-invalid: var(--red-primary);    /* ===== COMPLEX STYLES ===== */
+    --input-border-invalid: var(--red-primary);
+    /* ===== COMPLEX STYLES ===== */
     --panel-bg-gradient: linear-gradient(135deg, var(--bg-panel) 0%, var(--bg-dark) 100%);
     --panel-shadow: 0 2px 24px 0 color-mix(in srgb, var(--black) var(--opacity-80), transparent), 0 1.5px 0 0 var(--border-color-strong);
 
@@ -129,7 +142,8 @@
 
     /* ===== DIMENSIONS ===== */
     --border-width: 0.094rem;
-    /* 1.5px */    /* ===== BORDER RADIUS ===== */
+    /* 1.5px */
+    /* ===== BORDER RADIUS ===== */
     --border-radius-sm: 0.188rem;
     /* 3px */
     --border-radius-md: 0.25rem;
@@ -872,7 +886,8 @@ hr,
 }
 
 .update-hint {
-    text-align: center;    color: var(--text-secondary);
+    text-align: center;
+    color: var(--text-secondary);
     font-size: var(--font-size-sm);
     opacity: 0.85;
     transition: opacity var(--anim-duration);
@@ -1066,5 +1081,105 @@ hr,
             0 4px 24px rgba(45, 140, 240, 0.35),
             var(--shadow-medium);
         transform: scale(1.03);
+    }
+}
+
+/* ===== CS2 LAUNCH NOTIFICATION OVERLAY ===== */
+.cs2-launch-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: color-mix(in srgb, var(--bg-dark) var(--opacity-85), transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.cs2-launch-content {
+    background: var(--panel-bg-gradient);
+    border: var(--border-width) solid var(--panel-outline);
+    border-radius: var(--border-radius-xl);
+    padding: var(--space-xl);
+    text-align: center;
+    max-width: 420px;
+    min-width: 380px;
+    box-shadow: var(--panel-shadow);
+    animation: cs2NotificationShow 0.3s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.cs2-launch-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--blue-primary) 0%, var(--purple-primary) 100%);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--blue-primary) var(--opacity-40), transparent);
+}
+
+.cs2-launch-title {
+    color: var(--text-primary);
+    margin: 0 0 var(--space-lg) 0;
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.cs2-launch-message {
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-xl) 0;
+    line-height: 1.6;
+    font-size: var(--font-size-sm);
+}
+
+.cs2-launch-hint {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    margin: var(--space-lg) 0 0 0;
+    opacity: 0.85;
+    font-style: italic;
+}
+
+.cs2-launch-buttons {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@keyframes cs2NotificationShow {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Loading spinner for CS2 launch button */
+.loading-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--text-secondary);
+    border-radius: 50%;
+    border-top-color: var(--blue-primary);
+    animation: spin 1s ease-in-out infinite;
+    margin-right: var(--space-xs);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
     }
 }

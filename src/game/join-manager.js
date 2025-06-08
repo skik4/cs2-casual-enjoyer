@@ -12,6 +12,16 @@ class JoinManager {
         this.joinStates = {};
         this.onUpdateDot = null;
         this.onUpdateJoinButton = null;
+        this.cs2Manager = null;
+        this.onRequestCS2Launch = null; // Callback for requesting CS2 launch from UI layer
+    }
+
+    /**
+     * Set CS2Manager instance
+     * @param {CS2Manager} cs2Manager - CS2Manager instance
+     */
+    setCS2Manager(cs2Manager) {
+        this.cs2Manager = cs2Manager;
     }
 
     /**
@@ -20,6 +30,32 @@ class JoinManager {
      */
     async startJoin(friend_id) {
         try {
+            console.log('JoinManager: Starting join for friend:', friend_id);
+
+            // First check if user is in CS2
+            if (this.cs2Manager) {
+                console.log('JoinManager: Checking if user is in CS2...');
+                const isInCS2 = await this.cs2Manager.checkUserInCS2();
+                console.log('JoinManager: User in CS2 check result:', isInCS2);
+
+                if (!isInCS2) {
+                    console.log('JoinManager: User not in CS2, requesting launch...');
+                    // Request CS2 launch from UI layer
+                    if (this.onRequestCS2Launch) {
+                        const shouldLaunch = await this.onRequestCS2Launch(friend_id);
+                        console.log('JoinManager: Launch request result:', shouldLaunch);
+                        if (!shouldLaunch) {
+                            // User cancelled, don't proceed with join
+                            console.log('JoinManager: User cancelled launch, aborting join');
+                            return;
+                        }
+                        // CS2 launch notification will handle waiting for CS2 to start
+                    }
+                } else {
+                    console.log('JoinManager: User already in CS2, proceeding with join...');
+                }
+            }
+
             const steamIdInput = DOMUtils.getElementById('steam-id');
             const authInput = DOMUtils.getElementById('auth');
 
@@ -231,9 +267,7 @@ class JoinManager {
      */
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    /**
+    }    /**
      * Set UI update callbacks
      * @param {Function} onUpdateDot - Callback for updating status dot
      * @param {Function} onUpdateJoinButton - Callback for updating join button
@@ -241,6 +275,14 @@ class JoinManager {
     setUICallbacks(onUpdateDot, onUpdateJoinButton) {
         this.onUpdateDot = onUpdateDot;
         this.onUpdateJoinButton = onUpdateJoinButton;
+    }
+
+    /**
+     * Set CS2 launch request callback
+     * @param {Function} onRequestCS2Launch - Callback for requesting CS2 launch (returns Promise<boolean>)
+     */
+    setCS2LaunchCallback(onRequestCS2Launch) {
+        this.onRequestCS2Launch = onRequestCS2Launch;
     }
 }
 

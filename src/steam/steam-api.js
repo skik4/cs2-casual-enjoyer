@@ -115,6 +115,16 @@ class SteamAPI {
     static async resolveVanityUrl(vanityUrl, auth) {
         return SteamAPIClient.resolveVanityUrl(vanityUrl, auth);
     }
+
+    /**
+     * Check if a player is currently playing CS2
+     * @param {string} steam_id - Steam ID to check
+     * @param {string} auth - API key or token
+     * @returns {Promise<boolean>} - Whether the player is playing CS2
+     */
+    static async isPlayerInCS2(steam_id, auth) {
+        return SteamAPIClient.isPlayerInCS2(steam_id, auth);
+    }
 }
 
 export default SteamAPI;
