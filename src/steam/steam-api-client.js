@@ -21,74 +21,48 @@ class SteamAPIClient {
     static async _makeApiRequest(config, auth, context = {}) {
         const isToken = SteamAPIUtils.isWebApiToken(auth);
 
-        // Handle unified configuration (when key and token use same endpoint/params)
-        let authConfig;
-        if (config.unified) {
-            authConfig = config.unified;
-        } else {
-            authConfig = isToken ? config.token : config.key;
-        }
-
-        if (!authConfig) {
-            throw new Error(`No ${isToken ? 'token' : 'key'} configuration provided for ${config.method}`);
-        }
-
         try {
-            // Build URL and parameters
-            let url = `${API_CONFIG.STEAM_API_BASE}${authConfig.endpoint}`;
-            const params = new URLSearchParams();
-
-            // Add authentication
-            if (isToken) {
-                params.append('access_token', auth);
-            } else {
-                params.append('key', auth);
-            }
-
-            // Add method-specific parameters
-            if (authConfig.params) {
-                Object.entries(authConfig.params).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null) {
-                        params.append(key, value);
-                    }
-                });
-            }
-
-            // Construct final URL
-            url += `?${params.toString()}`;
+            // Build URL using utility function
+            const url = SteamAPIUtils.buildApiUrl(config, auth);
 
             // Log request (before making it)
             logger.info('SteamAPI', `Making ${config.method} request`, {
                 ...context,
                 isToken,
-                endpoint: authConfig.endpoint
+                endpoint: config.unified?.endpoint || (isToken ? config.token?.endpoint : config.key?.endpoint)
             });
 
             // Make the request
             const resp = await fetch(url);
 
-            // Handle HTTP errors
-            if (!resp.ok) {
-                const errorContext = {
-                    ...context,
-                    status: resp.status,
-                    statusText: resp.statusText
-                };
-
-                // Check for custom error handlers
-                if (config.errorHandlers && config.errorHandlers[resp.status]) {
-                    logger.warn('SteamAPI', `${config.method} request failed with status ${resp.status}`, errorContext);
-                    throw config.errorHandlers[resp.status]();
-                }
-
-                // Default error handling
-                logger.error('SteamAPI', `${config.method} request failed with status ${resp.status}`, errorContext);
-
-                if (config.allowFailure) {
+            // Handle HTTP errors using utility function
+            try {
+                const isOk = SteamAPIUtils.handleHttpResponse(resp, config, context);
+                if (!isOk) {
+                    // allowFailure case
+                    logger.warn('SteamAPI', `${config.method} request failed with status ${resp.status}`, {
+                        ...context,
+                        status: resp.status,
+                        statusText: resp.statusText
+                    });
                     return null;
                 }
-
-                throw ErrorHandler.createError(`API_ERROR_${resp.status}`, `${config.method} failed: ${resp.status} ${resp.statusText}`);
+            } catch (error) {
+                // Custom error handler or default error
+                if (config.errorHandlers && config.errorHandlers[resp.status]) {
+                    logger.warn('SteamAPI', `${config.method} request failed with status ${resp.status}`, {
+                        ...context,
+                        status: resp.status,
+                        statusText: resp.statusText
+                    });
+                } else {
+                    logger.error('SteamAPI', `${config.method} request failed with status ${resp.status}`, {
+                        ...context,
+                        status: resp.status,
+                        statusText: resp.statusText
+                    });
+                }
+                throw error;
             }
 
             // Parse response
@@ -96,7 +70,7 @@ class SteamAPIClient {
 
             // Log response (with masked auth tokens)
             logger.trace('SteamAPI', `Raw ${config.method} response`, {
-                url: url.replace(/(key|access_token)=[^&]+/g, '$1=***'),
+                url: SteamAPIUtils.maskAuthInUrl(url),
                 response: data
             });
 
