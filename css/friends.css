@@ -25,7 +25,7 @@
 
 /* Add spacing between friends, but not after the last one */
 .friend:not(:last-child) {
-    margin-bottom: var(--space-sm);
+    margin-bottom: var(--space-xs);
 }
 
 .friend:hover {

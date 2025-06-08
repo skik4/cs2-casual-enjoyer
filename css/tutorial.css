@@ -10,6 +10,9 @@
     z-index: 9998;
     pointer-events: none;
     animation: tutorialOverlayFadeIn 0.3s ease-out;
+    will-change: opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 @keyframes tutorialOverlayFadeIn {
@@ -38,6 +41,12 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
+    transform-origin: center center;
 }
 
 .tutorial-header {
@@ -148,6 +157,12 @@
     animation: tutorialHighlightGlow 3s infinite ease-in-out;
     transition: all var(--anim-duration);
     display: inline-block;
+    will-change: transform, box-shadow;
+    transform-origin: center center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
 }
 
 @keyframes tutorialHighlightGlow {
