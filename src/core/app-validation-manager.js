@@ -25,7 +25,7 @@ class AppValidationManager {
      */
     checkAndStartAutoRefresh(hasSaved, validSteamId, validApiKey, isTokenExpired) {
         const initialLoadAttempted = appStateManager.getState('initialLoadAttempted');
-        
+
         // Don't start auto-refresh if we already attempted initial load
         if (initialLoadAttempted) {
             return;
@@ -70,15 +70,19 @@ class AppValidationManager {
     /**
      * Update hint visibility based on user state
      */
+    
     updateHintVisibility(hasValidInputs, hasSavedFriends) {
         const hintElement = DOMUtils.getElementById('update-hint');
-        if (!hintElement) return;
+        const hintContainer = document.querySelector('.update-hint-container');
+        if (!hintElement || !hintContainer) return;
 
         // Show hint if user has valid inputs but no saved friends list
         if (hasValidInputs && !hasSavedFriends) {
             hintElement.classList.add('show');
+            hintContainer.classList.remove('hide');
         } else {
             hintElement.classList.remove('show');
+            hintContainer.classList.add('hide');
         }
     }
 }

@@ -2,7 +2,8 @@
   "name": "cs2-casual-enjoyer",
   "version": "0.4.0",
   "description": "CS2 Casual Enjoyer Electron App",
-  "main": "src/main/main.js",  "scripts": {
+  "main": "src/main/main.js",
+  "scripts": {
     "start": "npm run build:css && electron . --remote-debugging-port=9222",
     "dev": "npm-run-all --parallel watch:css start:electron",
     "start:electron": "electron . --inspect=9223 --remote-debugging-port=9222",

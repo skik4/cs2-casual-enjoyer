@@ -45,11 +45,10 @@ class NotificationManager {
         }
 
         const html = NOTIFICATION_TEMPLATES.TOKEN_INFO(tokenInfo.steamid, expiresStr, warnHtml);
-
         const infoDiv = document.createElement('div');
         infoDiv.id = 'token-info-notification';
+        infoDiv.className = 'mb-xs';
         infoDiv.innerHTML = html;
-        infoDiv.style.marginBottom = '8px';
         notificationElement.parentNode.insertBefore(infoDiv, notificationElement);
     }
 

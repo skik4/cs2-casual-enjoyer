@@ -2,13 +2,19 @@ import NotificationManager from '../notification-manager.js';
 
 /**
  * Tutorial mock friend data for demonstration purposes
+ * Based on real Steam API response data
  */
 const TUTORIAL_MOCK_FRIEND = {
-    steamid: 'tutorial-mock-friend-76561198072344234',
-    personaname: 'Gabe Newell',
-    avatar: 'https://avatars.steamstatic.com/d5d4e1bc94e8dd0d7cfc3b42cd9b4e46e1c3dfc9_medium.jpg',
-    avatarmedium: 'https://avatars.steamstatic.com/d5d4e1bc94e8dd0d7cfc3b42cd9b4e46e1c3dfc9_medium.jpg',
-    avatarfull: 'https://avatars.steamstatic.com/d5d4e1bc94e8dd0d7cfc3b42cd9b4e46e1c3dfc9_full.jpg',
+    steamid: '76561197960287930',
+    personaname: 'Rabscuttle',
+    avatar: 'https://avatars.steamstatic.com/c5d56249ee5d28a07db4ac9f7f60af961fab5426.jpg',
+    avatarmedium: 'https://avatars.steamstatic.com/c5d56249ee5d28a07db4ac9f7f60af961fab5426_medium.jpg',
+    avatarfull: 'https://avatars.steamstatic.com/c5d56249ee5d28a07db4ac9f7f60af961fab5426_full.jpg',
+    avatarhash: 'c5d56249ee5d28a07db4ac9f7f60af961fab5426',
+    profileurl: 'https://steamcommunity.com/id/GabeLoganNewell/',
+    communityvisibilitystate: 2,
+    profilestate: 1,
+    personastate: 0,
     status: 'Playing Casual on Dust 2',
     in_casual_mode: true,
     join_available: true

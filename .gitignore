@@ -1,6 +1,9 @@
 # Node.js dependencies
 node_modules/
 
+# Development scripts (not for production)
+dev-scripts/
+
 # Build output
 dist/
 build/
