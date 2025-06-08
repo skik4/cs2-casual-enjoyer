@@ -242,6 +242,84 @@ class SteamAPIResponseProcessor {
         return null;
     }
 
+    /**
+     * Process player link details response to check if player is in CS2
+     * @param {Object} rawData - Raw response from Steam API
+     * @param {string} steam_id - Steam ID being checked (for logging)
+     * @returns {boolean} - True if player is playing CS2
+     */
+    static processPlayerCS2StatusResponse(rawData, steam_id) {
+        logger.debug('SteamAPIResponseProcessor', 'Processing player CS2 status response', {
+            steam_id,
+            hasData: !!rawData,
+            hasResponse: !!(rawData && rawData.response),
+            hasAccounts: !!(rawData && rawData.response && rawData.response.accounts),
+            accountsLength: rawData && rawData.response && rawData.response.accounts ? rawData.response.accounts.length : 0,
+            fullResponse: rawData
+        });
+
+        if (!rawData || !rawData.response || !rawData.response.accounts || !rawData.response.accounts.length) {
+            logger.warn('SteamAPIResponseProcessor', `No player data found for ${steam_id}`, {
+                dataExists: !!rawData,
+                responseExists: !!(rawData && rawData.response),
+                accountsExists: !!(rawData && rawData.response && rawData.response.accounts),
+                accountsLength: rawData && rawData.response && rawData.response.accounts ? rawData.response.accounts.length : 0
+            });
+            return false;
+        }
+
+        const account = rawData.response.accounts[0];
+        const priv = account.private_data || {};
+        const isInCS2 = priv.game_id === "730";
+
+        if (!isInCS2) {
+            logger.info('SteamAPIResponseProcessor', `Player ${steam_id} CS2 status: not playing`, {
+                steam_id,
+                game_id: priv.game_id,
+                isInCS2: false
+            });
+            return false;
+        }
+
+        // Parse rich presence to check if user is in lobby
+        const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv || "");
+        const isInLobby = richPresence.game_state === "lobby";
+
+        logger.info('SteamAPIResponseProcessor', `Player ${steam_id} CS2 status: ${isInCS2 ? 'playing' : 'not playing'}, in lobby: ${isInLobby}`, {
+            steam_id,
+            game_id: priv.game_id,
+            game_state: richPresence.game_state,
+            isInCS2,
+            isInLobby,
+            richPresenceData: richPresence
+        });
+
+        // Return true only if player is in CS2 AND in lobby
+        return isInCS2 && isInLobby;
+    }
+
+    /**
+     * Process friends statuses with avatar fetching capabilities
+     * @param {Object} rawData - Raw response from Steam API
+     * @param {Object} avatarsCache - Cache of avatar data
+     * @param {Object} apiClient - Reference to API client for fetching additional data
+     * @returns {Promise<import('../shared/types.js').Friend[]>} - Array of processed friend objects
+     */
+    static async processFriendsStatusesWithAvatars(rawData, avatarsCache = {}, apiClient = null) {
+        logger.debug('SteamAPIResponseProcessor', 'Processing friends statuses response with avatar fetching');
+
+        // Create callback for fetching additional avatars if API client is provided
+        const getPlayerSummariesCallback = apiClient ?
+            async (steamids) => await apiClient.getPlayerSummaries(steamids, apiClient._lastUsedAuth) :
+            null;
+
+        return await this.processFriendsStatusesResponse(
+            rawData,
+            avatarsCache,
+            getPlayerSummariesCallback
+        );
+    }
+
     // Private helper methods    
     /**
      * Extract Steam IDs of players in supported modes (casual and deathmatch)

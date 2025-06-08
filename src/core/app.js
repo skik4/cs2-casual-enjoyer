@@ -53,6 +53,9 @@ class App {
                 (friendId, status) => UIManager.updateJoinButton(friendId, status)
             );
 
+            // Initialize CS2Manager first
+            this.cs2Manager.initialize(this.inputManager);
+
             // Set CS2Manager for JoinManager
             joinManager.setCS2Manager(this.cs2Manager);
 
@@ -64,9 +67,6 @@ class App {
 
                     this.cs2Manager);
             });
-
-            // Initialize CS2Manager
-            this.cs2Manager.initialize(this.inputManager);
 
             // Load settings
             const savedSettings = await window.electronAPI.settings.load();

@@ -1,6 +1,7 @@
 import ErrorHandler from '../utils/error-handler.js';
 import DOMUtils from '../utils/dom-utils.js';
 import { NOTIFICATION_TEMPLATES, HELP_TEMPLATES } from './html-templates.js';
+import logger from '../utils/logger.js';
 
 /**
  * Notification Manager module
@@ -134,13 +135,14 @@ class NotificationManager {
      * @param {CS2Manager} cs2Manager - CS2Manager instance for checking game status
      * @returns {Promise<boolean>} - True if user chooses to launch CS2, false if cancelled
      */
-
     static showCS2LaunchNotification(friendId, onLaunch, cs2Manager) {
+        logger.info('NotificationManager', 'Starting CS2 launch notification', { friendId, hasOnLaunch: !!onLaunch, hasCs2Manager: !!cs2Manager });
+
         return new Promise((resolve) => {
             const overlay = DOMUtils.getElementById('cs2-launch-notification');
 
             if (!overlay) {
-                console.error('CS2 notification overlay not found');
+                logger.error('NotificationManager', 'CS2 notification overlay not found');
                 resolve(false);
                 return;
             }
@@ -150,10 +152,8 @@ class NotificationManager {
 
             // Get elements after creating content
             const launchBtn = DOMUtils.getElementById('launch-cs2-btn');
-            const cancelBtn = DOMUtils.getElementById('cancel-cs2-launch');
-
-            if (!launchBtn || !cancelBtn) {
-                console.error('CS2 notification buttons not found after template creation');
+            const cancelBtn = DOMUtils.getElementById('cancel-cs2-launch'); if (!launchBtn || !cancelBtn) {
+                logger.error('NotificationManager', 'CS2 notification buttons not found after template creation');
                 resolve(false);
                 return;
             }
@@ -194,15 +194,22 @@ class NotificationManager {
                 }
 
                 // Start checking CS2 status periodically
+                logger.info('NotificationManager', 'Starting CS2 status check interval');
                 checkInterval = setInterval(async () => {
                     try {
+                        logger.debug('NotificationManager', 'CS2 Status Check', {
+                            cs2ManagerExists: !!cs2Manager,
+                            isResolved,
+                            isLaunching,
+                            cs2ManagerInitialized: cs2Manager?.isInitialized
+                        });
+
                         if (cs2Manager && !isResolved) {
-                            console.log('Checking CS2 status...');
                             const isInCS2 = await cs2Manager.checkUserInCS2();
-                            console.log('CS2 status check result:', isInCS2);
+                            logger.info('NotificationManager', 'CS2 status check completed', { isInCS2 });
 
                             if (isInCS2 && !isResolved) {
-                                console.log('User detected in CS2, closing notification...');
+                                logger.info('NotificationManager', 'User detected in CS2, closing notification');
 
                                 // Set resolved flag immediately to prevent multiple executions
                                 isResolved = true;
@@ -211,19 +218,26 @@ class NotificationManager {
                                 if (checkInterval) {
                                     clearInterval(checkInterval);
                                     checkInterval = null;
+                                    logger.debug('NotificationManager', 'Check interval cleared');
                                 }
 
-                                // User is now in CS2, wait 2 more seconds then close
-                                setTimeout(() => {
-                                    console.log('Hiding CS2 launch notification...');
-                                    this.hideCS2LaunchNotification();
-                                    cleanup();
-                                    resolve(true);
-                                }, 2000);
+                                // User is now in CS2 and in lobby, close notification immediately
+                                logger.info('NotificationManager', 'User is in CS2 and lobby, hiding notification immediately');
+                                this.hideCS2LaunchNotification();
+                                cleanup();
+                                resolve(true);
+                            } else if (isInCS2) {
+                                logger.debug('NotificationManager', 'User in CS2 but already resolved');
+                            } else {
+                                logger.debug('NotificationManager', 'User not yet in CS2, continuing to wait');
                             }
+                        } else if (!cs2Manager) {
+                            logger.error('NotificationManager', 'CS2Manager is null/undefined during status check');
+                        } else if (isResolved) {
+                            logger.debug('NotificationManager', 'Status check skipped - already resolved');
                         }
                     } catch (error) {
-                        console.error('Error checking CS2 status:', error);
+                        logger.error('NotificationManager', 'Error checking CS2 status', { error: error.message });
                     }
                 }, 3000); // Check every 3 seconds
             };
@@ -274,13 +288,14 @@ class NotificationManager {
      * Hide CS2 launch notification
      */
     static hideCS2LaunchNotification() {
-        console.log('hideCS2LaunchNotification called');
+        logger.debug('NotificationManager', 'hideCS2LaunchNotification called');
         const overlay = DOMUtils.getElementById('cs2-launch-notification');
         if (overlay) {
-            console.log('Hiding CS2 notification overlay');
+            logger.debug('NotificationManager', 'Hiding CS2 notification overlay', { currentDisplay: overlay.style.display });
             overlay.style.display = 'none';
+            logger.info('NotificationManager', 'CS2 notification overlay hidden');
         } else {
-            console.log('CS2 notification overlay not found');
+            logger.warn('NotificationManager', 'CS2 notification overlay not found in DOM');
         }
     }
 }

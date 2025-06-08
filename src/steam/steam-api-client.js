@@ -223,9 +223,10 @@ class SteamAPIClient {
      * @param {Object} [context] - Additional context for logging
      * @returns {Promise<Object|null>} - Player link details response
      * @private
-     */
-    static async _getPlayerLinkDetails(steamids, auth, context = {}) {
+     */    static async _getPlayerLinkDetails(steamids, auth, context = {}) {
         try {
+            logger.debug('SteamAPI', '_getPlayerLinkDetails called', { steamids, context });
+
             // Build special params for this API call
             const specialParams = {};
 
@@ -237,6 +238,8 @@ class SteamAPIClient {
                 specialParams['steamids[0]'] = steamids;
             }
 
+            logger.debug('SteamAPI', '_getPlayerLinkDetails params built', { specialParams });
+
             const config = {
                 method: 'GetPlayerLinkDetails',
                 unified: {
@@ -246,7 +249,18 @@ class SteamAPIClient {
                 allowFailure: true
             };
 
-            return await this._makeApiRequest(config, auth, context);
+            logger.debug('SteamAPI', '_getPlayerLinkDetails making API request', { config });
+
+            const result = await this._makeApiRequest(config, auth, context);
+
+            logger.debug('SteamAPI', '_getPlayerLinkDetails API response', {
+                hasResult: !!result,
+                resultKeys: result ? Object.keys(result) : [],
+                result: result
+            });
+
+            return result;
+
         } catch (error) {
             logger.error('SteamAPI', `_getPlayerLinkDetails error: ${error.message}`, { steamids, error });
             return null;
@@ -258,28 +272,13 @@ class SteamAPIClient {
      * @param {string} steam_id - Steam ID to check
      * @param {string} auth - API key or token
      * @returns {Promise<boolean>} - True if player is playing CS2
-     */
-    static async isPlayerInCS2(steam_id, auth) {
+     */    static async isPlayerInCS2(steam_id, auth) {
         try {
             logger.info('SteamAPI', `Checking if player ${steam_id} is in CS2`);
 
             const data = await this._getPlayerLinkDetails(steam_id, auth, { steam_id, checkingCS2: true });
 
-            if (!data || !data.response || !data.response.accounts || !data.response.accounts.length) {
-                logger.debug('SteamAPI', `No player data found for ${steam_id}`);
-                return false;
-            }
-
-            const account = data.response.accounts[0];
-            const isInCS2 = account.game_id === "730";
-
-            logger.info('SteamAPI', `Player ${steam_id} CS2 status: ${isInCS2 ? 'playing' : 'not playing'}`, {
-                steam_id,
-                game_id: account.game_id,
-                isInCS2
-            });
-
-            return isInCS2;
+            return SteamAPIResponseProcessor.processPlayerCS2StatusResponse(data, steam_id);
         } catch (error) {
             logger.error('SteamAPI', `isPlayerInCS2 error: ${error.message}`, { steam_id, error });
             return false;
@@ -295,18 +294,12 @@ class SteamAPIClient {
      */
     static async getFriendsStatuses(friend_ids, auth, avatarsCache = {}) {
         const isToken = SteamAPIUtils.isWebApiToken(auth);
-        logger.info('SteamAPI', `Getting friends statuses for ${friend_ids.length} friends`);
-
-        if (!friend_ids.length) {
+        logger.info('SteamAPI', `Getting friends statuses for ${friend_ids.length} friends`); if (!friend_ids.length) {
             logger.warn('SteamAPI', 'No friend IDs provided to getFriendsStatuses');
             return [];
-        } try {
-            // Build special params for this API call
-            const specialParams = {};
-            friend_ids.forEach((sid, idx) => {
-                specialParams[`steamids[${idx}]`] = sid;
-            });
+        }
 
+        try {
             const data = await this._getPlayerLinkDetails(friend_ids, auth, { friendsCount: friend_ids.length });
 
             // Create callback for fetching additional avatars

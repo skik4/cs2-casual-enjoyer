@@ -1,4 +1,5 @@
 import SteamAPI from '../steam/steam-api.js';
+import logger from '../utils/logger.js';
 
 /**
  * Manages CS2 launch functionality
@@ -16,7 +17,7 @@ class CS2Manager {
     initialize(appInputManager) {
         this.appInputManager = appInputManager;
         this.isInitialized = true;
-        console.log('CS2Manager initialized');
+        logger.info('CS2Manager', 'CS2Manager initialized');
     }
 
     /**
@@ -25,7 +26,10 @@ class CS2Manager {
      */
     async checkUserInCS2() {
         if (!this.isInitialized || !this.appInputManager) {
-            console.log('CS2Manager: Not initialized or missing appInputManager');
+            logger.warn('CS2Manager', 'Not initialized or missing appInputManager', {
+                isInitialized: this.isInitialized,
+                hasAppInputManager: !!this.appInputManager
+            });
             return false;
         }
 
@@ -33,20 +37,23 @@ class CS2Manager {
             const steamId = this.appInputManager.getSteamId();
             const auth = this.appInputManager.getAuth();
 
-            console.log('CS2Manager: Checking CS2 status for user:', steamId);
+            logger.debug('CS2Manager', 'Checking CS2 status for user', { steamId });
 
             if (!steamId || !auth) {
-                console.log('CS2Manager: Missing steamId or auth');
+                logger.warn('CS2Manager', 'Missing steamId or auth', {
+                    hasSteamId: !!steamId,
+                    hasAuth: !!auth
+                });
                 return false;
             }
 
             const extractedAuth = SteamAPI.extractApiKeyOrToken(auth);
             const result = await SteamAPI.isPlayerInCS2(steamId, extractedAuth);
 
-            console.log('CS2Manager: CS2 status result:', result);
+            logger.info('CS2Manager', 'CS2 status result', { steamId, result });
             return result;
         } catch (error) {
-            console.error('CS2Manager: Error checking CS2 status:', error);
+            logger.error('CS2Manager', 'Error checking CS2 status', { error: error.message });
             return false;
         }
     }
@@ -58,9 +65,9 @@ class CS2Manager {
         try {
             const launchUrl = 'steam://run/730/';
             window.open(launchUrl);
-            console.log('Launching CS2...');
+            logger.info('CS2Manager', 'Launching CS2...', { launchUrl });
         } catch (error) {
-            console.error('Error launching CS2:', error);
+            logger.error('CS2Manager', 'Error launching CS2', { error: error.message });
         }
     }
 
@@ -70,7 +77,7 @@ class CS2Manager {
     destroy() {
         this.appInputManager = null;
         this.isInitialized = false;
-        console.log('CS2Manager destroyed');
+        logger.info('CS2Manager', 'CS2Manager destroyed');
     }
 }
 
