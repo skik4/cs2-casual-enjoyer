@@ -1,4 +1,4 @@
-import { VALIDATION_PATTERNS, API_CONFIG } from '../shared/constants.js';
+import { VALIDATION_PATTERNS, API_CONFIG, ERROR_CODES } from '../shared/constants.js';
 
 /**
  * Steam API utilities and parsers
@@ -294,6 +294,24 @@ class SteamAPIUtils {
         // Default error handling
         throw ErrorHandler.createError(`API_ERROR_${response.status}`, 
             `${config.method} failed: ${response.status} ${response.statusText}`);
+    }
+
+    /**
+     * Get error handlers for specific API methods
+     * @param {string} method - API method name
+     * @returns {Object} - Error handlers map
+     */
+    static getMethodErrorHandlers(method) {
+        // Import here to avoid circular dependency
+        const ErrorHandler = require('../utils/error-handler.js').default;
+        
+        const errorHandlers = {
+            GetFriendsList: {
+                401: () => ErrorHandler.createError(ERROR_CODES.PRIVATE_FRIENDS_LIST)
+            }
+        };
+
+        return errorHandlers[method] || {};
     }
 }
 
