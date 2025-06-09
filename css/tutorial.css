@@ -38,12 +38,13 @@
     overflow: hidden;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     pointer-events: auto;
-    will-change: transform;
+    will-change: transform, top, left;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     perspective: 1000px;
     -webkit-perspective: 1000px;
     transform-origin: center center;
+    transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1), left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tutorial-header {
@@ -177,6 +178,6 @@
             0 0 0 2px rgba(45, 140, 240, 0.6),
             0 4px 24px rgba(45, 140, 240, 0.35),
             var(--shadow-medium);
-        transform: scale(1.01);
+        transform: scale(1.05);
     }
 }
