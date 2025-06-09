@@ -1,6 +1,7 @@
 import UIManager from '../ui/ui-manager.js';
 import joinManager from '../game/join-manager.js';
 import DOMUtils from '../utils/dom-utils.js';
+import { getTutorialManager } from '../ui/tutorial/tutorial-manager.js';
 
 /**
  * Event management module
@@ -94,8 +95,21 @@ class AppEventManager {
             if (!button) return;
 
             const steamId = button.id.replace('join-btn-', '');
-            if (!steamId) return; 
-            
+            if (!steamId) return;
+
+            // Check if tutorial is active and on step 7 (Join to Friend Game)
+            const tutorialManager = getTutorialManager();
+            if (tutorialManager.stateManager.getIsActive() &&
+                tutorialManager.stateManager.getCurrentStep() === 7) {
+                // This is the tutorial join step - don't perform real join
+                event.preventDefault();
+                event.stopPropagation();
+
+                // Move to next tutorial step instead
+                tutorialManager.nextStep();
+                return;
+            }
+
             if (button.classList.contains('cancel-btn')) {
                 joinManager.cancelJoin(steamId);
             } else {
