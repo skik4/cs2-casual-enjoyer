@@ -1,4 +1,5 @@
 import DOMUtils from '../utils/dom-utils.js';
+import { getTutorialManager } from '../ui/tutorial/tutorial-manager.js';
 
 import appStateManager from './app-state-manager.js';
 import logger from '../utils/logger.js';
@@ -25,7 +26,7 @@ class AppValidationManager {
      */
     checkAndStartAutoRefresh(hasSaved, validSteamId, validApiKey, isTokenExpired) {
         // Don't start auto-refresh if tutorial is active
-        if (window.tutorialManager && window.tutorialManager.isActive) {
+        if (getTutorialManager().isActive) {
             logger.info('App', 'Auto-refresh not started - tutorial is active');
             return;
         }

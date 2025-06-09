@@ -3,7 +3,7 @@ import CS2Manager from '../game/cs2-manager.js';
 import UIManager from '../ui/ui-manager.js';
 import { getTutorialManager } from '../ui/tutorial/tutorial-manager.js';
 import AppInputManager from './app-input-manager.js';
-import AppFriendsManager from './app-friends-manager.js';
+import appFriendsManager from './app-friends-manager.js';
 import AppEventManager from './app-event-manager.js';
 import AppValidationManager from './app-validation-manager.js';
 import DOMUtils from '../utils/dom-utils.js';
@@ -21,7 +21,7 @@ class App {
 
         // Initialize managers
         this.inputManager = new AppInputManager();
-        this.friendsManager = new AppFriendsManager();
+        this.friendsManager = appFriendsManager;
         this.eventManager = new AppEventManager();
         this.validationManager = new AppValidationManager();
         this.cs2Manager = new CS2Manager();

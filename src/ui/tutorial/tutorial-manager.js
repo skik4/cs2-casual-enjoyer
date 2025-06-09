@@ -4,6 +4,8 @@ import { TutorialUIManager } from './tutorial-ui-manager.js';
 import { TutorialHighlightManager } from './tutorial-highlight-manager.js';
 import { TutorialMockDataManager } from './tutorial-mock-data-manager.js';
 import { TutorialEventManager } from './tutorial-event-manager.js';
+import appStateManager from '../../core/app-state-manager.js';
+import appFriendsManager from '../../core/app-friends-manager.js';
 
 /**
  * Tutorial Manager
@@ -24,6 +26,9 @@ class TutorialManager {
      */
     start() {
         if (this.stateManager.getIsActive()) return;
+
+        // Stop auto-refresh before starting tutorial
+        this.stopAutoRefresh();
 
         // Clean up any existing elements first to prevent conflicts
         this.cleanup();
@@ -53,6 +58,9 @@ class TutorialManager {
 
         this.stateManager.reset();
         this.cleanup();
+
+        // Restart auto-refresh after tutorial ends
+        this.restoreAutoRefresh();
     }
 
     /**
@@ -239,6 +247,28 @@ class TutorialManager {
 
     get steps() {
         return this.stateManager.steps;
+    }
+
+    /**
+     * Stop auto-refresh before starting tutorial
+     */
+    stopAutoRefresh() {
+        appFriendsManager.stopAutoRefresh();
+    }
+
+    /**
+     * Restore auto-refresh after tutorial ends
+     */
+    restoreAutoRefresh() {
+        // Check if we have saved friends and valid settings before starting auto-refresh
+        const savedFriendsIds = appStateManager.getState('savedFriendsIds');
+        const savedSettings = appStateManager.getState('savedSettings');
+
+        if (savedFriendsIds && savedFriendsIds.length > 0 && savedSettings) {
+            setTimeout(() => {
+                appFriendsManager.startAutoRefresh();
+            }, 500); // Small delay to ensure tutorial cleanup is complete
+        }
     }
 }
 
