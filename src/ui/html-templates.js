@@ -386,11 +386,10 @@ export const TUTORIAL_TEMPLATES = {
                 <div class="tutorial-progress-bar">
                     <div class="tutorial-progress-fill" style="width: ${(currentStepNumber / totalSteps) * 100}%"></div>
                 </div>
-            </div>
+            </div>        
         </div>
-        <div class="tutorial-content">
-            <p>${content}</p>
-        </div>        <div class="tutorial-controls">
+        <div class="tutorial-content">${content}</div>        
+        <div class="tutorial-controls">
             <button class="tutorial-btn tutorial-btn-secondary">
                 Skip Tutorial
             </button>
