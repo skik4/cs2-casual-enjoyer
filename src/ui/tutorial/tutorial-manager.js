@@ -25,11 +25,11 @@ class TutorialManager {
     start() {
         if (this.stateManager.getIsActive()) return;
 
+        // Clean up any existing elements first to prevent conflicts
+        this.cleanup();
+
         this.stateManager.setActive(true);
         this.stateManager.setCurrentStep(0);
-
-        // Clean up any existing elements first
-        this.cleanup();
 
         this.uiManager.createOverlay();
 
@@ -51,7 +51,7 @@ class TutorialManager {
     stop() {
         if (!this.stateManager.getIsActive()) return;
 
-        this.stateManager.setActive(false);
+        this.stateManager.reset();
         this.cleanup();
     }
 

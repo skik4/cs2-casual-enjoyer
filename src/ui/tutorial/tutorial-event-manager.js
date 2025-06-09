@@ -20,6 +20,9 @@ export class TutorialEventManager {
      * @param {Function} onStop - Callback for stopping tutorial
      */
     setupEventListeners(currentStep, onNextStep, onPreviousStep = null, onStop = null) {
+        // Remove any existing listeners first to prevent duplicates
+        this.removeEventListeners();
+
         // Store callbacks
         this.nextStepCallback = onNextStep;
         this.previousStepCallback = onPreviousStep;
@@ -36,39 +39,39 @@ export class TutorialEventManager {
                 case 'Enter':
                     event.preventDefault();
                     event.stopPropagation();
-                    if (onNextStep) {
-                        onNextStep();
+                    if (this.nextStepCallback) {
+                        this.nextStepCallback();
                     }
                     break;
 
                 case 'Backspace':
                     event.preventDefault();
                     event.stopPropagation();
-                    if (onPreviousStep) {
-                        onPreviousStep();
+                    if (this.previousStepCallback) {
+                        this.previousStepCallback();
                     }
                     break;
 
                 case 'Escape':
                     event.preventDefault();
                     event.stopPropagation();
-                    if (onStop) {
-                        onStop();
+                    if (this.stopCallback) {
+                        this.stopCallback();
                     }
                     break;
             }
         };
 
         // Add global keyboard listener
-        document.addEventListener('keydown', this.handleKeyDown, true);
-
-        this.handleAPIKeyClick = (event) => {
+        document.addEventListener('keydown', this.handleKeyDown, true); this.handleAPIKeyClick = (event) => {
             // If on step 1 (Steam Web API Token) and user clicks the help link
             if (currentStep === 1) {
                 // Auto-advance to step 2 (Get Steam Web API Token)
                 // Use setTimeout for smooth transition without blocking the render cycle
                 setTimeout(() => {
-                    onNextStep();
+                    if (this.nextStepCallback) {
+                        this.nextStepCallback();
+                    }
                 }, 0);
             }
         };
@@ -102,10 +105,7 @@ export class TutorialEventManager {
      * @param {Function} onStop - Callback for stopping tutorial
      */
     updateEventListeners(currentStep, onNextStep, onPreviousStep = null, onStop = null) {
-        // Remove existing listeners
-        this.removeEventListeners();
-
-        // Setup new listeners for current step
+        // Setup new listeners for current step (removeEventListeners is called inside setupEventListeners)
         this.setupEventListeners(currentStep, onNextStep, onPreviousStep, onStop);
     }
 
