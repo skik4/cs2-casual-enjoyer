@@ -111,8 +111,8 @@ export class TutorialMockDataManager {
         } else if (stepIndex === 2 && previousStepIndex !== 2) {
             // Entering step 2 (Get Steam Web API Token) - open notification
             this.openAPITokenNotification(stepIndex);
-        }
-
+        }        
+        
         // Handle mock friend based on step transitions
         if (previousStepIndex !== null && previousStepIndex >= 6 && stepIndex < 6) {
             // Moving back from Friends List Display step (6) or later - remove mock friend
@@ -120,11 +120,6 @@ export class TutorialMockDataManager {
         } else if (stepIndex >= 6 && (previousStepIndex === null || previousStepIndex < 6)) {
             // Entering Friends List Display step (6) or later - add mock friend
             this.addTutorialMockFriend();
-        }
-
-        // Remove mock friend on final step (Tutorial Complete!)
-        if (stepIndex === 9) {
-            this.removeTutorialMockFriend();
         }
 
         // Handle mock connection process for step 8 (Connection Process)
