@@ -6,7 +6,7 @@
     border-radius: 50%;
     display: inline-block;
     margin-right: 0.5em;
-    box-shadow: 0 0 8px color-mix(in srgb, var(--black) var(--opacity-50), transparent);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
     border: var(--border-width) solid var(--panel-outline);
     transition: background var(--anim-duration-slow), box-shadow var(--anim-duration-slow);
 }
@@ -43,49 +43,49 @@
 /* Pulse Animations */
 @keyframes pulse-red {
     0% {
-        box-shadow: 0 0 0 0 color-mix(in srgb, var(--red-primary) var(--opacity-30), transparent);
+        box-shadow: 0 0 0 0 var(--red-primary-30);
     }
     70% {
-        box-shadow: 0 0 0 10px transparent;
+        box-shadow: 0 0 0 10px var(--red-primary-0);
     }
     100% {
-        box-shadow: 0 0 0 0 transparent;
+        box-shadow: 0 0 0 0 var(--red-primary-0);
     }
 }
 
 @keyframes pulse-yellow {
     0% {
-        box-shadow: 0 0 0 0 color-mix(in srgb, var(--yellow-primary) var(--opacity-30), transparent);
+        box-shadow: 0 0 0 0 var(--yellow-primary-30);
     }
     70% {
-        box-shadow: 0 0 0 10px transparent;
+        box-shadow: 0 0 0 10px var(--yellow-primary-0);
     }
     100% {
-        box-shadow: 0 0 0 0 transparent;
+        box-shadow: 0 0 0 0 var(--yellow-primary-0);
     }
 }
 
 @keyframes pulse-green {
     0% {
-        box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-primary) var(--opacity-30), transparent);
+        box-shadow: 0 0 0 0 var(--green-primary-30);
     }
     70% {
-        box-shadow: 0 0 0 10px transparent;
+        box-shadow: 0 0 0 10px var(--green-primary-0);
     }
     100% {
-        box-shadow: 0 0 0 0 transparent;
+        box-shadow: 0 0 0 0 var(--green-primary-0);
     }
 }
 
 @keyframes pulse-purple {
     0% {
-        box-shadow: 0 0 0 0 color-mix(in srgb, var(--purple-primary) var(--opacity-30), transparent);
+        box-shadow: 0 0 0 0 var(--purple-pulse-30);
     }
     70% {
-        box-shadow: 0 0 0 10px transparent;
+        box-shadow: 0 0 0 10px var(--purple-pulse-0);
     }
     100% {
-        box-shadow: 0 0 0 0 transparent;
+        box-shadow: 0 0 0 0 var(--purple-pulse-0);
     }
 }
 

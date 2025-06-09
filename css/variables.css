@@ -41,8 +41,10 @@
     /* Strong */
     --opacity-80: 80%;
     /* Very strong */
-    --opacity-85: 85%;
+    --opacity-90: 90%;
     /* Almost opaque */
+    --opacity-100: 100%;
+    /* Fully transparent for color-mix */
 
     /* ===== BRAND COLORS ===== */
     /* Blue */
@@ -62,6 +64,17 @@
 
     /* Purple */
     --purple-primary: #a259f7;
+
+    /* ===== PULSE ANIMATION COLORS ===== */
+    /* Transparent versions of primary colors for pulse animations */
+    --red-primary-30: color-mix(in srgb, var(--red-primary), transparent var(--opacity-70));
+    --red-primary-0: color-mix(in srgb, var(--red-primary), transparent var(--opacity-100));
+    --yellow-primary-30: color-mix(in srgb, var(--yellow-primary), transparent var(--opacity-70));
+    --yellow-primary-0: color-mix(in srgb, var(--yellow-primary), transparent var(--opacity-100));
+    --green-primary-30: color-mix(in srgb, var(--green-primary), transparent var(--opacity-70));
+    --green-primary-0: color-mix(in srgb, var(--green-primary), transparent var(--opacity-100));
+    --purple-pulse-30: color-mix(in srgb, var(--purple-primary), transparent var(--opacity-70));
+    --purple-pulse-0: color-mix(in srgb, var(--purple-primary), transparent var(--opacity-100));
 
     /* ===== WARNING COLORS ===== */
     --warning-bg: #fffbe6;
