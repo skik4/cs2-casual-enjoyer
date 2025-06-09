@@ -17,6 +17,12 @@ export class TutorialUIManager {
         this.resizeObserver = null;
         this.mutationObserver = null;
         this.intersectionObserver = null;
+
+        // Throttling and debouncing for smooth animations
+        this.positionUpdateTimeout = null;
+        this.lastPositionUpdate = 0;
+        this.positionUpdateThrottle = 16; // ~60fps
+        this.positionUpdateDebounce = 100; // Debounce rapid changes
     }
 
     /**
@@ -27,11 +33,9 @@ export class TutorialUIManager {
         this.overlay = document.createElement('div');
         this.overlay.className = 'tutorial-overlay';
 
-        // Create modal (initially hidden to prevent flicker)
+        // Create modal
         this.modal = document.createElement('div');
         this.modal.className = 'tutorial-modal';
-        this.modal.style.opacity = '0';
-        this.modal.style.visibility = 'hidden';
 
         document.body.appendChild(this.overlay);
         document.body.appendChild(this.modal);
@@ -70,12 +74,7 @@ export class TutorialUIManager {
             totalSteps,
             step.content,
             isFirstStep,
-            isLastStep
-        );
-
-        // Show modal after content is set (prevent flicker)
-        this.modal.style.opacity = '1';
-        this.modal.style.visibility = 'visible';
+            isLastStep);
 
         // Setup button event listeners programmatically
         this.setupModalEventListeners(callbacks, isFirstStep, isLastStep);
@@ -217,9 +216,7 @@ export class TutorialUIManager {
                 }
                 if (top < horizontalPadding) {
                     top = horizontalPadding;
-                }
-
-                this.modal.style.top = `${top}px`;
+                } this.modal.style.top = `${top}px`;
                 this.modal.style.left = `${left}px`;
                 this.modal.style.transform = 'none';
                 return;
@@ -281,6 +278,43 @@ export class TutorialUIManager {
     }
 
     /**
+     * Throttled position update to prevent jittery animations
+     */
+    throttledPositionUpdate() {
+        const now = Date.now();
+
+        // Clear any pending debounced update
+        if (this.positionUpdateTimeout) {
+            clearTimeout(this.positionUpdateTimeout);
+        }
+
+        // Throttle rapid updates
+        if (now - this.lastPositionUpdate < this.positionUpdateThrottle) {
+            this.positionUpdateTimeout = setTimeout(() => {
+                this.updateModalPosition();
+            }, this.positionUpdateDebounce);
+            return;
+        }
+
+        this.lastPositionUpdate = now;
+        this.updateModalPosition();
+    }
+
+    /**
+     * Update modal position based on current target
+     */
+    updateModalPosition() {
+        if (!this.modal) return;
+
+        if (this.currentTarget) {
+            const element = document.querySelector(this.currentTarget);
+            this.positionModal(element, this.currentForcedPosition);
+        } else {
+            this.positionModal(null, this.currentForcedPosition);
+        }
+    }
+
+    /**
      * Set current target and position for position tracking
      * @param {string|null} target - CSS selector
      * @param {string|null} forcedPosition - Forced position
@@ -316,24 +350,23 @@ export class TutorialUIManager {
             if (!isActiveCallback() || !this.modal) {
                 return;
             }
-
-            // Update position based on current target
-            if (this.currentTarget) {
-                const element = document.querySelector(this.currentTarget);
-                this.positionModal(element, this.currentForcedPosition);
-            } else {
-                this.positionModal(null, this.currentForcedPosition);
-            }
+            this.throttledPositionUpdate();
         };
 
         // Set up ResizeObserver for window and modal size changes
-        this.resizeObserver = new ResizeObserver(updatePosition);
+        this.resizeObserver = new ResizeObserver(() => {
+            // Window resize should update immediately for better UX
+            if (isActiveCallback() && this.modal) {
+                this.updateModalPosition();
+            }
+        });
         this.resizeObserver.observe(document.body);
         if (this.modal) {
             this.resizeObserver.observe(this.modal);
         }
 
         // Set up MutationObserver for DOM changes that might affect target element
+        // Use throttled updates for mutations to prevent animation interruption
         this.mutationObserver = new MutationObserver(updatePosition);
         this.mutationObserver.observe(document.body, {
             childList: true,
@@ -346,19 +379,30 @@ export class TutorialUIManager {
         if (this.currentTarget) {
             const targetElement = document.querySelector(this.currentTarget);
             if (targetElement) {
-                this.intersectionObserver = new IntersectionObserver(updatePosition);
+                this.intersectionObserver = new IntersectionObserver(() => {
+                    // Visibility changes should update immediately
+                    if (isActiveCallback() && this.modal) {
+                        this.updateModalPosition();
+                    }
+                });
                 this.intersectionObserver.observe(targetElement);
             }
         }
 
         // Initial position update
-        updatePosition();
+        this.updateModalPosition();
     }
 
     /**
      * Stop all position update observers
      */
     stopPositionUpdates() {
+        // Clear any pending position updates
+        if (this.positionUpdateTimeout) {
+            clearTimeout(this.positionUpdateTimeout);
+            this.positionUpdateTimeout = null;
+        }
+
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
             this.resizeObserver = null;
