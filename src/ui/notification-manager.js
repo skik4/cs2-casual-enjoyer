@@ -148,11 +148,9 @@ class NotificationManager {
             }
 
             // Create dynamic content using template
-            overlay.innerHTML = NOTIFICATION_TEMPLATES.CS2_LAUNCH.FULL_TEMPLATE();
-
-            // Get elements after creating content
+            overlay.innerHTML = NOTIFICATION_TEMPLATES.CS2_LAUNCH.FULL_TEMPLATE();            // Get elements after creating content
             const launchBtn = DOMUtils.getElementById('launch-cs2-btn');
-            const cancelBtn = DOMUtils.getElementById('cancel-cs2-launch'); if (!launchBtn || !cancelBtn) {
+            const closeBtn = DOMUtils.getElementById('close-cs2-launch'); if (!launchBtn || !closeBtn) {
                 logger.error('NotificationManager', 'CS2 notification buttons not found after template creation');
                 resolve(false);
                 return;
@@ -183,10 +181,6 @@ class NotificationManager {
                 // Update button to loading state
                 launchBtn.disabled = true;
                 launchBtn.innerHTML = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING.launchButton;
-
-                // Disable cancel button
-                cancelBtn.disabled = true;
-                cancelBtn.style.opacity = '0.5';
 
                 // Launch CS2
                 if (onLaunch) {
@@ -240,22 +234,16 @@ class NotificationManager {
                         logger.error('NotificationManager', 'Error checking CS2 status', { error: error.message });
                     }
                 }, 3000); // Check every 3 seconds
-            };
-
-            // Handle cancel button click
-            const handleCancel = () => {
-                if (isLaunching || isResolved) return; // Can't cancel during launch or if already resolved
-
+            };            // Handle close button click
+            const handleClose = () => {
                 isResolved = true; // Set resolved flag to prevent race conditions
                 this.hideCS2LaunchNotification();
                 cleanup();
                 resolve(false);
-            };
-
-            // Cleanup function to remove event listeners and intervals
+            };            // Cleanup function to remove event listeners and intervals
             const cleanup = () => {
                 launchBtn.removeEventListener('click', handleLaunch);
-                cancelBtn.removeEventListener('click', handleCancel);
+                closeBtn.removeEventListener('click', handleClose);
 
                 if (checkInterval) {
                     clearInterval(checkInterval);
@@ -274,13 +262,9 @@ class NotificationManager {
                 // Reset button states
                 launchBtn.disabled = false;
                 launchBtn.innerHTML = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.launchButton;
-                cancelBtn.disabled = false;
-                cancelBtn.style.opacity = '1';
-            };
-
-            // Add event listeners
+            };            // Add event listeners
             launchBtn.addEventListener('click', handleLaunch);
-            cancelBtn.addEventListener('click', handleCancel);
+            closeBtn.addEventListener('click', handleClose);
         });
     }
 

@@ -87,7 +87,7 @@ export const NOTIFICATION_TEMPLATES = {
             message: 'You need to launch Counter-Strike 2 before joining your friend\'s game.',
             hint: 'Wait for the game to fully load before trying to join again.',
             launchButton: 'Launch CS2',
-            cancelButton: 'Cancel'
+            closeButton: 'Close'
         },
 
         /**
@@ -98,7 +98,7 @@ export const NOTIFICATION_TEMPLATES = {
             message: 'Starting Counter-Strike 2. Please wait for the game to fully load.',
             hint: 'The notification will close automatically when CS2 is detected.',
             launchButton: '<span class="loading-spinner"></span> Launching...',
-            cancelButton: 'Cancel'
+            closeButton: 'Close'
         },
 
         /**
@@ -108,10 +108,10 @@ export const NOTIFICATION_TEMPLATES = {
         FULL_TEMPLATE: () => `
             <div class="cs2-launch-content">
                 <div class="cs2-launch-title">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.title}</div>
-                <div class="cs2-launch-message">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.message}</div>
+                <div class="cs2-launch-message">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.message}</div>                
                 <div class="cs2-launch-buttons">
                     <button id="launch-cs2-btn" class="action-btn btn-primary">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.launchButton}</button>
-                    <button id="cancel-cs2-launch" class="action-btn">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.cancelButton}</button>
+                    <button id="close-cs2-launch" class="action-btn cancel-btn">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.closeButton}</button>
                 </div>
                 <div class="cs2-launch-hint">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.hint}</div>
             </div>
