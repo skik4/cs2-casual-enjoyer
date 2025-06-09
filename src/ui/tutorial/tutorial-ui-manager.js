@@ -10,9 +10,13 @@ export class TutorialUIManager {
         this.modal = null;
 
         // Position tracking
-        this.positionUpdateRAF = null;
         this.currentTarget = null;
         this.currentForcedPosition = null;
+
+        // Observers for efficient position tracking
+        this.resizeObserver = null;
+        this.mutationObserver = null;
+        this.intersectionObserver = null;
     }
 
     /**
@@ -129,8 +133,10 @@ export class TutorialUIManager {
 
         if (!targetElement) {
             // Default center position if no target - calculate absolute position
-            // Use requestAnimationFrame to ensure modal dimensions are available
+            // Use requestAnimationFrame to ensure modal dimensions are available after render
             requestAnimationFrame(() => {
+                if (!this.modal) return; // Safety check
+
                 const modalRect = this.modal.getBoundingClientRect();
                 const viewportWidth = window.innerWidth;
                 const viewportHeight = window.innerHeight;
@@ -173,11 +179,11 @@ export class TutorialUIManager {
                 case 'right':
                     left = rect.right + verticalSpacing;
                     top = rect.top + (rect.height / 2) - (modalRect.height / 2);
-                    break;
-
-                case 'center':
-                    // Use requestAnimationFrame to ensure modal dimensions are available
+                    break; case 'center':
+                    // Use requestAnimationFrame to ensure modal dimensions are available after render
                     requestAnimationFrame(() => {
+                        if (!this.modal) return; // Safety check
+
                         const centerModalRect = this.modal.getBoundingClientRect();
                         const centerViewportWidth = window.innerWidth;
                         const centerViewportHeight = window.innerHeight;
@@ -298,10 +304,8 @@ export class TutorialUIManager {
      */
     getCurrentForcedPosition() {
         return this.currentForcedPosition;
-    }
-
-    /**
-     * Start continuous position updates using requestAnimationFrame
+    }    /**
+     * Start efficient position updates using observers
      * @param {Function} isActiveCallback - Function to check if tutorial is still active
      */
     startPositionUpdates(isActiveCallback) {
@@ -320,22 +324,54 @@ export class TutorialUIManager {
             } else {
                 this.positionModal(null, this.currentForcedPosition);
             }
-
-            // Schedule next update
-            this.positionUpdateRAF = requestAnimationFrame(updatePosition);
         };
 
-        // Start the update loop
-        this.positionUpdateRAF = requestAnimationFrame(updatePosition);
+        // Set up ResizeObserver for window and modal size changes
+        this.resizeObserver = new ResizeObserver(updatePosition);
+        this.resizeObserver.observe(document.body);
+        if (this.modal) {
+            this.resizeObserver.observe(this.modal);
+        }
+
+        // Set up MutationObserver for DOM changes that might affect target element
+        this.mutationObserver = new MutationObserver(updatePosition);
+        this.mutationObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['style', 'class']
+        });
+
+        // Set up IntersectionObserver for target element visibility changes
+        if (this.currentTarget) {
+            const targetElement = document.querySelector(this.currentTarget);
+            if (targetElement) {
+                this.intersectionObserver = new IntersectionObserver(updatePosition);
+                this.intersectionObserver.observe(targetElement);
+            }
+        }
+
+        // Initial position update
+        updatePosition();
     }
 
     /**
-     * Stop continuous position updates
+     * Stop all position update observers
      */
     stopPositionUpdates() {
-        if (this.positionUpdateRAF) {
-            cancelAnimationFrame(this.positionUpdateRAF);
-            this.positionUpdateRAF = null;
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+            this.resizeObserver = null;
+        }
+
+        if (this.mutationObserver) {
+            this.mutationObserver.disconnect();
+            this.mutationObserver = null;
+        }
+
+        if (this.intersectionObserver) {
+            this.intersectionObserver.disconnect();
+            this.intersectionObserver = null;
         }
     }
 

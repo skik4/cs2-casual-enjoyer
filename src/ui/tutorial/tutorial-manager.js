@@ -31,8 +31,10 @@ class TutorialManager {
         // Clean up any existing elements first
         this.cleanup();
 
-        this.uiManager.createOverlay();        // Use requestAnimationFrame to prevent flicker during initialization
-        requestAnimationFrame(() => {
+        this.uiManager.createOverlay();
+
+        // Use setTimeout to prevent flicker during initialization without blocking render cycle
+        setTimeout(() => {
             this.showStep(this.stateManager.getCurrentStep());
             this.eventManager.setupEventListeners(
                 this.stateManager.getCurrentStep(),
@@ -40,7 +42,7 @@ class TutorialManager {
                 () => this.previousStep(),
                 () => this.stop()
             );
-        });
+        }, 0);
     }
 
     /**
@@ -182,27 +184,38 @@ class TutorialManager {
             this.uiManager.positionModal(element, forcedPosition);
             this.uiManager.startPositionUpdates(() => this.stateManager.getIsActive());
         });
-    }
-
-    /**
+    }    /**
      * Wait for UI to be ready and start tutorial automatically
-     * Uses requestAnimationFrame to check for UI readiness, then starts tutorial
+     * Uses MutationObserver for efficient DOM monitoring
      */
     waitForUIAndStartTutorial() {
-        const startTutorialWhenReady = () => {
-            const tutorialBtn = document.getElementById('tutorial-btn');
+        const tutorialBtn = document.getElementById('tutorial-btn');
 
-            if (tutorialBtn) {
-                // UI is ready, start tutorial directly without button click to prevent flicker
-                this.start();
-            } else {
-                // UI not ready yet, try again on next frame
-                requestAnimationFrame(startTutorialWhenReady);
-            }
-        };
+        if (tutorialBtn) {
+            // UI is already ready, start tutorial immediately
+            this.start();
+        } else {
+            // Use MutationObserver to watch for UI changes
+            const observer = new MutationObserver(() => {
+                const btn = document.getElementById('tutorial-btn');
+                if (btn) {
+                    observer.disconnect();
+                    // UI is ready, start tutorial
+                    this.start();
+                }
+            });
 
-        // Start checking on next frame
-        requestAnimationFrame(startTutorialWhenReady);
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+
+            // Fallback timeout to prevent infinite waiting
+            setTimeout(() => {
+                observer.disconnect();
+                console.warn('Tutorial button not found within timeout period');
+            }, 10000); // 10 second timeout
+        }
     }
 
     /**

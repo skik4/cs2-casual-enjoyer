@@ -59,18 +59,27 @@ export class TutorialHighlightManager {
             this.highlightTarget(selector);
             if (callback) callback(element);
         } else {
-            // Use requestAnimationFrame for smoother checking
-            const checkElement = () => {
+            // Use MutationObserver for efficient DOM monitoring
+            const observer = new MutationObserver(() => {
                 const elem = document.querySelector(selector);
                 if (elem && elem.offsetParent !== null) {
+                    observer.disconnect();
                     this.highlightTarget(selector);
                     if (callback) callback(elem);
-                } else {
-                    // Try again on next frame
-                    requestAnimationFrame(checkElement);
                 }
-            };
-            requestAnimationFrame(checkElement);
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['style', 'class']
+            });
+
+            // Fallback timeout to prevent infinite waiting
+            setTimeout(() => {
+                observer.disconnect();
+            }, 10000); // 10 second timeout
         }
     }
 
@@ -84,29 +93,37 @@ export class TutorialHighlightManager {
      */
     waitForElementWithAttempts(selector, attempts = 0, maxAttempts = 50, callback = null, failureCallback = null) {
         const element = document.querySelector(selector);
-        
-        if (element) {
-            // Element found, wait for next frame for layout to stabilize
-            requestAnimationFrame(() => {
-                // Double-check element is still there and visible
-                const checkElement = document.querySelector(selector);
-                if (checkElement && checkElement.offsetParent !== null) {
+
+        if (element && element.offsetParent !== null) {
+            // Element found and visible
+            this.highlightTarget(selector);
+            if (callback) callback(element);
+        } else if (attempts < maxAttempts) {
+            // Use MutationObserver for more efficient waiting
+            const observer = new MutationObserver(() => {
+                const elem = document.querySelector(selector);
+                if (elem && elem.offsetParent !== null) {
+                    observer.disconnect();
                     this.highlightTarget(selector);
-                    if (callback) callback(checkElement);
-                } else {
-                    // Element disappeared or not visible, try again
-                    if (attempts < maxAttempts) {
-                        this.waitForElementWithAttempts(selector, attempts + 1, maxAttempts, callback, failureCallback);
-                    } else if (failureCallback) {
-                        failureCallback();
-                    }
+                    if (callback) callback(elem);
+                } else if (attempts >= maxAttempts) {
+                    observer.disconnect();
+                    if (failureCallback) failureCallback();
                 }
             });
-        } else if (attempts < maxAttempts) {
-            // Element not found, try again on next frame
-            requestAnimationFrame(() => {
-                this.waitForElementWithAttempts(selector, attempts + 1, maxAttempts, callback, failureCallback);
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['style', 'class']
             });
+
+            // Recursive retry with timeout
+            setTimeout(() => {
+                observer.disconnect();
+                this.waitForElementWithAttempts(selector, attempts + 1, maxAttempts, callback, failureCallback);
+            }, 100); // Check every 100ms
         } else if (failureCallback) {
             // Element not found after max attempts
             failureCallback();

@@ -28,10 +28,10 @@ export class TutorialEventManager {
             // If on step 1 (Steam Web API Token) and user clicks the help link
             if (currentStep === 1) {
                 // Auto-advance to step 2 (Get Steam Web API Token)
-                // Use requestAnimationFrame to ensure smooth transition
-                requestAnimationFrame(() => {
+                // Use setTimeout for smooth transition without blocking the render cycle
+                setTimeout(() => {
                     onNextStep();
-                });
+                }, 0);
             }
         };
 
