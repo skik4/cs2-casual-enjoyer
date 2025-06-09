@@ -262,9 +262,9 @@ export const TUTORIAL_TEMPLATES = {
             title: "Welcome to CS2 Casual Enjoyer",
             content: `
                 Quick tutorial on main features.<br>
-                Use buttons below to navigate.
+                Use buttons below to navigate.                
                 <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                    Press Enter for next step, Esc to skip.
+                    Press Enter for next step, Backspace for previous, Esc to skip.
                 </div>
             `,
             target: null,

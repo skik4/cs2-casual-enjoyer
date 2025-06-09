@@ -6,6 +6,7 @@ export class TutorialEventManager {
     constructor() {
         this.handleAPIKeyClick = null;
         this.handleSteamTokenLinkClick = null;
+        this.handleKeyDown = null; // Add keyboard handler
         this.nextStepCallback = null;
         this.previousStepCallback = null;
         this.stopCallback = null;
@@ -23,6 +24,43 @@ export class TutorialEventManager {
         this.nextStepCallback = onNextStep;
         this.previousStepCallback = onPreviousStep;
         this.stopCallback = onStop;
+
+        // Setup keyboard event handler
+        this.handleKeyDown = (event) => {
+            // Only handle events when tutorial is active and not in input fields
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return; // Don't interfere with form inputs
+            }
+
+            switch (event.key) {
+                case 'Enter':
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (onNextStep) {
+                        onNextStep();
+                    }
+                    break;
+
+                case 'Backspace':
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (onPreviousStep) {
+                        onPreviousStep();
+                    }
+                    break;
+
+                case 'Escape':
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (onStop) {
+                        onStop();
+                    }
+                    break;
+            }
+        };
+
+        // Add global keyboard listener
+        document.addEventListener('keydown', this.handleKeyDown, true);
 
         this.handleAPIKeyClick = (event) => {
             // If on step 1 (Steam Web API Token) and user clicks the help link
@@ -45,6 +83,11 @@ export class TutorialEventManager {
      * Remove event listeners
      */
     removeEventListeners() {
+        // Remove keyboard listener
+        if (this.handleKeyDown) {
+            document.removeEventListener('keydown', this.handleKeyDown, true);
+        }
+
         const apiKeyHelp = document.querySelector('#api-key-help');
         if (apiKeyHelp && this.handleAPIKeyClick) {
             apiKeyHelp.removeEventListener('click', this.handleAPIKeyClick);
@@ -73,6 +116,7 @@ export class TutorialEventManager {
         this.removeEventListeners();
         this.handleAPIKeyClick = null;
         this.handleSteamTokenLinkClick = null;
+        this.handleKeyDown = null;
         this.nextStepCallback = null;
         this.previousStepCallback = null;
         this.stopCallback = null;

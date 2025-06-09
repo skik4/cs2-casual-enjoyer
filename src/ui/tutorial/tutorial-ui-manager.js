@@ -49,6 +49,7 @@ export class TutorialUIManager {
             this.overlay.remove();
             this.overlay = null;
         }
+
         if (this.modal) {
             this.modal.remove();
             this.modal = null;
@@ -147,6 +148,7 @@ export class TutorialUIManager {
                 this.modal.style.left = `${left}px`;
                 this.modal.style.transform = 'none';
             });
+
             return;
         }
 
@@ -167,18 +169,23 @@ export class TutorialUIManager {
                     top = rect.top - modalRect.height - verticalSpacing;
                     left = rect.left + (rect.width / 2) - (modalRect.width / 2);
                     break;
+
                 case 'bottom':
                     top = rect.bottom + verticalSpacing;
                     left = rect.left + (rect.width / 2) - (modalRect.width / 2);
                     break;
+
                 case 'left':
                     left = rect.left - modalRect.width - verticalSpacing;
                     top = rect.top + (rect.height / 2) - (modalRect.height / 2);
                     break;
+
                 case 'right':
                     left = rect.right + verticalSpacing;
                     top = rect.top + (rect.height / 2) - (modalRect.height / 2);
-                    break; case 'center':
+                    break;
+
+                case 'center':
                     // Use requestAnimationFrame to ensure modal dimensions are available after render
                     requestAnimationFrame(() => {
                         if (!this.modal) return; // Safety check
@@ -195,6 +202,7 @@ export class TutorialUIManager {
                         this.modal.style.transform = 'none';
                     });
                     return;
+
                 default:
                     // Fall through to automatic positioning
                     break;
@@ -206,6 +214,7 @@ export class TutorialUIManager {
                 if (left + modalRect.width > viewportWidth - horizontalPadding) {
                     left = viewportWidth - modalRect.width - horizontalPadding;
                 }
+
                 if (left < horizontalPadding) {
                     left = horizontalPadding;
                 }
@@ -214,9 +223,12 @@ export class TutorialUIManager {
                 if (top + modalRect.height > viewportHeight - horizontalPadding) {
                     top = viewportHeight - modalRect.height - horizontalPadding;
                 }
+
                 if (top < horizontalPadding) {
                     top = horizontalPadding;
-                } this.modal.style.top = `${top}px`;
+                }
+
+                this.modal.style.top = `${top}px`;
                 this.modal.style.left = `${left}px`;
                 this.modal.style.transform = 'none';
                 return;
@@ -292,7 +304,8 @@ export class TutorialUIManager {
         if (now - this.lastPositionUpdate < this.positionUpdateThrottle) {
             this.positionUpdateTimeout = setTimeout(() => {
                 this.updateModalPosition();
-            }, this.positionUpdateDebounce);
+            },
+                this.positionUpdateDebounce);
             return;
         }
 
@@ -338,7 +351,9 @@ export class TutorialUIManager {
      */
     getCurrentForcedPosition() {
         return this.currentForcedPosition;
-    }    /**
+    }
+
+    /**
      * Start efficient position updates using observers
      * @param {Function} isActiveCallback - Function to check if tutorial is still active
      */
@@ -360,7 +375,9 @@ export class TutorialUIManager {
                 this.updateModalPosition();
             }
         });
+
         this.resizeObserver.observe(document.body);
+
         if (this.modal) {
             this.resizeObserver.observe(this.modal);
         }
