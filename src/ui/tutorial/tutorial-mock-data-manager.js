@@ -28,6 +28,7 @@ const TUTORIAL_MOCK_FRIEND = {
 export class TutorialMockDataManager {
     constructor() {
         this.mockConnectionInterval = null;
+        this.activeTimeouts = new Set(); // Track all active timeouts
     }
 
     /**
@@ -111,8 +112,8 @@ export class TutorialMockDataManager {
         } else if (stepIndex === 2 && previousStepIndex !== 2) {
             // Entering step 2 (Get Steam Web API Token) - open notification
             this.openAPITokenNotification(stepIndex);
-        }        
-        
+        }
+
         // Handle mock friend based on step transitions
         if (previousStepIndex !== null && previousStepIndex >= 6 && stepIndex < 6) {
             // Moving back from Friends List Display step (6) or later - remove mock friend
@@ -125,7 +126,12 @@ export class TutorialMockDataManager {
         // Handle mock connection process for step 8 (Connection Process)
         if (stepIndex === 8 && previousStepIndex !== 8) {
             // Entering Connection Process step - start mock connection
-            this.startMockConnectionProcess();
+            // Add small delay to ensure previous process is fully stopped
+            setTimeout(() => {
+                if (stepIndex === 8) { // Double-check we're still on step 8
+                    this.startMockConnectionProcess();
+                }
+            }, 50);
         } else if (previousStepIndex === 8 && stepIndex !== 8) {
             // Leaving Connection Process step - stop mock connection
             this.stopMockConnectionProcess();
@@ -146,30 +152,37 @@ export class TutorialMockDataManager {
         import('../status-manager.js').then(({ default: StatusManager }) => {
             let currentStep = 0;
             const steps = [
-                { status: 'waiting', duration: 2000 },     // Red - checking for available slots
-                { status: 'connecting', duration: 3000 },  // Yellow - attempting to connect (longer)
-                { status: 'joined', duration: 1500 }       // Green - successfully connected
+                { status: 'waiting', duration: 1200 },     // Red - checking for available slots
+                { status: 'connecting', duration: 2400 },  // Yellow - attempting to connect (longer)
+                { status: 'joined', duration: 1200 }       // Green - successfully connected
             ];
 
             const runStep = () => {
-                if (!this.mockConnectionInterval) return; // Process was stopped
+                // Check if process was stopped
+                if (!this.mockConnectionInterval) return;
 
                 const step = steps[currentStep % steps.length];
 
                 // Update the status dot
                 StatusManager.updateDot(mockFriendId, step.status);
 
-                // Move to next step after duration
-                setTimeout(() => {
+                // Schedule next step
+                const timeoutId = setTimeout(() => {
+                    // Remove this timeout from tracking set
+                    this.activeTimeouts.delete(timeoutId);
+
                     currentStep++;
                     if (this.mockConnectionInterval) {
                         runStep();
                     }
                 }, step.duration);
+
+                // Track this timeout for cleanup
+                this.activeTimeouts.add(timeoutId);
             };
 
             // Start the process
-            this.mockConnectionInterval = true; // Use as a flag
+            this.mockConnectionInterval = true;
             runStep();
         });
     }
@@ -178,7 +191,14 @@ export class TutorialMockDataManager {
      * Stop mock connection process
      */
     stopMockConnectionProcess() {
+        // Stop the process flag
         this.mockConnectionInterval = null;
+
+        // Clear all active timeouts
+        this.activeTimeouts.forEach(timeoutId => {
+            clearTimeout(timeoutId);
+        });
+        this.activeTimeouts.clear();
 
         // Reset to default state if mock friend exists
         const mockFriendId = TUTORIAL_MOCK_FRIEND.steamid;
