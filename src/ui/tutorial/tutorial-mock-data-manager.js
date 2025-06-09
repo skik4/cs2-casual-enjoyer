@@ -26,6 +26,10 @@ const TUTORIAL_MOCK_FRIEND = {
  * Handles mock friend and API notifications for tutorial demonstration
  */
 export class TutorialMockDataManager {
+    constructor() {
+        this.mockConnectionInterval = null;
+    }
+
     /**
      * Open API token notification if not already open
      * @param {number} currentStep - Current tutorial step
@@ -61,7 +65,7 @@ export class TutorialMockDataManager {
     addTutorialMockFriend() {
         // Set flag in app state that tutorial mock friend should be displayed
         appStateManager.setState('showTutorialMockFriend', true);
-        
+
         // Immediately re-render friends list to show mock friend
         this.rerenderFriendsList();
     }
@@ -72,7 +76,7 @@ export class TutorialMockDataManager {
     removeTutorialMockFriend() {
         // Remove flag from app state
         appStateManager.setState('showTutorialMockFriend', false);
-        
+
         // Immediately re-render friends list to hide mock friend
         this.rerenderFriendsList();
     }
@@ -122,6 +126,70 @@ export class TutorialMockDataManager {
         if (stepIndex === 9) {
             this.removeTutorialMockFriend();
         }
+
+        // Handle mock connection process for step 8 (Connection Process)
+        if (stepIndex === 8 && previousStepIndex !== 8) {
+            // Entering Connection Process step - start mock connection
+            this.startMockConnectionProcess();
+        } else if (previousStepIndex === 8 && stepIndex !== 8) {
+            // Leaving Connection Process step - stop mock connection
+            this.stopMockConnectionProcess();
+        }
+    }
+
+    /**
+     * Start mock connection process for tutorial step 8 (Connection Process)
+     * Simulates the join process with red -> yellow -> green cycle
+     */
+    startMockConnectionProcess() {
+        // Stop any existing mock process
+        this.stopMockConnectionProcess();
+
+        const mockFriendId = TUTORIAL_MOCK_FRIEND.steamid;
+
+        // Import StatusManager dynamically to avoid circular dependency
+        import('../status-manager.js').then(({ default: StatusManager }) => {
+            let currentStep = 0;
+            const steps = [
+                { status: 'waiting', duration: 2000 },     // Red - checking for available slots
+                { status: 'connecting', duration: 3000 },  // Yellow - attempting to connect (longer)
+                { status: 'joined', duration: 1500 }       // Green - successfully connected
+            ];
+
+            const runStep = () => {
+                if (!this.mockConnectionInterval) return; // Process was stopped
+
+                const step = steps[currentStep % steps.length];
+
+                // Update the status dot
+                StatusManager.updateDot(mockFriendId, step.status);
+
+                // Move to next step after duration
+                setTimeout(() => {
+                    currentStep++;
+                    if (this.mockConnectionInterval) {
+                        runStep();
+                    }
+                }, step.duration);
+            };
+
+            // Start the process
+            this.mockConnectionInterval = true; // Use as a flag
+            runStep();
+        });
+    }
+
+    /**
+     * Stop mock connection process
+     */
+    stopMockConnectionProcess() {
+        this.mockConnectionInterval = null;
+
+        // Reset to default state if mock friend exists
+        const mockFriendId = TUTORIAL_MOCK_FRIEND.steamid;
+        import('../status-manager.js').then(({ default: StatusManager }) => {
+            StatusManager.updateDot(mockFriendId, 'cancelled');
+        });
     }
 
     /**
@@ -130,6 +198,7 @@ export class TutorialMockDataManager {
     cleanup() {
         this.closeAPITokenNotification();
         this.removeTutorialMockFriend();
+        this.stopMockConnectionProcess();
     }
 }
 
