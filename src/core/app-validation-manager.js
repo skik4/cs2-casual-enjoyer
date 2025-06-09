@@ -24,6 +24,12 @@ class AppValidationManager {
      * Check validation and start auto-refresh if conditions are met
      */
     checkAndStartAutoRefresh(hasSaved, validSteamId, validApiKey, isTokenExpired) {
+        // Don't start auto-refresh if tutorial is active
+        if (window.tutorialManager && window.tutorialManager.isActive) {
+            logger.info('App', 'Auto-refresh not started - tutorial is active');
+            return;
+        }
+
         const initialLoadAttempted = appStateManager.getState('initialLoadAttempted');
 
         // Don't start auto-refresh if we already attempted initial load
@@ -70,7 +76,7 @@ class AppValidationManager {
     /**
      * Update hint visibility based on user state
      */
-    
+
     updateHintVisibility(hasValidInputs, hasSavedFriends) {
         const hintElement = DOMUtils.getElementById('update-hint');
         const hintContainer = document.querySelector('.update-hint-container');

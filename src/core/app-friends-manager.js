@@ -39,6 +39,12 @@ class AppFriendsManager {
      * @returns {Promise<import('../shared/types.js').Friend[]>} - Array of friends
      */
     async fetchAndRenderFriendsByIds(friendIds, auth, keepStates = false) {
+        // Skip auto-refresh updates during tutorial
+        if (keepStates && window.tutorialManager && window.tutorialManager.isActive) {
+            logger.debug('App', 'fetchAndRenderFriendsByIds skipped - tutorial is active');
+            return [];
+        }
+
         if (!friendIds || !friendIds.length) {
             logger.error('App', "No friend IDs provided to fetchAndRenderFriendsByIds");
             return [];
@@ -161,7 +167,12 @@ class AppFriendsManager {
                 this.validationManager.updateHintVisibility(false, true);
             }
 
-            this.startAutoRefresh();
+            // Only start auto-refresh if tutorial is not active
+            if (!window.tutorialManager || !window.tutorialManager.isActive) {
+                this.startAutoRefresh();
+            } else {
+                logger.info('App', 'Auto-refresh not started after update - tutorial is active');
+            }
         } catch (error) {
             ErrorHandler.logError('App.updateFriendsList', error);
             UIManager.showError(error.message || error, steam_id);
@@ -177,6 +188,12 @@ class AppFriendsManager {
      * Start auto-refresh for friends list
      */
     async startAutoRefresh() {
+        // Check if tutorial is currently active
+        if (window.tutorialManager && window.tutorialManager.isActive) {
+            logger.info('App', 'Auto-refresh blocked - tutorial is active');
+            return;
+        }
+
         const auth = this.inputManager ? this.inputManager.getAuth() : '';
 
         const savedFriendsIds = appStateManager.getState('savedFriendsIds');
@@ -195,6 +212,12 @@ class AppFriendsManager {
             // Set new interval
             const autoRefreshIntervalMs = appStateManager.getState('autoRefreshIntervalMs');
             const interval = setInterval(async () => {
+                // Check if tutorial is active before each refresh
+                if (window.tutorialManager && window.tutorialManager.isActive) {
+                    logger.debug('App', 'Auto-refresh skipped - tutorial is active');
+                    return;
+                }
+
                 const usingSavedFriends = appStateManager.getState('usingSavedFriends');
                 const currentSavedFriendsIds = appStateManager.getState('savedFriendsIds');
 
