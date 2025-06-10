@@ -133,3 +133,8 @@ export class TutorialStateManager {
         return null;
     }
 }
+
+// Singleton instance
+const tutorialStateManager = new TutorialStateManager([]);
+
+export default tutorialStateManager;

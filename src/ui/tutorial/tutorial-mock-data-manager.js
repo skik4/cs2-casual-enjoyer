@@ -1,25 +1,11 @@
-import NotificationManager from '../notification-manager.js';
+// Shared constants
+import { TUTORIAL_MOCK_FRIEND } from '../../shared/constants.js';
+
+// Core singletons
 import appStateManager from '../../core/app-state-manager.js';
 
-/**
- * Tutorial mock friend data for demonstration purposes
- * Based on real Steam API response data
- */
-const TUTORIAL_MOCK_FRIEND = {
-    steamid: '76561197960287930',
-    personaname: 'Rabscuttle',
-    avatar: 'https://avatars.steamstatic.com/c5d56249ee5d28a07db4ac9f7f60af961fab5426.jpg',
-    avatarmedium: 'https://avatars.steamstatic.com/c5d56249ee5d28a07db4ac9f7f60af961fab5426_medium.jpg',
-    avatarfull: 'https://avatars.steamstatic.com/c5d56249ee5d28a07db4ac9f7f60af961fab5426_full.jpg',
-    avatarhash: 'c5d56249ee5d28a07db4ac9f7f60af961fab5426',
-    profileurl: 'https://steamcommunity.com/id/GabeLoganNewell/',
-    communityvisibilitystate: 2,
-    profilestate: 1,
-    personastate: 0,
-    status: 'Playing Casual on Dust 2',
-    in_casual_mode: true,
-    join_available: true
-};
+// UI and utilities
+import NotificationManager from '../notification-manager.js';
 
 /**
  * Tutorial Mock Data Manager
@@ -217,4 +203,7 @@ export class TutorialMockDataManager {
     }
 }
 
-export { TUTORIAL_MOCK_FRIEND };
+// Singleton instance
+const tutorialMockDataManager = new TutorialMockDataManager();
+
+export default tutorialMockDataManager;

@@ -1,8 +1,11 @@
+// Steam modules
 import SteamAPIHttpClient from './http-client.js';
 import SteamAPIConfig from './api-config.js';
 import SteamAPILogger from './api-logger.js';
 import SteamAPIResponseProcessor from './steam-api-response-processor.js';
 import SteamAPIUtils from './steam-api-utils.js';
+
+// UI and utilities
 import Validators from '../utils/validators.js';
 
 /**

@@ -1,12 +1,17 @@
-import SteamAPI from '../steam/steam-api.js';
-import UIManager from '../ui/ui-manager.js';
+
+// Core singletons
+import appStateManager from './app-state-manager.js';
+
+// Game singletons
 import joinManager from '../game/join-manager.js';
+
+// UI and utilities
+import UIManager from '../ui/ui-manager.js';
+import SteamAPI from '../steam/steam-api.js';
 import Validators from '../utils/validators.js';
 import ErrorHandler from '../utils/error-handler.js';
 import DOMUtils from '../utils/dom-utils.js';
-import { getTutorialManager } from '../ui/tutorial/tutorial-manager.js';
-
-import appStateManager from './app-state-manager.js';
+import tutorialManager from '../ui/tutorial/tutorial-manager.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -41,7 +46,7 @@ class AppFriendsManager {
      */
     async fetchAndRenderFriendsByIds(friendIds, auth, keepStates = false) {
         // Skip auto-refresh updates during tutorial
-        if (keepStates && getTutorialManager().isActive) {
+        if (keepStates && tutorialManager.isActive) {
             logger.debug('App', 'fetchAndRenderFriendsByIds skipped - tutorial is active');
             return [];
         }
@@ -163,13 +168,13 @@ class AppFriendsManager {
                 this.eventManager.setupFriendListeners();
             }
 
-            // Hide the hint since we now have friends data
+            // Hide the hint since we now have friends data            
             if (this.validationManager) {
                 this.validationManager.updateHintVisibility(false, true);
             }
 
             // Only start auto-refresh if tutorial is not active
-            if (!getTutorialManager().isActive) {
+            if (!tutorialManager.isActive) {
                 this.startAutoRefresh();
             } else {
                 logger.info('App', 'Auto-refresh not started after update - tutorial is active');
@@ -190,7 +195,7 @@ class AppFriendsManager {
      */
     async startAutoRefresh() {
         // Check if tutorial is currently active
-        if (getTutorialManager().isActive) {
+        if (tutorialManager.isActive) {
             logger.info('App', 'Auto-refresh blocked - tutorial is active');
             return;
         }
@@ -211,9 +216,8 @@ class AppFriendsManager {
             appStateManager.clearRefreshInterval();
 
             // Set new interval
-            const autoRefreshIntervalMs = appStateManager.getState('autoRefreshIntervalMs'); const interval = setInterval(async () => {
-                // Check if tutorial is active before each refresh
-                if (getTutorialManager().isActive) {
+            const autoRefreshIntervalMs = appStateManager.getState('autoRefreshIntervalMs'); const interval = setInterval(async () => {                // Check if tutorial is active before each refresh
+                if (tutorialManager.isActive) {
                     logger.debug('App', 'Auto-refresh skipped - tutorial is active');
                     return;
                 }

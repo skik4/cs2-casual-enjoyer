@@ -133,3 +133,9 @@ export class TutorialEventManager {
         };
     }
 }
+
+
+// Singleton instance
+const tutorialEventManager = new TutorialEventManager();
+
+export default tutorialEventManager;

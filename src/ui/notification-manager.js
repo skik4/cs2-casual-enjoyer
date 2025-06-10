@@ -1,6 +1,9 @@
+// Shared constants
+import { NOTIFICATION_TEMPLATES, HELP_TEMPLATES } from './html-templates.js';
+
+// UI and utilities
 import ErrorHandler from '../utils/error-handler.js';
 import DOMUtils from '../utils/dom-utils.js';
-import { NOTIFICATION_TEMPLATES, HELP_TEMPLATES } from './html-templates.js';
 import logger from '../utils/logger.js';
 
 /**

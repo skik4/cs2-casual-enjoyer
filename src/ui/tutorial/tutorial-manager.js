@@ -1,11 +1,16 @@
+// Shared constants
 import { TUTORIAL_TEMPLATES } from '../html-templates.js';
-import { TutorialStateManager } from './tutorial-state-manager.js';
-import { TutorialUIManager } from './tutorial-ui-manager.js';
-import { TutorialHighlightManager } from './tutorial-highlight-manager.js';
-import { TutorialMockDataManager } from './tutorial-mock-data-manager.js';
-import { TutorialEventManager } from './tutorial-event-manager.js';
+
+// Core singletons
 import appStateManager from '../../core/app-state-manager.js';
 import appFriendsManager from '../../core/app-friends-manager.js';
+
+// Tutorial singletons
+import tutorialStateManager from './tutorial-state-manager.js';
+import tutorialUIManager from './tutorial-ui-manager.js';
+import tutorialHighlightManager from './tutorial-highlight-manager.js';
+import tutorialMockDataManager from './tutorial-mock-data-manager.js';
+import tutorialEventManager from './tutorial-event-manager.js';
 
 /**
  * Tutorial Manager
@@ -13,12 +18,14 @@ import appFriendsManager from '../../core/app-friends-manager.js';
  */
 class TutorialManager {
     constructor() {
-        // Initialize sub-managers
-        this.stateManager = new TutorialStateManager(TUTORIAL_TEMPLATES.STEPS);
-        this.uiManager = new TutorialUIManager();
-        this.highlightManager = new TutorialHighlightManager();
-        this.mockDataManager = new TutorialMockDataManager();
-        this.eventManager = new TutorialEventManager();
+        this.stateManager = tutorialStateManager;
+        this.uiManager = tutorialUIManager;
+        this.highlightManager = tutorialHighlightManager;
+        this.mockDataManager = tutorialMockDataManager;
+        this.eventManager = tutorialEventManager;
+        
+        // Initialize steps in the state manager
+        this.stateManager.steps = TUTORIAL_TEMPLATES.STEPS;
     }
 
     /**
@@ -273,21 +280,6 @@ class TutorialManager {
 }
 
 // Singleton instance
-let tutorialManagerInstance = null;
+const tutorialManager = new TutorialManager();
 
-/**
- * Get or create the singleton instance of TutorialManager
- * @returns {TutorialManager} The singleton instance
- */
-function getTutorialManager() {
-    if (!tutorialManagerInstance) {
-        tutorialManagerInstance = new TutorialManager();
-    }
-    return tutorialManagerInstance;
-}
-
-// Create and export the singleton instance
-const tutorialManager = getTutorialManager();
-
-export default TutorialManager;
-export { tutorialManager, getTutorialManager };
+export default tutorialManager;

@@ -85,18 +85,18 @@
                 style="color: var(--blue-primary); text-decoration: underline dotted; cursor: pointer;"
                 title="Open skik4's Steam profile">skik4</a>
         </span>
-    </div> <!-- Load the new modular application -->
+    </div>
     <script type="module" src="src/core/app.js"></script>
     <script type="module">
-        import { getTutorialManager } from './src/ui/tutorial/tutorial-manager.js';
-
-        // Make tutorial manager globally available for HTML onclick handlers
-        window.tutorialManager = getTutorialManager();
+        import tutorialManager from './src/ui/tutorial/tutorial-manager.js';
 
         // Global function to start tutorial using singleton
         window.startTutorial = function () {
-            window.tutorialManager.start();
+            tutorialManager.start();
         };
+
+        // Make tutorialManager globally accessible
+        window.tutorialManager = tutorialManager;
     </script>
     <script>
         // Initialize app version display

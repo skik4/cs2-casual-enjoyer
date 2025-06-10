@@ -1,4 +1,8 @@
+
+// Shared constants
 import { API_CONFIG } from '../shared/constants.js';
+
+// UI and utilities
 import logger from '../utils/logger.js';
 
 /**

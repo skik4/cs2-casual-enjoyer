@@ -1,8 +1,15 @@
-import { STATUS_TYPES } from '../shared/constants.js';
-import DOMUtils from '../utils/dom-utils.js';
+// Shared constants
 import { FRIENDS_TEMPLATES } from './html-templates.js';
+import { TUTORIAL_MOCK_FRIEND } from '../shared/constants.js';
+
+// Core singletons
 import appStateManager from '../core/app-state-manager.js';
-import { TUTORIAL_MOCK_FRIEND } from './tutorial/tutorial-mock-data-manager.js';
+
+// Shared constants
+import { STATUS_TYPES } from '../shared/constants.js';
+
+// UI and utilities
+import DOMUtils from '../utils/dom-utils.js';
 
 /**
  * Friends Renderer module

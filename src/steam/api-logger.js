@@ -1,5 +1,8 @@
-import logger from '../utils/logger.js';
+// Steam modules
 import SteamAPIUtils from './steam-api-utils.js';
+
+// UI and utilities
+import logger from '../utils/logger.js';
 
 /**
  * Request/Response logger for Steam API

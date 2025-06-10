@@ -1,14 +1,24 @@
-import joinManager from '../game/join-manager.js';
-import CS2Manager from '../game/cs2-manager.js';
-import UIManager from '../ui/ui-manager.js';
-import { getTutorialManager } from '../ui/tutorial/tutorial-manager.js';
-import AppInputManager from './app-input-manager.js';
-import appFriendsManager from './app-friends-manager.js';
-import AppEventManager from './app-event-manager.js';
-import AppValidationManager from './app-validation-manager.js';
-import DOMUtils from '../utils/dom-utils.js';
 
+// Core singletons
+import appInputManager from './app-input-manager.js';
+import appFriendsManager from './app-friends-manager.js';
+import appEventManager from './app-event-manager.js';
+import appValidationManager from './app-validation-manager.js';
 import appStateManager from './app-state-manager.js';
+
+// import AppInputManager from './app-input-manager.js';
+// import AppEventManager from './app-event-manager.js';
+// import AppValidationManager from './app-validation-manager.js';
+// import CS2Manager from '../game/cs2-manager.js';
+
+// Game singletons
+import joinManager from '../game/join-manager.js';
+import cs2Manager from '../game/cs2-manager.js';
+
+// UI and utilities
+import UIManager from '../ui/ui-manager.js';
+import tutorialManager from '../ui/tutorial/tutorial-manager.js';
+import DOMUtils from '../utils/dom-utils.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -20,11 +30,15 @@ class App {
         this.initialized = false;
 
         // Initialize managers
-        this.inputManager = new AppInputManager();
+        this.inputManager = appInputManager;
         this.friendsManager = appFriendsManager;
-        this.eventManager = new AppEventManager();
-        this.validationManager = new AppValidationManager();
-        this.cs2Manager = new CS2Manager();
+        this.eventManager = appEventManager;
+        this.validationManager = appValidationManager;
+        this.cs2Manager = cs2Manager;
+        // this.inputManager = new AppInputManager();
+        // this.eventManager = new AppEventManager();
+        // this.validationManager = new AppValidationManager();
+        // this.cs2Manager = new CS2Manager();
 
         // Set up cross-references
         this.inputManager.setValidationManager(this.validationManager);
@@ -83,7 +97,6 @@ class App {
             if (isFirstRun) {
                 logger.info('App', 'First run detected - starting tutorial');
                 // Use TutorialManager's method to wait for UI and start tutorial
-                const tutorialManager = getTutorialManager();
                 tutorialManager.waitForUIAndStartTutorial();
             } else {
                 logger.info('App', 'Settings found - skipping tutorial auto-start');
@@ -128,3 +141,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Export class for testing and external access
 export default App;
+console.log("APP LOADED");

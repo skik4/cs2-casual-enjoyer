@@ -1,3 +1,4 @@
+// Shared constants
 import { ERROR_CODES } from '../shared/constants.js';
 
 /**

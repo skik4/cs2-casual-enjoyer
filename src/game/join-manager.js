@@ -1,3 +1,5 @@
+
+// UI and utilities
 import { API_CONFIG, STATUS_TYPES } from '../shared/constants.js';
 import SteamAPI from '../steam/steam-api.js';
 import Validators from '../utils/validators.js';

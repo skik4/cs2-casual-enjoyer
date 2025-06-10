@@ -1,3 +1,4 @@
+// Shared constants
 import { TUTORIAL_TEMPLATES } from '../html-templates.js';
 
 /**
@@ -446,3 +447,8 @@ export class TutorialUIManager {
         this.currentForcedPosition = null;
     }
 }
+
+// // Singleton instance
+const tutorialUIManager = new TutorialUIManager();
+
+export default tutorialUIManager;

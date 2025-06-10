@@ -1,3 +1,4 @@
+// Shared constants
 import { VALIDATION_PATTERNS } from '../shared/constants.js';
 
 /**

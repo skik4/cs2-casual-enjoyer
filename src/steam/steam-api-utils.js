@@ -1,4 +1,7 @@
+// Shared constants
 import { VALIDATION_PATTERNS, API_CONFIG, ERROR_CODES } from '../shared/constants.js';
+
+// UI and utilities
 import Validators from '../utils/validators.js';
 
 /**

@@ -1,3 +1,5 @@
+
+// UI and utilities
 import SteamAPI from '../steam/steam-api.js';
 import Validators from '../utils/validators.js';
 import logger from '../utils/logger.js';
@@ -119,4 +121,9 @@ class CS2Manager {
     }
 }
 
-export default CS2Manager;
+// Singleton instance
+const cs2Manager = new CS2Manager();
+
+export default cs2Manager;
+
+// export default CS2Manager;

@@ -1,13 +1,15 @@
 import StatusManager from './status-manager.js';
 import FriendsRenderer from './friends-renderer.js';
 import NotificationManager from './notification-manager.js';
-import { getTutorialManager } from './tutorial/tutorial-manager.js';
+
+import tutorialManager from './tutorial/tutorial-manager.js';
 
 /**
  * UI Manager module
  * Facade that delegates to specialized UI managers
  */
-class UIManager {    /**
+class UIManager {
+    /**
      * Cache for last rendered friends (for re-rendering on filter)
      */
     static get lastRenderedFriends() {
@@ -129,8 +131,7 @@ class UIManager {    /**
     /**
      * Start the tutorial
      */
-    static startTutorial() {
-        const tutorialManager = getTutorialManager();
+    static startTutorial() {;
         return tutorialManager.start();
     }
 
@@ -138,7 +139,6 @@ class UIManager {    /**
      * Stop the tutorial
      */
     static stopTutorial() {
-        const tutorialManager = getTutorialManager();
         return tutorialManager.stop();
     }
 }

@@ -1,3 +1,4 @@
+// Shared constants
 import { LOG_LEVELS, LOG_LEVEL_PRIORITY, LOGGING_CONFIG } from '../shared/constants.js';
 
 /**
@@ -201,33 +202,6 @@ class Logger {
                 console.table({ Previous: oldValue, Current: newValue });
             }
             console.groupEnd();
-        }
-    }
-
-    /**
-     * Create a performance timer for measuring execution time
-     * @param {string} label - Timer label
-     * @returns {Function} Function to end the timer
-     */
-    time(label) {
-        const fullLabel = `⏱️ ${label}`;
-        console.time(fullLabel);
-        return () => {
-            console.timeEnd(fullLabel);
-        };
-    }
-
-    /**
-     * Log memory usage
-     */
-    logMemoryUsage() {
-        if (performance.memory) {
-            const memory = performance.memory;
-            console.table({
-                'Used JS Heap Size': `${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
-                'Total JS Heap Size': `${(memory.totalJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
-                'JS Heap Size Limit': `${(memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)} MB`
-            });
         }
     }
 }

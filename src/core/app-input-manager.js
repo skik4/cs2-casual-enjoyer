@@ -1,10 +1,15 @@
-import SteamAPI from '../steam/steam-api.js';
-import UIManager from '../ui/ui-manager.js';
+
+// Core singletons
+import appStateManager from './app-state-manager.js';
+
+// Game singletons
 import joinManager from '../game/join-manager.js';
+
+// UI and utilities
+import UIManager from '../ui/ui-manager.js';
+import SteamAPI from '../steam/steam-api.js';
 import Validators from '../utils/validators.js';
 import DOMUtils from '../utils/dom-utils.js';
-
-import appStateManager from './app-state-manager.js';
 
 /**
  * Input management module
@@ -224,4 +229,9 @@ class AppInputManager {
     }
 }
 
-export default AppInputManager;
+// Singleton instance
+const appInputManager = new AppInputManager();
+
+export default appInputManager;
+
+//  export default AppInputManager;

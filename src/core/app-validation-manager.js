@@ -1,7 +1,10 @@
-import DOMUtils from '../utils/dom-utils.js';
-import { getTutorialManager } from '../ui/tutorial/tutorial-manager.js';
 
+// Core singletons
 import appStateManager from './app-state-manager.js';
+
+// UI and utilities
+import DOMUtils from '../utils/dom-utils.js';
+import tutorialManager from '../ui/tutorial/tutorial-manager.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -26,7 +29,7 @@ class AppValidationManager {
      */
     checkAndStartAutoRefresh(hasSaved, validSteamId, validApiKey, isTokenExpired) {
         // Don't start auto-refresh if tutorial is active
-        if (getTutorialManager().isActive) {
+        if (tutorialManager.isActive) {
             logger.info('App', 'Auto-refresh not started - tutorial is active');
             return;
         }
@@ -94,4 +97,9 @@ class AppValidationManager {
     }
 }
 
-export default AppValidationManager;
+// Singleton instance
+const appValidationManager = new AppValidationManager();
+
+export default appValidationManager;
+
+// export default AppValidationManager;

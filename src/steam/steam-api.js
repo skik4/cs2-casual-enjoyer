@@ -1,3 +1,4 @@
+// Steam modules
 import SteamAPIClient from './steam-api-client.js';
 import SteamAPIUtils from './steam-api-utils.js';
 

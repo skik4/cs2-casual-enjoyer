@@ -1,7 +1,12 @@
+// Shared constants
 import { ERROR_CODES } from '../shared/constants.js';
+
+// Steam modules
+import SteamAPIUtils from './steam-api-utils.js';
+
+// UI and utilities
 import ErrorHandler from '../utils/error-handler.js';
 import logger from '../utils/logger.js';
-import SteamAPIUtils from './steam-api-utils.js';
 
 /**
  * Steam API Response Processor

@@ -1,4 +1,7 @@
+// Shared constants
 import { STATUS_TYPES } from '../shared/constants.js';
+
+// UI and utilities
 import DOMUtils from '../utils/dom-utils.js';
 
 /**

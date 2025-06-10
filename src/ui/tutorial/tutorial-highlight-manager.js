@@ -138,3 +138,8 @@ export class TutorialHighlightManager {
         this.removeSpotlight();
     }
 }
+
+// Singleton instance
+const tutorialHighlightManager = new TutorialHighlightManager();
+
+export default tutorialHighlightManager;
