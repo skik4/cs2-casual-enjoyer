@@ -14,6 +14,37 @@ const WINDOW_CONFIG = {
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 
 /**
+ * Simple main process logger
+ */
+class MainLogger {
+    static log(level, message, data = null) {
+        const timestamp = new Date().toISOString();
+        const logMessage = `[${timestamp}] [MAIN] [${level.toUpperCase()}] ${message}`;
+        
+        console.log(logMessage);
+        if (data) {
+            console.log('Data:', data);
+        }
+    }
+
+    static info(message, data = null) {
+        this.log('info', message, data);
+    }
+
+    static warn(message, data = null) {
+        this.log('warn', message, data);
+    }
+
+    static error(message, data = null) {
+        this.log('error', message, data);
+    }
+
+    static debug(message, data = null) {
+        this.log('debug', message, data);
+    }
+}
+
+/**
  * Settings management utilities
  */
 class SettingsManager {
@@ -25,10 +56,11 @@ class SettingsManager {
         try {
             if (await fs.access(SETTINGS_PATH).then(() => true).catch(() => false)) {
                 const data = await fs.readFile(SETTINGS_PATH, 'utf-8');
+                MainLogger.info('Settings loaded successfully');
                 return JSON.parse(data);
             }
         } catch (error) {
-            console.error('Error reading settings:', error);
+            MainLogger.error('Error reading settings', error);
         }
         return null;
     }
@@ -41,9 +73,10 @@ class SettingsManager {
     static async writeSettings(data) {
         try {
             await fs.writeFile(SETTINGS_PATH, JSON.stringify(data, null, 2), 'utf-8');
+            MainLogger.info('Settings saved successfully');
             return true;
         } catch (error) {
-            console.error('Error writing settings:', error);
+            MainLogger.error('Error writing settings', error);
             return false;
         }
     }
@@ -134,10 +167,21 @@ class IPCManager {
             return app.getVersion();
         });
 
-        // Logging handler
-        ipcMain.on('log-message', (event, level, message, data) => {
-            const timestamp = new Date().toISOString();
-            console.log(`[${timestamp}] [${level.toUpperCase()}] ${message}`, data || '');
+        // Logging handlers - receive logs from renderer process
+        ipcMain.on('log-error', (event, context, message, data) => {
+            MainLogger.error(`[${context}] ${message}`, data);
+        });
+
+        ipcMain.on('log-warn', (event, context, message, data) => {
+            MainLogger.warn(`[${context}] ${message}`, data);
+        });
+
+        ipcMain.on('log-info', (event, context, message, data) => {
+            MainLogger.info(`[${context}] ${message}`, data);
+        });
+
+        ipcMain.on('log-debug', (event, context, message, data) => {
+            MainLogger.debug(`[${context}] ${message}`, data);
         });
     }
 }
@@ -170,9 +214,12 @@ const appManager = new AppManager();
 
 // App event handlers
 app.whenReady().then(async () => {
+    MainLogger.info('Application starting...');
     await appManager.initialize();
+    MainLogger.info('Application initialized successfully');
 });
 
 app.on('window-all-closed', () => {
+    MainLogger.info('All windows closed, quitting application');
     app.quit();
 });

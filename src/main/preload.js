@@ -36,16 +36,6 @@ const electronAPI = {
     },
 
     /**
-     * Logging methods
-     */
-    log: {
-        info: (message, data) => ipcRenderer.send('log-message', 'info', message, data),
-        warn: (message, data) => ipcRenderer.send('log-message', 'warn', message, data),
-        error: (message, data) => ipcRenderer.send('log-message', 'error', message, data),
-        debug: (message, data) => ipcRenderer.send('log-message', 'debug', message, data)
-    },
-
-    /**
      * App information methods
      */
     app: {
@@ -57,6 +47,16 @@ const electronAPI = {
                 return 'unknown';
             }
         }
+    },
+
+    /**
+     * Logging methods - bridge renderer logs to main process
+     */
+    log: {
+        error: (context, message, data) => ipcRenderer.send('log-error', context, message, data),
+        warn: (context, message, data) => ipcRenderer.send('log-warn', context, message, data),
+        info: (context, message, data) => ipcRenderer.send('log-info', context, message, data),
+        debug: (context, message, data) => ipcRenderer.send('log-debug', context, message, data)
     }
 };
 

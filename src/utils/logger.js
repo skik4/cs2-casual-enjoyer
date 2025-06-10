@@ -1,8 +1,8 @@
 import { LOG_LEVELS, LOG_LEVEL_PRIORITY, LOGGING_CONFIG } from '../shared/constants.js';
 
 /**
- * Simple wrapper around Electron's native logging with level control
- * Provides consistent interface across the application
+ * Enhanced Logger with proper Electron DevTools integration
+ * Uses native console methods for optimal DevTools experience
  */
 class Logger {
     constructor() {
@@ -29,7 +29,27 @@ class Logger {
     }
 
     /**
-     * Log error message
+     * Format timestamp for logs
+     * @returns {string} Formatted timestamp
+     */
+    getTimestamp() {
+        return new Date().toISOString().replace('T', ' ').substring(0, 19);
+    }
+
+    /**
+     * Format log message with timestamp and context
+     * @param {string} level - Log level
+     * @param {string} context - Context/module name
+     * @param {string} message - Log message
+     * @returns {string} Formatted message
+     */
+    formatMessage(level, context, message) {
+        const timestamp = this.getTimestamp();
+        return `[${timestamp}] [${level}] [${context}] ${message}`;
+    }
+
+    /**
+     * Log error message with stack trace support
      * @param {string} context - Context/module name
      * @param {string} message - Error message
      * @param {*} data - Additional data to log
@@ -37,10 +57,22 @@ class Logger {
     error(context, message, data = null) {
         if (!this.shouldLog(LOG_LEVELS.ERROR)) return;
         
-        if (this.isElectronAvailable) {
-            window.electronAPI.log.error(`[${context}] ${message}`, data);
+        const formattedMessage = this.formatMessage('ERROR', context, message);
+        
+        // Use console.error for proper DevTools error styling and stack traces
+        if (data instanceof Error) {
+            console.error(formattedMessage, data);
+            console.trace('Error stack trace');
+        } else if (data) {
+            console.error(formattedMessage);
+            console.table(data);
         } else {
-            console.error(`[${context}] ${message}`, data);
+            console.error(formattedMessage);
+        }
+        
+        // Send to main process
+        if (this.isElectronAvailable) {
+            window.electronAPI.log.error(context, message, data);
         }
     }
 
@@ -53,10 +85,19 @@ class Logger {
     warn(context, message, data = null) {
         if (!this.shouldLog(LOG_LEVELS.WARN)) return;
         
+        const formattedMessage = this.formatMessage('WARN', context, message);
+        
+        // Use console.warn for proper DevTools warning styling
+        console.warn(formattedMessage);
+        if (data && typeof data === 'object') {
+            console.table(data);
+        } else if (data) {
+            console.warn('Data:', data);
+        }
+        
+        // Send to main process
         if (this.isElectronAvailable) {
-            window.electronAPI.log.warn(`[${context}] ${message}`, data);
-        } else {
-            console.warn(`[${context}] ${message}`, data);
+            window.electronAPI.log.warn(context, message, data);
         }
     }
 
@@ -69,15 +110,24 @@ class Logger {
     info(context, message, data = null) {
         if (!this.shouldLog(LOG_LEVELS.INFO)) return;
         
+        const formattedMessage = this.formatMessage('INFO', context, message);
+        
+        // Use console.info for proper DevTools info styling
+        console.info(formattedMessage);
+        if (data && typeof data === 'object') {
+            console.table(data);
+        } else if (data) {
+            console.info('Data:', data);
+        }
+        
+        // Send to main process
         if (this.isElectronAvailable) {
-            window.electronAPI.log.info(`[${context}] ${message}`, data);
-        } else {
-            console.info(`[${context}] ${message}`, data);
+            window.electronAPI.log.info(context, message, data);
         }
     }
 
     /**
-     * Log debug message
+     * Log debug message with grouping support
      * @param {string} context - Context/module name
      * @param {string} message - Debug message
      * @param {*} data - Additional data to log
@@ -85,15 +135,28 @@ class Logger {
     debug(context, message, data = null) {
         if (!this.shouldLog(LOG_LEVELS.DEBUG)) return;
         
-        if (this.isElectronAvailable) {
-            window.electronAPI.log.debug(`[${context}] ${message}`, data);
+        const formattedMessage = this.formatMessage('DEBUG', context, message);
+        
+        // Use console.debug which can be filtered in DevTools
+        if (data && typeof data === 'object' && Object.keys(data).length > 3) {
+            console.groupCollapsed(formattedMessage);
+            console.table(data);
+            console.groupEnd();
         } else {
-            console.log(`[DEBUG] [${context}] ${message}`, data);
+            console.debug(formattedMessage);
+            if (data) {
+                console.debug('Data:', data);
+            }
+        }
+        
+        // Send to main process
+        if (this.isElectronAvailable) {
+            window.electronAPI.log.debug(context, message, data);
         }
     }
 
     /**
-     * Log trace message (for detailed debugging, like raw API responses)
+     * Log trace message with detailed data inspection
      * @param {string} context - Context/module name
      * @param {string} message - Trace message
      * @param {*} data - Additional data to log
@@ -101,23 +164,70 @@ class Logger {
     trace(context, message, data = null) {
         if (!this.shouldLog(LOG_LEVELS.TRACE)) return;
         
+        const formattedMessage = this.formatMessage('TRACE', context, message);
+        
+        // Use console.trace for stack trace and grouping for large data
+        console.groupCollapsed(`🔍 ${formattedMessage}`);
+        if (data) {
+            if (typeof data === 'object') {
+                console.table(data);
+                console.dir(data, { depth: 3 });
+            } else {
+                console.log('Data:', data);
+            }
+        }
+        console.trace('Call stack');
+        console.groupEnd();
+        
+        // Send to main process as debug level
         if (this.isElectronAvailable) {
-            // Electron doesn't have native trace, use debug
-            window.electronAPI.log.debug(`[TRACE] [${context}] ${message}`, data);
-        } else {
-            console.log(`[TRACE] [${context}] ${message}`, data);
+            window.electronAPI.log.debug(context, `[TRACE] ${message}`, data);
         }
     }
 
     /**
-     * Log state changes (controlled by config)
+     * Log state changes with visual grouping
      * @param {string} key - State key
      * @param {*} oldValue - Previous value
      * @param {*} newValue - New value
      */
     logStateChange(key, oldValue, newValue) {
         if (LOGGING_CONFIG.ENABLE_STATE_CHANGE_LOGGING || this.shouldLog(LOG_LEVELS.DEBUG)) {
-            this.debug('StateManager', `State change: ${key}`, { oldValue, newValue });
+            const timestamp = this.getTimestamp();
+            console.groupCollapsed(`🔄 [${timestamp}] State Change: ${key}`);
+            console.log('Previous:', oldValue);
+            console.log('Current:', newValue);
+            if (typeof oldValue === 'object' && typeof newValue === 'object') {
+                console.table({ Previous: oldValue, Current: newValue });
+            }
+            console.groupEnd();
+        }
+    }
+
+    /**
+     * Create a performance timer for measuring execution time
+     * @param {string} label - Timer label
+     * @returns {Function} Function to end the timer
+     */
+    time(label) {
+        const fullLabel = `⏱️ ${label}`;
+        console.time(fullLabel);
+        return () => {
+            console.timeEnd(fullLabel);
+        };
+    }
+
+    /**
+     * Log memory usage
+     */
+    logMemoryUsage() {
+        if (performance.memory) {
+            const memory = performance.memory;
+            console.table({
+                'Used JS Heap Size': `${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
+                'Total JS Heap Size': `${(memory.totalJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
+                'JS Heap Size Limit': `${(memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)} MB`
+            });
         }
     }
 }
