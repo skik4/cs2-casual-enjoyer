@@ -132,17 +132,11 @@ class NotificationManager {
     }
 
     /**
-     * Cleanup CS2 launch notification elements and intervals
+     * Cleanup CS2 launch notification elements
      * @private
      */
-    static _cleanupCS2LaunchNotification(launchBtn, closeBtn, checkInterval, handleLaunch, handleClose) {
-        logger.debug('NotificationManager', 'Starting CS2 launch notification cleanup', {
-            hasLaunchBtn: !!launchBtn,
-            hasCloseBtn: !!closeBtn,
-            hasCheckInterval: !!checkInterval,
-            hasHandleLaunch: !!handleLaunch,
-            hasHandleClose: !!handleClose
-        });
+    static _cleanupCS2LaunchNotification(launchBtn, closeBtn, handleLaunch, handleClose) {
+        logger.debug('NotificationManager', 'Starting CS2 launch notification cleanup');
 
         if (launchBtn && handleLaunch) {
             launchBtn.removeEventListener('click', handleLaunch);
@@ -151,11 +145,6 @@ class NotificationManager {
         if (closeBtn && handleClose) {
             closeBtn.removeEventListener('click', handleClose);
             logger.debug('NotificationManager', 'Removed close button event listener');
-        }
-
-        if (checkInterval) {
-            clearInterval(checkInterval);
-            logger.info('NotificationManager', 'CS2 status check interval cleared and stopped');
         }
 
         // Reset UI to initial state using templates
@@ -182,31 +171,13 @@ class NotificationManager {
     }
 
     /**
-     * Handle CS2 launch notification close button click
-     * @private
-     */
-    static _handleCS2LaunchNotificationClose(context) {
-        context.isResolved = true; // Set resolved flag to prevent race conditions
-        this.hideCS2LaunchNotification();
-        this._cleanupCS2LaunchNotification(
-            context.launchBtn,
-            context.closeBtn,
-            context.checkInterval,
-            context.handleLaunch,
-            context.handleClose
-        );
-        context.resolve(false);
-    }
-
-    /**
      * Show CS2 launch notification
      * @param {string} friendId - Steam ID of the friend being joined
-     * @param {Function} onLaunch - Callback for launch CS2 action
-     * @param {CS2Manager} cs2Manager - CS2Manager instance for checking game status
+     * @param {CS2Manager} cs2Manager - CS2Manager instance for handling launch operations
      * @returns {Promise<boolean>} - True if user chooses to launch CS2, false if cancelled
      */
-    static showCS2LaunchNotification(friendId, onLaunch, cs2Manager) {
-        logger.info('NotificationManager', 'Starting CS2 launch notification', { friendId, hasOnLaunch: !!onLaunch, hasCs2Manager: !!cs2Manager });
+    static showCS2LaunchNotification(friendId, cs2Manager) {
+        logger.info('NotificationManager', 'Starting CS2 launch notification', { friendId, hasCs2Manager: !!cs2Manager });
 
         return new Promise((resolve) => {
             const overlay = DOMUtils.getElementById('cs2-launch-notification');
@@ -222,15 +193,16 @@ class NotificationManager {
 
             // Get elements after creating content
             const launchBtn = DOMUtils.getElementById('launch-cs2-btn');
-            const closeBtn = DOMUtils.getElementById('close-cs2-launch'); if (!launchBtn || !closeBtn) {
+            const closeBtn = DOMUtils.getElementById('close-cs2-launch');
+
+            if (!launchBtn || !closeBtn) {
                 logger.error('NotificationManager', 'CS2 notification buttons not found after template creation');
                 resolve(false);
                 return;
             }
 
-            // Create state object to share between handlers
+            // Create state object
             const state = {
-                checkInterval: null,
                 isLaunching: false,
                 isResolved: false
             };
@@ -239,8 +211,8 @@ class NotificationManager {
             overlay.style.display = 'flex';
 
             // Handle launch button click
-            const handleLaunch = () => {
-                if (state.isLaunching) return; // Prevent multiple clicks
+            const handleLaunch = async () => {
+                if (state.isLaunching || state.isResolved) return;
 
                 state.isLaunching = true;
 
@@ -257,82 +229,45 @@ class NotificationManager {
                 launchBtn.disabled = true;
                 launchBtn.innerHTML = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING.launchButton;
 
-                // Launch CS2
-                if (onLaunch) {
-                    onLaunch();
-                }
+                // Use CS2Manager to handle launch and monitoring
+                try {
+                    const success = await cs2Manager.launchAndWaitForLobby((status) => {
+                        logger.debug('NotificationManager', 'CS2 launch progress', { status });
+                    });
 
-                // Start checking CS2 status periodically
-                logger.info('NotificationManager', 'Starting CS2 status check interval');
-                state.checkInterval = setInterval(async () => {
-                    try {
-                        logger.debug('NotificationManager', 'CS2 Status Check', {
-                            cs2ManagerExists: !!cs2Manager,
-                            isResolved: state.isResolved,
-                            isLaunching: state.isLaunching,
-                            cs2ManagerInitialized: cs2Manager?.isInitialized
-                        });
-
-                        if (cs2Manager && !state.isResolved) {
-                            const isInCS2AndLobby = await cs2Manager.checkUserInCS2AndLobby();
-                            logger.info('NotificationManager', 'CS2 and lobby status check completed', { isInCS2AndLobby });
-
-                            if (isInCS2AndLobby && !state.isResolved) {
-                                logger.info('NotificationManager', 'User detected in CS2 and lobby, closing notification');
-
-                                // Set resolved flag immediately to prevent multiple executions
-                                state.isResolved = true;
-
-                                // Clear the interval immediately to prevent further checks
-                                if (state.checkInterval) {
-                                    clearInterval(state.checkInterval);
-                                    state.checkInterval = null;
-                                    logger.debug('NotificationManager', 'Check interval cleared');
-                                }
-
-                                // User is now in CS2 and in lobby, close notification immediately
-                                logger.info('NotificationManager', 'User is in CS2 and lobby, hiding notification immediately');
-                                this.hideCS2LaunchNotification();
-                                this._cleanupCS2LaunchNotification(launchBtn, closeBtn, state.checkInterval, handleLaunch, handleClose);
-                                resolve(true);
-                            } else if (isInCS2AndLobby) {
-                                logger.debug('NotificationManager', 'User in CS2 and lobby but already resolved');
-                            } else {
-                                logger.debug('NotificationManager', 'User not yet in CS2 and lobby, continuing to wait');
-                            }
-                        } else if (!cs2Manager) {
-                            logger.error('NotificationManager', 'CS2Manager is null/undefined during status check');
-                        } else if (state.isResolved) {
-                            logger.debug('NotificationManager', 'Status check skipped - already resolved');
-                        }
-                    } catch (error) {
-                        logger.error('NotificationManager', 'Error checking CS2 status', { error: error.message });
+                    if (success && !state.isResolved) {
+                        state.isResolved = true;
+                        this.hideCS2LaunchNotification();
+                        this._cleanupCS2LaunchNotification(launchBtn, closeBtn, handleLaunch, handleClose);
+                        resolve(true);
                     }
-                }, 3000); // Check every 3 seconds
+                } catch (error) {
+                    logger.error('NotificationManager', 'Error during CS2 launch process', { error: error.message });
+                    if (!state.isResolved) {
+                        state.isResolved = true;
+                        this.hideCS2LaunchNotification();
+                        this._cleanupCS2LaunchNotification(launchBtn, closeBtn, handleLaunch, handleClose);
+                        resolve(false);
+                    }
+                }
             };
 
             // Handle close button click
             const handleClose = () => {
-                logger.info('NotificationManager', 'Close button clicked during CS2 launch process', {
-                    hasCheckInterval: !!state.checkInterval,
-                    isLaunching: state.isLaunching,
-                    isResolved: state.isResolved
-                });
+                if (state.isResolved) return;
 
-                const context = {
-                    isResolved: true,
-                    launchBtn,
-                    closeBtn,
-                    checkInterval: state.checkInterval, // Use current interval from state
-                    handleLaunch,
-                    handleClose,
-                    resolve
-                };
+                logger.info('NotificationManager', 'Close button clicked during CS2 launch process');
 
-                // Update state to mark as resolved
                 state.isResolved = true;
 
-                this._handleCS2LaunchNotificationClose(context);
+                // Cancel any ongoing CS2 operations
+                if (cs2Manager) {
+                    cs2Manager.cancelLaunchOperations();
+                }
+
+                this.hideCS2LaunchNotification();
+                this._cleanupCS2LaunchNotification(launchBtn, closeBtn, handleLaunch, handleClose);
+                resolve(false);
             };
 
             // Add event listeners

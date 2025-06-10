@@ -75,11 +75,7 @@ class App {
 
             // Set CS2 launch callback
             joinManager.setCS2LaunchCallback(async (friendId) => {
-                return UIManager.showCS2LaunchNotification(friendId, () => {
-                    this.cs2Manager.launchCS2();
-                },
-
-                    this.cs2Manager);
+                return UIManager.showCS2LaunchNotification(friendId, this.cs2Manager);
             });
 
             // Load settings

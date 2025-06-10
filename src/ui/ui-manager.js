@@ -98,12 +98,11 @@ class UIManager {
     /**
      * Show CS2 launch notification
      * @param {string} friendId - Steam ID of the friend being joined
-     * @param {Function} onLaunch - Callback for launch CS2 action
-     * @param {CS2Manager} cs2Manager - CS2Manager instance for checking game status
+     * @param {CS2Manager} cs2Manager - CS2Manager instance for handling launch operations
      * @returns {Promise<boolean>} - True if user chooses to launch CS2, false if cancelled
      */
-    static showCS2LaunchNotification(friendId, onLaunch, cs2Manager) {
-        return NotificationManager.showCS2LaunchNotification(friendId, onLaunch, cs2Manager);
+    static showCS2LaunchNotification(friendId, cs2Manager) {
+        return NotificationManager.showCS2LaunchNotification(friendId, cs2Manager);
     }
 
     /**
@@ -131,7 +130,7 @@ class UIManager {
     /**
      * Start the tutorial
      */
-    static startTutorial() {;
+    static startTutorial() {
         return tutorialManager.start();
     }
 
