@@ -23,7 +23,7 @@ class TutorialManager {
         this.highlightManager = tutorialHighlightManager;
         this.mockDataManager = tutorialMockDataManager;
         this.eventManager = tutorialEventManager;
-        
+
         // Initialize steps in the state manager
         this.stateManager.steps = TUTORIAL_TEMPLATES.STEPS;
     }
@@ -145,6 +145,9 @@ class TutorialManager {
         } else if (stepIndex === 6 && step.target === '#friends') {
             // Special handling for Friends List Display step - force position above
             this.highlightTarget(step.target, 'top');
+        } else if (stepIndex === 8 && step.target === '.status-dot') {
+            // Special handling for Connection Process step - force position above
+            this.highlightTarget(step.target, null, true);
         } else {
             this.highlightTarget(step.target);
         }
@@ -155,7 +158,7 @@ class TutorialManager {
      * @param {string|null} selector - CSS selector of target element
      * @param {string|null} forcedPosition - Forced position ('top', 'bottom', 'left', 'right', 'center')
      */
-    highlightTarget(selector, forcedPosition = null) {
+    highlightTarget(selector, forcedPosition = null, skipHighlight = false) {
         // Always remove existing highlights first
         this.highlightManager.removeHighlight();
 
@@ -177,7 +180,9 @@ class TutorialManager {
             return;
         }
 
-        this.highlightManager.highlightTarget(selector);
+        if (!skipHighlight) {
+            this.highlightManager.highlightTarget(selector);
+        }
 
         // Position modal near the target element
         this.uiManager.positionModal(element, forcedPosition);
@@ -199,7 +204,9 @@ class TutorialManager {
             this.uiManager.positionModal(element, forcedPosition);
             this.uiManager.startPositionUpdates(() => this.stateManager.getIsActive());
         });
-    }    /**
+    }
+
+    /**
      * Wait for UI to be ready and start tutorial automatically
      * Uses MutationObserver for efficient DOM monitoring
      */
