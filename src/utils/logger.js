@@ -1,286 +1,31 @@
 import { LOG_LEVELS, LOG_LEVEL_PRIORITY, LOGGING_CONFIG } from '../shared/constants.js';
 
 /**
- * Electron-based logging system with level control
- * Uses Electron's built-in logging capabilities
+ * Simple wrapper around Electron's native logging with level control
+ * Provides consistent interface across the application
  */
 class Logger {
     constructor() {
         this.isElectronAvailable = typeof window !== 'undefined' && window.electronAPI?.log;
-        this.currentLevel = LOGGING_CONFIG?.CURRENT_LEVEL || 'info';
-        this.logBuffer = [];
-        
-        // Expose logger to global scope for console access
-        if (typeof window !== 'undefined') {
-            window.logger = this;
-            
-            // Add global shortcuts for easy console access
-            window.debug = () => {
-                this.setLevel('debug');
-                console.log('🔧 Debug mode enabled');
-                return 'debug';
-            };
-            
-            window.trace = () => {
-                this.setLevel('trace');
-                console.log('🔍 Trace mode enabled (maximum detail)');
-                return 'trace';
-            };
-            
-            window.info = () => {
-                this.setLevel('info');
-                console.log('ℹ️ Info mode enabled (production)');
-                return 'info';
-            };
-            
-            window.error = () => {
-                this.setLevel('error');
-                console.log('❌ Error mode enabled (minimal)');
-                return 'error';
-            };
-            
-            window.logs = (count = 50, level = null) => {
-                if (level) {
-                    const filteredLogs = this.getRecentLogs(count, level);
-                    console.log(`📋 Last ${count} ${level.toUpperCase()} logs:`);
-                    return filteredLogs;
-                } else {
-                    console.log(`📋 Last ${count} logs:`);
-                    return this.getRecentLogs(count);
-                }
-            };
-            
-            window.clearLogs = () => {
-                this.clearLogs();
-                console.log('🗑️ Logs cleared');
-                return 'cleared';
-            };
-            
-            window.logLevel = () => {
-                console.log(`📊 Current log level: ${this.getLevel()}`);
-                return this.getLevel();
-            };
-            
-            // Add specific level shortcuts for logs
-            window.errorLogs = (count = 50) => {
-                const logs = this.getLogsByLevel('error', count);
-                console.log(`❌ Last ${count} ERROR logs:`);
-                return logs;
-            };
-            
-            window.infoLogs = (count = 50) => {
-                const logs = this.getLogsByLevel('info', count);
-                console.log(`ℹ️ Last ${count} INFO logs:`);
-                return logs;
-            };
-            
-            window.debugLogs = (count = 50) => {
-                const logs = this.getLogsByLevel('debug', count);
-                console.log(`🔧 Last ${count} DEBUG logs:`);
-                return logs;
-            };
-            
-            window.traceLogs = (count = 50) => {
-                const logs = this.getLogsByLevel('trace', count);
-                console.log(`🔍 Last ${count} TRACE logs:`);
-                return logs;
-            };
-            
-            window.logHelp = () => {
-                console.log(`
-🚀 Logger shortcuts:
-• debug()         - Enable debug mode
-• trace()         - Enable trace mode (max detail)
-• info()          - Enable info mode (production)
-• error()         - Enable error mode (minimal)
-
-• logs(50)        - Show last 50 logs (all levels)
-• logs(50, 'info') - Show last 50 INFO logs
-• logs(50, 'debug') - Show last 50 DEBUG logs
-
-• errorLogs(50)   - Show last 50 ERROR logs
-• infoLogs(50)    - Show last 50 INFO logs  
-• debugLogs(50)   - Show last 50 DEBUG logs
-• traceLogs(50)   - Show last 50 TRACE logs
-
-• clearLogs()     - Clear log buffer
-• logLevel()      - Show current level
-• logHelp()       - Show this help
-
-Full API:
-• logger.setLevel('debug')
-• logger.getRecentLogs(100, 'info')
-• logger.getLogsByLevel('debug', 50)
-                `);
-                return 'help shown';
-            };
-        }
-    }
-
-    /**
-     * Check if a message at given level should be logged
-     * @param {string} level - Log level to check
-     * @returns {boolean} Whether message should be logged
-     */
-    shouldLog(level) {
-        // Fallback for test environment
-        const defaultPriorities = {
-            error: 0,
-            warn: 1,
-            info: 2,
-            debug: 3,
-            trace: 4
-        };
-        
-        const priorities = typeof LOG_LEVEL_PRIORITY !== 'undefined' ? LOG_LEVEL_PRIORITY : defaultPriorities;
-        const currentPriority = priorities[this.currentLevel] || 0;
-        const messagePriority = priorities[level] || 0;
-        return messagePriority <= currentPriority;
+        this.currentLevel = LOGGING_CONFIG.CURRENT_LEVEL;
     }
 
     /**
      * Set logging level
-     * @param {string} level - New logging level
+     * @param {string} level - Logging level (error, warn, info, debug, trace)
      */
     setLevel(level) {
-        if (LOG_LEVEL_PRIORITY.hasOwnProperty(level)) {
-            this.currentLevel = level;
-            if (LOGGING_CONFIG) {
-                LOGGING_CONFIG.CURRENT_LEVEL = level;
-                
-                // Update feature flags based on level
-                const isDebugOrTrace = level === 'debug' || level === 'trace';
-                LOGGING_CONFIG.ENABLE_STATE_CHANGE_LOGGING = isDebugOrTrace;
-            }
-            
-            this.info('Logger', `Log level changed to: ${level}`);
-            return true;
-        }
-        return false;
+        this.currentLevel = level;
+        LOGGING_CONFIG.CURRENT_LEVEL = level;
     }
 
     /**
-     * Get current logging level
-     * @returns {string} - Current logging level
+     * Check if message should be logged based on current level
+     * @param {string} level - Message level
+     * @returns {boolean} - True if should log
      */
-    getLevel() {
-        return this.currentLevel;
-    }
-
-    /**
-     * Format log message with context
-     * @param {string} level - Log level
-     * @param {string} context - Context/module name
-     * @param {string} message - Log message
-     * @param {any} [data] - Additional data
-     * @returns {string} - Formatted message
-     */
-    formatMessage(level, context, message, data) {
-        const baseMessage = `[${context}] ${message}`;
-        
-        if (data && typeof data === 'object') {
-            return `${baseMessage} | Data: ${JSON.stringify(data)}`;
-        } else if (data) {
-            return `${baseMessage} | ${data}`;
-        }
-        
-        return baseMessage;
-    }
-
-    /**
-     * Add log to buffer (for debugging)
-     * @param {string} level - Log level
-     * @param {string} context - Context/module name
-     * @param {string} message - Log message
-     * @param {any} [data] - Additional data
-     */
-    addToBuffer(level, context, message, data) {
-        const entry = {
-            timestamp: new Date().toISOString(),
-            level: level.toUpperCase(),
-            context,
-            message,
-            data
-        };
-        
-        this.logBuffer.push(entry);
-        
-        // Keep buffer size limited
-        const maxEntries = LOGGING_CONFIG?.MAX_LOG_ENTRIES || 1000;
-        if (this.logBuffer.length > maxEntries) {
-            this.logBuffer = this.logBuffer.slice(-maxEntries);
-        }
-    }
-
-    /**
-     * Get color for log level text
-     * @param {string} level - Log level
-     * @returns {string} - CSS color value
-     */
-    getLevelColor(level) {
-        const colors = {
-            error: '#ff4444',
-            warn: '#ffaa00',
-            info: '#4488ff',
-            debug: '#228844',
-            trace: '#aa88ff'
-        };
-        return colors[level] || '#ffffff';
-    }
-
-    /**
-     * Send log to Electron main process
-     * @param {string} level - Log level
-     * @param {string} context - Context/module name
-     * @param {string} message - Log message
-     * @param {any} [data] - Additional data
-     */
-    sendToElectron(level, context, message, data) {
-        if (!this.shouldLog(level)) {
-            return;
-        }
-
-        this.addToBuffer(level, context, message, data);
-
-        // Send to Electron main process
-        if (this.isElectronAvailable) {
-            const formattedMessage = this.formatMessage(level, context, message, data);
-            window.electronAPI.log(level, formattedMessage);
-        }
-
-        // Also log to browser console (DevTools) with colored level
-        const timestamp = new Date().toISOString();
-        const levelColor = this.getLevelColor(level);
-        
-        const logArgs = [
-            `[${timestamp}] %c[${level.toUpperCase()}]%c [${context}] ${message}`,
-            `color: ${levelColor}`,
-            'color: inherit'
-        ];
-
-        if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-            logArgs.push(data);
-        } else if (data) {
-            logArgs.push(data);
-        }
-        
-        switch (level) {
-            case 'error':
-                console.error(...logArgs);
-                break;
-            case 'warn':
-                console.warn(...logArgs);
-                break;
-            case 'info':
-                console.info(...logArgs);
-                break;
-            case 'debug':
-            case 'trace':
-                console.log(...logArgs);
-                break;
-            default:
-                console.log(...logArgs);
-        }
+    shouldLog(level) {
+        return LOG_LEVEL_PRIORITY[level] <= LOG_LEVEL_PRIORITY[this.currentLevel];
     }
 
     /**
@@ -290,7 +35,13 @@ Full API:
      * @param {*} data - Additional data to log
      */
     error(context, message, data = null) {
-        this.sendToElectron('error', context, message, data);
+        if (!this.shouldLog(LOG_LEVELS.ERROR)) return;
+        
+        if (this.isElectronAvailable) {
+            window.electronAPI.log.error(`[${context}] ${message}`, data);
+        } else {
+            console.error(`[${context}] ${message}`, data);
+        }
     }
 
     /**
@@ -300,7 +51,13 @@ Full API:
      * @param {*} data - Additional data to log
      */
     warn(context, message, data = null) {
-        this.sendToElectron('warn', context, message, data);
+        if (!this.shouldLog(LOG_LEVELS.WARN)) return;
+        
+        if (this.isElectronAvailable) {
+            window.electronAPI.log.warn(`[${context}] ${message}`, data);
+        } else {
+            console.warn(`[${context}] ${message}`, data);
+        }
     }
 
     /**
@@ -310,7 +67,13 @@ Full API:
      * @param {*} data - Additional data to log
      */
     info(context, message, data = null) {
-        this.sendToElectron('info', context, message, data);
+        if (!this.shouldLog(LOG_LEVELS.INFO)) return;
+        
+        if (this.isElectronAvailable) {
+            window.electronAPI.log.info(`[${context}] ${message}`, data);
+        } else {
+            console.info(`[${context}] ${message}`, data);
+        }
     }
 
     /**
@@ -320,74 +83,46 @@ Full API:
      * @param {*} data - Additional data to log
      */
     debug(context, message, data = null) {
-        this.sendToElectron('debug', context, message, data);
+        if (!this.shouldLog(LOG_LEVELS.DEBUG)) return;
+        
+        if (this.isElectronAvailable) {
+            window.electronAPI.log.debug(`[${context}] ${message}`, data);
+        } else {
+            console.log(`[DEBUG] [${context}] ${message}`, data);
+        }
     }
 
     /**
-     * Log trace message
+     * Log trace message (for detailed debugging, like raw API responses)
      * @param {string} context - Context/module name
      * @param {string} message - Trace message
      * @param {*} data - Additional data to log
      */
     trace(context, message, data = null) {
-        this.sendToElectron('trace', context, message, data);
+        if (!this.shouldLog(LOG_LEVELS.TRACE)) return;
+        
+        if (this.isElectronAvailable) {
+            // Electron doesn't have native trace, use debug
+            window.electronAPI.log.debug(`[TRACE] [${context}] ${message}`, data);
+        } else {
+            console.log(`[TRACE] [${context}] ${message}`, data);
+        }
     }
 
-
-
     /**
-     * Log state changes for debugging
+     * Log state changes (controlled by config)
      * @param {string} key - State key
-     * @param {any} oldValue - Previous value
-     * @param {any} newValue - New value
+     * @param {*} oldValue - Previous value
+     * @param {*} newValue - New value
      */
     logStateChange(key, oldValue, newValue) {
-        if (!LOGGING_CONFIG.ENABLE_STATE_CHANGE_LOGGING) return;
-        
-        this.debug('StateManager', `State changed: ${key}`, {
-            key,
-            oldValue: typeof oldValue === 'object' ? JSON.stringify(oldValue) : oldValue,
-            newValue: typeof newValue === 'object' ? JSON.stringify(newValue) : newValue
-        });
-    }
-
-    /**
-     * Get recent logs from buffer
-     * @param {number} [limit=100] - Number of recent logs to return
-     * @param {string} [level] - Filter by log level (optional)
-     * @returns {Object[]} - Array of log entries
-     */
-    getRecentLogs(limit = 100, level = null) {
-        let filteredLogs = this.logBuffer;
-        
-        if (level) {
-            filteredLogs = this.logBuffer.filter(log => log.level.toLowerCase() === level.toLowerCase());
+        if (LOGGING_CONFIG.ENABLE_STATE_CHANGE_LOGGING || this.shouldLog(LOG_LEVELS.DEBUG)) {
+            this.debug('StateManager', `State change: ${key}`, { oldValue, newValue });
         }
-        
-        return filteredLogs.slice(-limit);
-    }
-
-    /**
-     * Get logs by level
-     * @param {string} level - Log level to filter
-     * @param {number} [limit=100] - Number of recent logs to return
-     * @returns {Object[]} - Array of log entries
-     */
-    getLogsByLevel(level, limit = 100) {
-        const filteredLogs = this.logBuffer.filter(log => log.level.toLowerCase() === level.toLowerCase());
-        return filteredLogs.slice(-limit);
-    }
-
-    /**
-     * Clear log buffer
-     */
-    clearLogs() {
-        this.logBuffer = [];
-        this.info('Logger', 'Log buffer cleared');
     }
 }
 
 // Create singleton instance
 const logger = new Logger();
 
-export default logger; 
+export default logger;
