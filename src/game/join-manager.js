@@ -64,13 +64,17 @@ class JoinManager {
 
             if (!steamIdInput || !authInput) {
                 throw new Error('Required input elements not found');
-            }            const steam_id = steamIdInput.value.trim();
+            }
+
+            const steam_id = steamIdInput.value.trim();
             const auth_raw = authInput.value.trim();
             const auth = Validators.extractApiKeyOrToken(auth_raw);
 
             if (!steam_id || !auth) {
                 throw new Error('Steam ID and API auth are required');
-            }this.joinStates[friend_id] = {
+            }
+
+            this.joinStates[friend_id] = {
                 status: STATUS_TYPES.WAITING,
                 cancelled: false,
                 interval: null
@@ -114,6 +118,16 @@ class JoinManager {
 
         while (this.joinStates[friend_id] && !this.joinStates[friend_id].cancelled) {
             try {
+                // Check if user is still in CS2 during the connection process
+                if (this.cs2Manager) {
+                    const isUserInCS2 = await this.cs2Manager.checkUserInCS2();
+                    if (!isUserInCS2) {
+                        console.log('JoinManager: User no longer in CS2, stopping join process for:', friend_id);
+                        this.cancelJoin(friend_id);
+                        break;
+                    }
+                }
+
                 // Try to get connect info for the friend
                 const currentConnect = await SteamAPI.getFriendConnectInfo(friend_id, auth);
 

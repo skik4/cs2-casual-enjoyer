@@ -221,5 +221,3 @@ class CS2Manager {
 const cs2Manager = new CS2Manager();
 
 export default cs2Manager;
-
-// export default CS2Manager;
