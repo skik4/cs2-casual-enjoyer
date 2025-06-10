@@ -373,8 +373,14 @@ export const TUTORIAL_TEMPLATES = {
                 content: `
                     Congratulations! You've completed the tutorial and learned all the main features.                
                     <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                        Enjoy using CS2 Casual Enjoyer!<br>
+                        Enjoy using Casual Enjoyer!<br>
+                        Hope you find it useful.<br>
                         If you like it, please share with your friends.
+                    </div>
+                    <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                        <span id='github-releases-link' style='color:#2d8cf0;cursor:pointer;text-decoration:underline;'>
+                            GitHub Releases
+                        </span>
                     </div>
                 `,
                 target: null,

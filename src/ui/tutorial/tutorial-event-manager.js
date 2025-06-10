@@ -7,6 +7,7 @@ export class TutorialEventManager {
         this.handleAPIKeyClick = null;
         this.handleSteamTokenLinkClick = null;
         this.handleKeyDown = null; // Add keyboard handler
+        this.handleGithubLinkClick = null; // Add github link handler
         this.nextStepCallback = null;
         this.previousStepCallback = null;
         this.stopCallback = null;
@@ -80,6 +81,47 @@ export class TutorialEventManager {
         if (apiKeyHelp) {
             apiKeyHelp.addEventListener('click', this.handleAPIKeyClick);
         }
+
+        // Setup GitHub releases link click handler (for final step)
+        this.handleGithubLinkClick = async (event) => {
+            event.preventDefault();
+            const link = event.currentTarget;
+            const originalText = link.textContent;
+
+            try {
+                await navigator.clipboard.writeText("https://github.com/skik4/cs2-casual-enjoyer/releases");
+
+                // Update visual feedback
+                link.style.color = "#4caf50";
+                link.style.textDecoration = "none";
+
+                // Create and insert SVG emoji for clipboard
+                const { getEmojiSVG } = await import('../../utils/emoji-svg.js');
+                const clipboardSVG = await getEmojiSVG('📋', 'emoji-svg copy-success');
+                link.innerHTML = `${clipboardSVG} Copied to clipboard!`;
+
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    link.style.color = "#2d8cf0";
+                    link.style.textDecoration = "underline";
+                    link.textContent = originalText;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy to clipboard:', err);
+                // Fallback visual feedback even if clipboard fails
+                link.style.color = "#ff4444";
+                link.textContent = "Copy failed";
+                setTimeout(() => {
+                    link.style.color = "#2d8cf0";
+                    link.textContent = originalText;
+                }, 2000);
+            }
+        };
+
+        const githubLink = document.querySelector('#github-releases-link');
+        if (githubLink) {
+            githubLink.addEventListener('click', this.handleGithubLinkClick);
+        }
     }
 
     /**
@@ -94,6 +136,11 @@ export class TutorialEventManager {
         const apiKeyHelp = document.querySelector('#api-key-help');
         if (apiKeyHelp && this.handleAPIKeyClick) {
             apiKeyHelp.removeEventListener('click', this.handleAPIKeyClick);
+        }
+
+        const githubLink = document.querySelector('#github-releases-link');
+        if (githubLink && this.handleGithubLinkClick) {
+            githubLink.removeEventListener('click', this.handleGithubLinkClick);
         }
     }
 
@@ -117,6 +164,7 @@ export class TutorialEventManager {
         this.handleAPIKeyClick = null;
         this.handleSteamTokenLinkClick = null;
         this.handleKeyDown = null;
+        this.handleGithubLinkClick = null;
         this.nextStepCallback = null;
         this.previousStepCallback = null;
         this.stopCallback = null;
