@@ -23,16 +23,17 @@ class TutorialManager {
         this.highlightManager = tutorialHighlightManager;
         this.mockDataManager = tutorialMockDataManager;
         this.eventManager = tutorialEventManager;
-
-        // Initialize steps in the state manager
-        this.stateManager.steps = TUTORIAL_TEMPLATES.STEPS;
     }
 
     /**
      * Start the tutorial
      */
-    start() {
+    async start() {
         if (this.stateManager.getIsActive()) return;
+
+        // Load SVG steps
+        const svgSteps = await TUTORIAL_TEMPLATES.getStepsWithSVG();
+        this.stateManager.steps = svgSteps;
 
         // Stop auto-refresh before starting tutorial
         this.stopAutoRefresh();
@@ -73,10 +74,10 @@ class TutorialManager {
     /**
      * Go to next step
      */
-    nextStep() {
+    async nextStep() {
         const result = this.stateManager.nextStep();
         if (result) {
-            this.showStep(result.currentStep, result.previousStep);
+            await this.showStep(result.currentStep, result.previousStep);
         } else {
             this.stop();
         }
@@ -85,10 +86,10 @@ class TutorialManager {
     /**
      * Go to previous step
      */
-    previousStep() {
+    async previousStep() {
         const result = this.stateManager.previousStep();
         if (result) {
-            this.showStep(result.currentStep, result.previousStep);
+            await this.showStep(result.currentStep, result.previousStep);
         }
     }
 
@@ -97,7 +98,7 @@ class TutorialManager {
      * @param {number} stepIndex - Index of the step to show
      * @param {number|null} previousStepIndex - Index of the previous step (for transition handling)
      */
-    showStep(stepIndex, previousStepIndex = null) {
+    async showStep(stepIndex, previousStepIndex = null) {
         const step = this.stateManager.getCurrentStepData();
         if (!step) return;
 
@@ -107,8 +108,8 @@ class TutorialManager {
         // Remove all existing highlights
         this.highlightManager.removeHighlight();
 
-        // Update modal content
-        this.uiManager.updateModal(
+        // Update modal content (async for SVG support)
+        await this.uiManager.updateModal(
             step,
             stepIndex + 1, // 1-based step number
             this.stateManager.getTotalSteps(),
@@ -210,20 +211,20 @@ class TutorialManager {
      * Wait for UI to be ready and start tutorial automatically
      * Uses MutationObserver for efficient DOM monitoring
      */
-    waitForUIAndStartTutorial() {
+    async waitForUIAndStartTutorial() {
         const tutorialBtn = document.getElementById('tutorial-btn');
 
         if (tutorialBtn) {
             // UI is already ready, start tutorial immediately
-            this.start();
+            await this.start();
         } else {
             // Use MutationObserver to watch for UI changes
-            const observer = new MutationObserver(() => {
+            const observer = new MutationObserver(async () => {
                 const btn = document.getElementById('tutorial-btn');
                 if (btn) {
                     observer.disconnect();
                     // UI is ready, start tutorial
-                    this.start();
+                    await this.start();
                 }
             });
 

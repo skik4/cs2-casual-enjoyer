@@ -82,7 +82,7 @@ export const TUTORIAL_MOCK_FRIEND = {
     communityvisibilitystate: 2,
     profilestate: 1,
     personastate: 0,
-    status: 'Playing Casual on Dust 2',
+    status: 'Casual Dust2 [ 7 : 0 ]',
     in_casual_mode: true,
     join_available: true
 };

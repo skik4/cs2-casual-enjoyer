@@ -58,25 +58,27 @@ export class TutorialUIManager {
     }
 
     /**
-     * Update modal content
+     * Update modal content with SVG emoji support
      * @param {Object} step - Current step data
      * @param {number} currentStepNumber - Current step number (1-based)
      * @param {number} totalSteps - Total number of steps
      * @param {boolean} isFirstStep - Whether this is the first step
      * @param {boolean} isLastStep - Whether this is the last step
      * @param {Object} callbacks - Event callbacks {nextStep, previousStep, stop}
-     */
-    updateModal(step, currentStepNumber, totalSteps, isFirstStep, isLastStep, callbacks = {}) {
+     */    async updateModal(step, currentStepNumber, totalSteps, isFirstStep, isLastStep, callbacks = {}) {
         if (!this.modal) return;
 
-        this.modal.innerHTML = TUTORIAL_TEMPLATES.MODAL_CONTENT(
+        const modalContent = await TUTORIAL_TEMPLATES.MODAL_CONTENT_SVG(
             step.icon,
             step.title,
             currentStepNumber,
             totalSteps,
             step.content,
             isFirstStep,
-            isLastStep);
+            isLastStep
+        );
+
+        this.modal.innerHTML = modalContent;
 
         // Setup button event listeners programmatically
         this.setupModalEventListeners(callbacks, isFirstStep, isLastStep);

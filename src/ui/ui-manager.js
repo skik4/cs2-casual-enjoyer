@@ -60,8 +60,8 @@ class UIManager {
      * @param {string} html - HTML content of the notification
      * @param {string} type - Type of notification
      */
-    static showNotification(html, type = 'info') {
-        return NotificationManager.showNotification(html, type);
+    static async showNotification(html, type = 'info') {
+        return await NotificationManager.showNotification(html, type);
     }
 
     /**
@@ -116,22 +116,22 @@ class UIManager {
     /**
      * Show help notification for Steam ID
      */
-    static showSteamIdHelp() {
-        return NotificationManager.showSteamIdHelp();
+    static async showSteamIdHelp() {
+        return await NotificationManager.showSteamIdHelp();
     }
 
     /**
      * Show help notification for API Key
      */
-    static showApiKeyHelp() {
-        return NotificationManager.showApiKeyHelp();
+    static async showApiKeyHelp() {
+        return await NotificationManager.showApiKeyHelp();
     }
 
     /**
      * Start the tutorial
      */
-    static startTutorial() {
-        return tutorialManager.start();
+    static async startTutorial() {
+        return await tutorialManager.start();
     }
 
     /**

@@ -1,5 +1,5 @@
 // Shared constants
-import { NOTIFICATION_TEMPLATES, HELP_TEMPLATES } from './html-templates.js';
+import { NOTIFICATION_TEMPLATES, HELP_TEMPLATES, processEmojisInTemplate } from './html-templates.js';
 
 // UI and utilities
 import ErrorHandler from '../utils/error-handler.js';
@@ -12,14 +12,15 @@ import logger from '../utils/logger.js';
  */
 class NotificationManager {
     /**
-     * Show a notification with close button
+     * Show a notification with close button (with SVG emoji support)
      * @param {string} html - HTML content of the notification
      * @param {string} type - Type of notification ('info', 'error')
      */
-    static showNotification(html, type = 'info') {
+    static async showNotification(html, type = 'info') {
         const notificationElement = DOMUtils.getElementById('notifications');
         if (!notificationElement) return;
 
+        // HTML already processed in templates, no need for additional processing
         notificationElement.innerHTML = NOTIFICATION_TEMPLATES.CLOSE_BUTTON + `<div class="notification-content ${type}">${html}</div>`;
         notificationElement.style.display = 'block';
 
@@ -118,17 +119,19 @@ class NotificationManager {
     }
 
     /**
-     * Show help notification for Steam ID
+     * Show help notification for Steam ID (with SVG emoji support)
      */
-    static showSteamIdHelp() {
-        this.showNotification(HELP_TEMPLATES.STEAM_ID_HELP, 'info');
+    static async showSteamIdHelp() {
+        const content = await HELP_TEMPLATES.STEAM_ID_HELP();
+        await this.showNotification(content, 'info');
     }
 
     /**
-     * Show help notification for API Key
+     * Show help notification for API Key (with SVG emoji support)
      */
-    static showApiKeyHelp() {
-        this.showNotification(HELP_TEMPLATES.API_KEY_HELP, 'info');
+    static async showApiKeyHelp() {
+        const content = await HELP_TEMPLATES.API_KEY_HELP();
+        await this.showNotification(content, 'info');
     }
 
     /**

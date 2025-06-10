@@ -4,6 +4,31 @@
  */
 
 import { ICON_PATHS } from '../shared/icon-paths.js';
+import { replaceEmojisWithSVG, getEmojiSVG } from '../utils/emoji-svg.js';
+
+// =============================================================================
+// EMOJI PROCESSING HELPERS
+// =============================================================================
+
+/**
+ * Process HTML template and replace emojis with SVG equivalents
+ * @param {string} htmlTemplate - HTML template string
+ * @param {string} className - CSS class for emoji SVGs
+ * @returns {Promise<string>} Processed HTML with SVG emojis
+ */
+async function processEmojisInTemplate(htmlTemplate, className = 'emoji-svg') {
+    return await replaceEmojisWithSVG(htmlTemplate, className);
+}
+
+/**
+ * Create notification emoji span with SVG
+ * @param {string} emoji - Unicode emoji
+ * @returns {Promise<string>} HTML span with SVG emoji
+ */
+async function createNotificationEmoji(emoji) {
+    const svgEmoji = await getEmojiSVG(emoji, 'emoji-svg', 'margin-right: 0.5rem;');
+    return `<span class="notification-emoji">${svgEmoji}</span>`;
+}
 
 // =============================================================================
 // NOTIFICATION MANAGER TEMPLATES
@@ -126,54 +151,58 @@ export const NOTIFICATION_TEMPLATES = {
 // =============================================================================
 
 export const HELP_TEMPLATES = {
+    /**
+     * Help for getting Steam ID (with SVG emoji)
+     */
+    STEAM_ID_HELP: async () => {
+        const keyEmoji = await createNotificationEmoji('🆔');
+        return `
+            <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
+                ${keyEmoji} How to Get Your SteamID64
+            </div>
+            <div style="margin:10px 0;text-align:left;">
+                <div style="margin-bottom:15px;">
+                    <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
+                        Option 1: Quick Link (Recommended)
+                    </div>                  
+                    <div style="margin-bottom:8px;">
+                        <a href="steam://url/SteamIDMyProfile" class="steam-profile-link" target="_self" title="Open your Steam profile in the Steam client.">Open your Steam profile in the Steam client.</a>
+                    </div>
+                    <div style="margin-bottom:8px;color:#f3f6fa;">
+                        Your profile will open in the Steam client. Click on the URL in the address bar at the top of the Steam window - this automatically copies it to your clipboard. Then paste it into the <strong>SteamID64</strong> field below.
+                    </div>                
+                    <ul style="color:#bfc9d8;font-size:0.95em;margin-left:10px;padding-left:20px;">
+                        <li>Fast and automatic</li>
+                        <li>Works with any Steam profile URL format</li>
+                        <li>The app converts URLs to SteamID64 automatically</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
+                        Option 2: Manual Entry
+                    </div>
+                    <div style="margin-bottom:8px;color:#f3f6fa;">
+                        If you already know your <strong>SteamID64</strong> (17-digit number), you can enter it directly.
+                    </div>
+                </div>
+            </div>            
+            <div class="note" style="color:#aaa;font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid #353a40;padding-top:10px;">
+                Your SteamID64 used to identify your account in Steam Web API requests.
+            </div>
+        `
+    },
 
     /**
-     * Help for getting Steam ID
+     * Help for getting API key (with SVG emoji)
      */
-    STEAM_ID_HELP: `
+    API_KEY_HELP: async () => {
+        const keyEmoji = await createNotificationEmoji('🔑');
+        return `
         <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
-            <span class="notification-emoji">🆔</span> How to Get Your SteamID64
+            ${keyEmoji} How to Get Your Steam API Token or Key
         </div>
-        <div style="margin:10px 0;text-align:left;">
-            <div style="margin-bottom:15px;">
-                <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
-                    Option 1: Quick Link (Recommended)
-                </div>                  
-                <div style="margin-bottom:8px;">
-                    <a href="steam://url/SteamIDMyProfile" class="steam-profile-link" target="_self" title="Open your Steam profile in the Steam client.">Open your Steam profile in the Steam client.</a>
-                </div>
-                <div style="margin-bottom:8px;color:#f3f6fa;">
-                    Your profile will open in the Steam client. Click on the URL in the address bar at the top of the Steam window - this automatically copies it to your clipboard. Then paste it into the <strong>SteamID64</strong> field below.
-                </div>                
-                <ul style="color:#bfc9d8;font-size:0.95em;margin-left:10px;padding-left:20px;">
-                    <li>Fast and automatic</li>
-                    <li>Works with any Steam profile URL format</li>
-                    <li>The app converts URLs to SteamID64 automatically</li>
-                </ul>
-            </div>
-            
-            <div>
-                <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
-                    Option 2: Manual Entry
-                </div>
-                <div style="margin-bottom:8px;color:#f3f6fa;">
-                    If you already know your <strong>SteamID64</strong> (17-digit number), you can enter it directly.
-                </div>
-            </div>
-        </div>            
-        <div class="note" style="color:#aaa;font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid #353a40;padding-top:10px;">
-            Your SteamID64 used to identify your account in Steam Web API requests.
-        </div>
-    `,
-
-    /**
-     * Help for getting API key
-     */
-    API_KEY_HELP: `
-        <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
-            <span class="notification-emoji">🔑</span> How to Get Your Steam API Token or Key
-        </div>
-        <div style="margin:10px 0;text-align:left;">
+                <div style="margin:10px 0;text-align:left;">
             <div style="margin-bottom:15px;">                
             <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
                     Option 1: Token (Recommended)
@@ -215,7 +244,8 @@ export const HELP_TEMPLATES = {
             Your credentials are stored locally only.<br>
             All requests are made only through the official Steam Web API.
         </div>
-    `
+        `
+    },
 };
 
 // =============================================================================
@@ -257,130 +287,132 @@ export const FRIENDS_TEMPLATES = {
 
 export const TUTORIAL_TEMPLATES = {
     /**
-     * Tutorial steps data
+     * Generate tutorial steps with SVG emojis
+     * @returns {Promise<Array>} Tutorial steps with processed SVG emojis
      */
-    STEPS: [
-        {
-            title: "Welcome to CS2 Casual Enjoyer",
-            content: `
-                Quick tutorial on main features.<br>
-                Use buttons below to navigate.                
-                <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                    Press Enter for next step, Backspace for previous, Esc to skip.
-                </div>
-            `,
-            target: null,
-            icon: "🎮"
-        },
-        {
-            title: "Steam Web API Token / Key",
-            content: "Click the highlighted text to open help with Steam link for token.",
-            target: "#api-key-help",
-            icon: "🔑"
-        },
-        {
-            title: "Get Steam Web API Token",
-            content: `
-                Click highlighted text to open Steam.<br>
-                It may appear black - press Ctrl+A then Ctrl+C to copy token.
-            `,
-            target: ".steam-token-link",
-            icon: "🌐"
-        },
-        {
-            title: "Paste Token",
-            content: `
-                Paste token into highlighted field.<br>
-                Token expires in 24 hours, get new one when needed.
-            `,
-            target: "#auth",
-            icon: "📋"
-        },
-        {
-            title: "Update Friends List",
-            content: "Click highlighted button to load friends from Steam with game status.",
-            target: "#update-friends-btn",
-            icon: "🔄"
-        },
-        {
-            title: "Filter Friends",
-            content: "Type in highlighted box to filter friends by nickname.",
-            target: "#friend-filter-input",
-            icon: "🔍"
-        },
-        {
-            title: "Friends List Display",
-            content: "Friends currently playing Casual or Deathmatch modes will appear in this list.",
-            target: "#friends",
-            icon: "👥"
-        },
-        {
-            title: "Join to Friend Game",
-            content: `
-                For example, your best friend <strong>Gabe Newell</strong> is playing Casual on Dust 2.<br>
-                Click 'Join' to automatically connect to his match!
-            `,
-            target: ".friend .action-btn",
-            icon: "🚀"
-        }, {
-            title: "Connection Process",
-            content: `
-                Red dot = no slots available, Yellow = attempting to connect, Green = successfully connected.
-                <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                    Yellow may stay for a while.<br>
-                    Will change to red or green once server responds.<br>
-                    Meanwhile, CS2 will show connection error dialogs (this is normal) - hold ESC to dismiss them all.
-                </div>
-            `,
-            target: ".status-dot",
-            icon: "🟡"
-        },
-        {
-            title: "Tutorial Complete!",
-            content: `
-                Congratulations! You've completed the tutorial and learned all the main features.                
-                <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                    Enjoy using CS2 Casual Enjoyer!<br>
-                    If you like it, please share with your friends.
-                </div>
-                <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                    <span style='color:#2d8cf0;cursor:pointer;text-decoration:underline;'
-                        onclick='
-                            navigator.clipboard.writeText("https://github.com/skik4/cs2-casual-enjoyer/releases");
-                            const originalText = this.innerHTML;
-                            this.style.color="#4caf50"; 
-                            this.style.textDecoration="none";
-                            this.innerHTML="📋 Copied to clipboard!";
-                            setTimeout(() => {
-                                this.style.color="#2d8cf0";
-                                this.style.textDecoration="underline";
-                                this.innerHTML=originalText;
-                            }, 2000);
-                          '>
-                        GitHub Releases
-                    </span>
-                </div>
-            `,
-            target: null,
-            icon: "🎉"
-        }
-    ],
+    async getStepsWithSVG() {
+        const steps = [
+            {
+                title: "Welcome to CS2 Casual Enjoyer",
+                content: `
+                    Quick tutorial on main features.<br>
+                    Use buttons below to navigate.                
+                    <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                        Press Enter for next step, Backspace for previous, Esc to skip.
+                    </div>
+                `,
+                target: null,
+                icon: "🎮"
+            },
+            {
+                title: "Steam Web API Token / Key",
+                content: "Click the highlighted text to open help with Steam link for token.",
+                target: "#api-key-help",
+                icon: "🔑"
+            },
+            {
+                title: "Get Steam Web API Token",
+                content: `
+                    Click highlighted text to open Steam.<br>
+                    It may appear black - press Ctrl+A then Ctrl+C to copy token.
+                `,
+                target: ".steam-token-link",
+                icon: "🌐"
+            },
+            {
+                title: "Paste Token",
+                content: `
+                    Paste token into highlighted field.<br>
+                    Token expires in 24 hours, get new one when needed.
+                `,
+                target: "#auth",
+                icon: "📋"
+            },
+            {
+                title: "Update Friends List",
+                content: "Click highlighted button to load friends from Steam with game status.",
+                target: "#update-friends-btn",
+                icon: "🔄"
+            },
+            {
+                title: "Filter Friends",
+                content: "Type in highlighted box to filter friends by nickname.",
+                target: "#friend-filter-input",
+                icon: "🔍"
+            },
+            {
+                title: "Friends List Display",
+                content: "Friends currently playing Casual or Deathmatch modes will appear in this list.",
+                target: "#friends",
+                icon: "👥"
+            },
+            {
+                title: "Join to Friend Game",
+                content: `
+                    For example, your best friend <strong>Gabe Newell</strong> is playing Casual on Dust 2.<br>
+                    Click 'Join' to automatically connect to his match!
+                `,
+                target: ".friend .action-btn",
+                icon: "🚀"
+            },
+            {
+                title: "Connection Process",
+                content: `
+                    Red dot = no slots available, Yellow = attempting to connect, Green = successfully connected.
+                    <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                        Yellow may stay for a while.<br>
+                        Will change to red or green once server responds.<br>
+                        Meanwhile, CS2 will show connection error dialogs (this is normal) - hold ESC to dismiss them all.
+                    </div>
+                `,
+                target: ".status-dot",
+                icon: "🟡"
+            },
+            {
+                title: "Tutorial Complete!",
+                content: `
+                    Congratulations! You've completed the tutorial and learned all the main features.                
+                    <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                        Enjoy using CS2 Casual Enjoyer!<br>
+                        If you like it, please share with your friends.
+                    </div>
+                `,
+                target: null,
+                icon: "🎉"
+            }
+        ];
+
+        // Process each step to replace emojis with SVG
+        const processedSteps = await Promise.all(
+            steps.map(async (step) => ({
+                ...step,
+                icon: await getEmojiSVG(step.icon, 'emoji-svg'),
+                content: await processEmojisInTemplate(step.content)
+            }))
+        );
+
+        return processedSteps;
+    },
 
     /**
-     * Tutorial modal content
-     * @param {string} icon - Tutorial step icon
+     * Tutorial modal content with SVG emoji support
+     * @param {string} icon - Tutorial step icon (SVG HTML or Unicode emoji)
      * @param {string} title - Tutorial step title
      * @param {number} currentStepNumber - Current step number (1-based)
      * @param {number} totalSteps - Total number of steps
      * @param {string} content - Tutorial step content
      * @param {boolean} isFirstStep - Whether this is the first step
      * @param {boolean} isLastStep - Whether this is the last step
-     * @returns {string} Tutorial modal HTML
+     * @returns {Promise<string>} Tutorial modal HTML with SVG emojis
      */
-    MODAL_CONTENT: (icon, title, currentStepNumber, totalSteps, content, isFirstStep, isLastStep) => `
+    MODAL_CONTENT_SVG: async (icon, title, currentStepNumber, totalSteps, content, isFirstStep, isLastStep) => {
+        const processedIcon = icon?.includes('<svg') ? icon : await getEmojiSVG(icon || '📖', 'emoji-svg');
+        const processedContent = await processEmojisInTemplate(content);
+
+        return `
         <div class="tutorial-header">
             <h3 class="tutorial-title">
-                <span class="tutorial-icon">${icon || '📖'}</span>
+                <span class="tutorial-icon">${processedIcon}</span>
                 ${title}
             </h3>
             <div class="tutorial-progress">
@@ -390,22 +422,30 @@ export const TUTORIAL_TEMPLATES = {
                 </div>
             </div>        
         </div>
-        <div class="tutorial-content">${content}</div>        
+        <div class="tutorial-content">${processedContent}</div>        
         <div class="tutorial-controls">
             <button class="tutorial-btn tutorial-btn-secondary">
                 Skip Tutorial
-            </button>            <div class="tutorial-nav-buttons">
+            </button>            
+            <div class="tutorial-nav-buttons">
                 <button class="tutorial-btn tutorial-btn-secondary" 
                         ${isFirstStep ? 'disabled' : ''}>
-                    <img src="${ICON_PATHS.CHEVRON_LEFT}" alt="←" style="width: 16px; height: 16px"> Previous
+                    Previous
                 </button>
                 <button class="tutorial-btn tutorial-btn-primary">
-                    ${isLastStep ? `<img src="${ICON_PATHS.CHECK}" alt="✓" style="width: 16px; height: 16px;">Finish` : `Next <img src="${ICON_PATHS.CHEVRON_RIGHT}" alt="→" style="width: 16px; height: 16p;">`}
+                    ${isLastStep ? 'Finish' : 'Next'}
                 </button>
-                </div>
-        </div>
-    `
+            </div>
+        </div>`;
+    }
 };
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+
+// Export emoji processing helpers
+export { processEmojisInTemplate, createNotificationEmoji };
 
 // =============================================================================
 // EXPORT ALL TEMPLATES
