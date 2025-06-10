@@ -109,6 +109,15 @@ export class TutorialMockDataManager {
             this.addTutorialMockFriend();
         }
 
+        // Handle join button appearance for tutorial steps
+        if (stepIndex === 8 && previousStepIndex !== 8) {
+            // Entering step 8 - make button look like "Cancel"
+            this.setTutorialButtonToCancel();
+        } else if (previousStepIndex === 8 && stepIndex !== 8) {
+            // Leaving step 8 - make button look like "Join"
+            this.setTutorialButtonToJoin();
+        }
+
         // Handle mock connection process for step 8 (Connection Process)
         if (stepIndex === 8 && previousStepIndex !== 8) {
             // Entering Connection Process step - start mock connection
@@ -139,7 +148,7 @@ export class TutorialMockDataManager {
             let currentStep = 0;
             const steps = [
                 { status: 'waiting', duration: 1200 },     // Red - checking for available slots
-                { status: 'connecting', duration: 2400 },  // Yellow - attempting to connect (longer)
+                { status: 'connecting', duration: 1200 },  // Yellow - attempting to connect (longer)
                 { status: 'joined', duration: 1200 }       // Green - successfully connected
             ];
 
@@ -191,6 +200,32 @@ export class TutorialMockDataManager {
         import('../status-manager.js').then(({ default: StatusManager }) => {
             StatusManager.updateDot(mockFriendId, 'cancelled');
         });
+    }
+
+    /**
+     * Set tutorial button to "Cancel" appearance
+     */
+    setTutorialButtonToCancel() {
+        const mockFriendId = TUTORIAL_MOCK_FRIEND.steamid;
+        const btn = document.getElementById('join-btn-' + mockFriendId);
+        if (btn) {
+            btn.textContent = "Cancel";
+            btn.classList.add('cancel-btn');
+            btn.disabled = false;
+        }
+    }
+
+    /**
+     * Set tutorial button to "Join" appearance
+     */
+    setTutorialButtonToJoin() {
+        const mockFriendId = TUTORIAL_MOCK_FRIEND.steamid;
+        const btn = document.getElementById('join-btn-' + mockFriendId);
+        if (btn) {
+            btn.textContent = "Join";
+            btn.classList.remove('cancel-btn');
+            btn.disabled = false;
+        }
     }
 
     /**

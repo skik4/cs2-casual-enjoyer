@@ -100,16 +100,24 @@ class AppEventManager {
             const steamId = button.id.replace('join-btn-', '');
             if (!steamId) return;
 
-            // Check if tutorial is active and on step 7 (Join to Friend Game)
-            if (tutorialManager.stateManager.getIsActive() &&
-                tutorialManager.stateManager.getCurrentStep() === 7) {
-                // This is the tutorial join step - don't perform real join
-                event.preventDefault();
-                event.stopPropagation();
+            // Check if tutorial is active
+            if (tutorialManager.stateManager.getIsActive()) {
+                const currentStep = tutorialManager.stateManager.getCurrentStep();
 
-                // Move to next tutorial step instead
-                tutorialManager.nextStep();
-                return;
+                // Step 8 (Connection Process) - move to next step
+                if (currentStep === 7) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    tutorialManager.nextStep();
+                    return;
+                }
+
+                // Steps 6, 8, 9 - do nothing but prevent default action
+                if (currentStep === 6 || currentStep === 8 || currentStep === 9) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
+                }
             }
 
             if (button.classList.contains('cancel-btn')) {
