@@ -17,22 +17,46 @@ const electronAPI = {
      * Settings management methods
      */
     settings: {
-        load: () => ipcRenderer.invoke('settings-load'),
-        save: (data) => ipcRenderer.invoke('settings-save', data)
+        load: async () => {
+            try {
+                return await ipcRenderer.invoke('settings-load');
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+                return null;
+            }
+        },
+        save: async (data) => {
+            try {
+                return await ipcRenderer.invoke('settings-save', data);
+            } catch (error) {
+                console.error('Failed to save settings:', error);
+                return false;
+            }
+        }
     },
 
     /**
      * Logging methods
      */
-    log: (level, message, data) => {
-        ipcRenderer.send('log-message', level, message, data);
+    log: {
+        info: (message, data) => ipcRenderer.send('log-message', 'info', message, data),
+        warn: (message, data) => ipcRenderer.send('log-message', 'warn', message, data),
+        error: (message, data) => ipcRenderer.send('log-message', 'error', message, data),
+        debug: (message, data) => ipcRenderer.send('log-message', 'debug', message, data)
     },
 
     /**
      * App information methods
      */
     app: {
-        getVersion: () => ipcRenderer.invoke('get-app-version')
+        getVersion: async () => {
+            try {
+                return await ipcRenderer.invoke('get-app-version');
+            } catch (error) {
+                console.error('Failed to get app version:', error);
+                return 'unknown';
+            }
+        }
     }
 };
 

@@ -2,6 +2,7 @@
   "name": "cs2-casual-enjoyer",
   "version": "0.4.5",
   "description": "CS2 Casual Enjoyer Electron App",
+  "type": "module",
   "main": "src/main/main.js",
   "scripts": {
     "start": "npm run build:css && electron . --remote-debugging-port=9222",
@@ -37,7 +38,6 @@
   },
   "author": "skik4",
   "devDependencies": {
-    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
     "@babel/preset-env": "^7.27.2",
     "electron": "^36.4.0",
     "electron-builder": "^26.0.12",

@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
-const fs = require('fs');
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Constants
 const WINDOW_CONFIG = {
@@ -20,10 +21,10 @@ class SettingsManager {
      * Read settings from file
      * @returns {Object|null} - Settings object or null if not found
      */
-    static readSettings() {
+    static async readSettings() {
         try {
-            if (fs.existsSync(SETTINGS_PATH)) {
-                const data = fs.readFileSync(SETTINGS_PATH, 'utf-8');
+            if (await fs.access(SETTINGS_PATH).then(() => true).catch(() => false)) {
+                const data = await fs.readFile(SETTINGS_PATH, 'utf-8');
                 return JSON.parse(data);
             }
         } catch (error) {
@@ -37,9 +38,9 @@ class SettingsManager {
      * @param {Object} data - Settings data to write
      * @returns {boolean} - Success status
      */
-    static writeSettings(data) {
+    static async writeSettings(data) {
         try {
-            fs.writeFileSync(SETTINGS_PATH, JSON.stringify(data, null, 2), 'utf-8');
+            await fs.writeFile(SETTINGS_PATH, JSON.stringify(data, null, 2), 'utf-8');
             return true;
         } catch (error) {
             console.error('Error writing settings:', error);
@@ -69,18 +70,17 @@ class WindowManager {
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
-                preload: path.join(__dirname, '..', 'main', 'preload.js')
+                preload: fileURLToPath(new URL('preload.js', import.meta.url))
             }
         });
 
         // Load the main HTML file
-        const htmlPath = path.join(__dirname, '..', '..', 'index.html');
+        const htmlPath = fileURLToPath(new URL('../../index.html', import.meta.url));
         win.loadFile(htmlPath);
         win.setMenuBarVisibility(false);
 
         // Handle external links
         win.webContents.setWindowOpenHandler(({ url }) => {
-            const { shell } = require('electron');
             shell.openExternal(url);
             return { action: 'deny' };
         });
@@ -153,23 +153,15 @@ class AppManager {
     /**
      * Initialize the application
      */
-    initialize() {
+    async initialize() {
         // Setup IPC handlers
         IPCManager.setupHandlers();
 
         // Create main window
         this.mainWindow = WindowManager.createMainWindow();
-        
+
         // Setup window controls
         WindowManager.setupWindowControls(this.mainWindow);
-    }    /**
-     * Handle app activation
-     */
-    handleActivation() {
-        // Create new window if none exist
-        if (BrowserWindow.getAllWindows().length === 0) {
-            this.initialize();
-        }
     }
 }
 
@@ -177,8 +169,8 @@ class AppManager {
 const appManager = new AppManager();
 
 // App event handlers
-app.whenReady().then(() => {
-    appManager.initialize();
+app.whenReady().then(async () => {
+    await appManager.initialize();
 });
 
 app.on('window-all-closed', () => {
