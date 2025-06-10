@@ -3,6 +3,8 @@
  * Contains all HTML templates organized by module usage
  */
 
+import { ICON_PATHS } from '../shared/icon-paths.js';
+
 // =============================================================================
 // NOTIFICATION MANAGER TEMPLATES
 // =============================================================================
@@ -11,13 +13,13 @@ export const NOTIFICATION_TEMPLATES = {
     /**
      * Close button for notifications
      */
-    CLOSE_BUTTON: `<div class="notification-header"><span class="notification-close-btn" title="Close">&times;</span></div>`,
+    CLOSE_BUTTON: `<div class="notification-header"><span class="notification-close-btn" title="Close"><img src="${ICON_PATHS.CLOSE_BOLD}" alt="×" style="width: 14px; height: 14px;"></span></div>`,
 
     /**
      * Warning for expired token
      */
     TOKEN_EXPIRED_WARNING: `
-        <div style="color:#ff4444;font-weight:500;margin-top:8px;">
+        <div style="color:#f1c40f;font-weight:500;margin-top:8px;">
             Your token has expired.<br>
             <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self">Get a new one</a><br>
         </div>
@@ -392,14 +394,13 @@ export const TUTORIAL_TEMPLATES = {
         <div class="tutorial-controls">
             <button class="tutorial-btn tutorial-btn-secondary">
                 Skip Tutorial
-            </button>
-            <div class="tutorial-nav-buttons">
+            </button>            <div class="tutorial-nav-buttons">
                 <button class="tutorial-btn tutorial-btn-secondary" 
                         ${isFirstStep ? 'disabled' : ''}>
-                    ← Previous
+                    <img src="${ICON_PATHS.CHEVRON_LEFT}" alt="←" style="width: 16px; height: 16px"> Previous
                 </button>
                 <button class="tutorial-btn tutorial-btn-primary">
-                    ${isLastStep ? 'Finish ✓' : 'Next →'}
+                    ${isLastStep ? `<img src="${ICON_PATHS.CHECK}" alt="✓" style="width: 16px; height: 16px;">Finish` : `Next <img src="${ICON_PATHS.CHEVRON_RIGHT}" alt="→" style="width: 16px; height: 16p;">`}
                 </button>
                 </div>
         </div>

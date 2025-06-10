@@ -170,6 +170,13 @@
     margin-bottom: 2px;
 }
 
+.notification-emoji {
+    /* font-family: 'Noto Color Emoji'; */
+    font-size: 1.2em;
+    display: inline-block;
+    animation: tutorialIconBounce 2s ease-in-out infinite;
+}
+
 /* Update Hints */
 .update-hint {
     text-align: center;

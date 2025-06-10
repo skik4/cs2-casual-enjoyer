@@ -57,12 +57,7 @@
 }
 
 .tutorial-icon {
-    font-size: 1.2em;
-    display: inline-block;
-    animation: tutorialIconBounce 2s ease-in-out infinite;
-}
-
-.notification-emoji {
+    /* font-family: 'Noto Color Emoji'; */
     font-size: 1.2em;
     display: inline-block;
     animation: tutorialIconBounce 2s ease-in-out infinite;

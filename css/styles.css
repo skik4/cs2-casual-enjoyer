@@ -1,5 +1,10 @@
 /* Main Styles File - Modular CSS Architecture */
 
+/* Import Inter and Noto Color Emoji locally */
+@import url('../node_modules/@fontsource/inter/index.css');
+/* @import url('../node_modules/@fontsource/noto-emoji/index.css');
+@import url('../node_modules/@fontsource/noto-color-emoji/index.css'); */
+
 /* CSS Variables and Design Tokens */
 @import url('./variables.css');
 
