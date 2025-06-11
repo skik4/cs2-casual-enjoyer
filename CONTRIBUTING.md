@@ -13,17 +13,20 @@ Thank you for your interest in contributing to CS2 Casual Enjoyer! This document
 ### Setting Up Development Environment
 
 1. **Fork and clone the repository:**
+
    ```sh
    git clone https://github.com/your-username/cs2-casual-enjoyer-electron.git
    cd cs2-casual-enjoyer-electron
    ```
 
 2. **Install dependencies:**
+
    ```sh
    npm install
    ```
 
 3. **Start development mode:**
+
    ```sh
    npm start
    ```
@@ -50,6 +53,7 @@ Thank you for your interest in contributing to CS2 Casual Enjoyer! This document
 ### Code Contributions
 
 1. **Create a feature branch:**
+
    ```sh
    git checkout -b feature/your-feature-name
    ```
@@ -60,17 +64,20 @@ Thank you for your interest in contributing to CS2 Casual Enjoyer! This document
    - Update documentation
 
 3. **Test your changes:**
+
    ```sh
    npm start
    npm run lint
    ```
 
 4. **Commit your changes:**
+
    ```sh
    git commit -m "feat: add your feature description"
    ```
 
 5. **Push and create a Pull Request:**
+
    ```sh
    git push origin feature/your-feature-name
    ```
@@ -93,7 +100,7 @@ Thank you for your interest in contributing to CS2 Casual Enjoyer! This document
 
 ### File Structure
 
-```
+```text
 src/
 ├── core/          # Core application logic
 ├── game/          # CS2 and game-related functionality
@@ -106,6 +113,7 @@ src/
 ### Commit Message Format
 
 Use conventional commits:
+
 - `feat:` - New features
 - `fix:` - Bug fixes
 - `docs:` - Documentation changes
@@ -117,17 +125,20 @@ Use conventional commits:
 ## 🔧 Technical Areas for Contribution
 
 ### High Priority
+
 - **Performance optimizations**: Improve startup time and memory usage
 - **Error handling**: Better error messages and recovery
 - **UI/UX improvements**: Enhanced user experience
 - **Testing**: Add unit and integration tests
 
 ### Medium Priority
+
 - **Localization**: Multi-language support
 - **Accessibility**: Better accessibility features
 - **Documentation**: Code documentation and examples
 
 ### Low Priority
+
 - **Platform support**: Linux/macOS versions
 - **Advanced features**: Additional game modes support
 
