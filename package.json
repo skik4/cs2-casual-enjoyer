@@ -2,6 +2,16 @@
   "name": "cs2-casual-enjoyer",
   "version": "0.4.6",
   "description": "CS2 Casual Enjoyer Electron App",
+  "keywords": [
+    "cs2",
+    "counter-strike",
+    "gaming",
+    "electron",
+    "steam",
+    "casual",
+    "deathmatch",
+    "auto-join"
+  ],
   "type": "module",
   "main": "src/main/main.js",
   "scripts": {
@@ -34,6 +44,15 @@
     "publish": null
   },
   "author": "skik4",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skik4/cs2-casual-enjoyer-electron.git"
+  },
+  "homepage": "https://github.com/skik4/cs2-casual-enjoyer-electron#readme",
+  "bugs": {
+    "url": "https://github.com/skik4/cs2-casual-enjoyer-electron/issues"
+  },
   "devDependencies": {
     "@babel/preset-env": "^7.27.2",
     "electron": "^36.4.0",

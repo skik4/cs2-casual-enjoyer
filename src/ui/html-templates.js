@@ -371,9 +371,9 @@ export const TUTORIAL_TEMPLATES = {
             {
                 title: "Tutorial Complete!",
                 content: `
-                    Congratulations! You've completed the tutorial and learned all the main features.                
+                    Congratulations! You've completed the tutorial and learned all the main features.<br><br>
+                    Enjoy using Casual Enjoyer!
                     <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                        Enjoy using Casual Enjoyer!<br>
                         Hope you find it useful.<br>
                         If you like it, please share with your friends.
                     </div>

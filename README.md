@@ -1,23 +1,55 @@
 # CS2 Casual Enjoyer
 
-**CS2 Casual Enjoyer** is an Electron-based desktop application that automates the process of joining a friend's Casual match in Counter-Strike 2 (CS2). Steam does not provide a built-in feature for this in CS2, and the Steam client may show outdated or delayed information about available slots in a match. This app helps you connect to your friend's Casual match as soon as a slot becomes available, improving your experience and saving time.
+**CS2 Casual Enjoyer** is an Electron-based desktop application that automates the process of joining a friend's **Casual** or **Deathmatch** matches in Counter-Strike 2 (CS2). Steam does not provide a built-in feature for this in CS2, and the Steam client may show outdated or delayed information about available slots in a match. This app helps you connect to your friend's match as soon as a slot becomes available, improving your experience and saving time.
+
+## ✨ Key Features
+
+- **🎮 Dual Game Mode Support**: Automatically join friends playing in both Casual and Deathmatch modes
+- **🎯 Interactive Tutorial System**: Comprehensive step-by-step tutorial for new users with automatic launch on first run
+- **🚀 Smart CS2 Launch Integration**: Automatically launches CS2 if not running when trying to join a friend
+- **🔄 Real-time Status Monitoring**: Live updates of friends' game status with visual status indicators
+- **🔍 Advanced Friend Filtering**: Search and filter friends by nickname for easy navigation
+- **🌟 Modern UI/UX**: Beautiful, responsive interface with Material Design icons and smooth animations
+- **🔐 Flexible Authentication**: Support for both Steam API Keys and Session Tokens with privacy-friendly options
 
 ## How It Works
 
-- The app uses Steam Web API requests to monitor your friends' match statuses.
-- You can use either a Steam API Key or a session Token (recommended) for authentication.
-- The token is valid for 24 hours and is obtained by redirecting you to the installed Steam client on your computer. After it expires, you'll need to refresh it again through the same process. The key is also obtained by redirecting you to the Steam client and does not expire. However, using the app with the key requires your profile and friends list to be set to public — at least once to retrieve the friends list. After that, you can set them back to private, and the app will continue using the locally cached list. The token does not have such privacy requirements.
-- After you press "Join", the app periodically checks for an available slot in your friend's Casual match. If a slot is found, it attempts to connect. If the connection is successful, the attempts stop; otherwise, the app keeps retrying until it succeeds, your friend leaves the Casual match, or you cancel the process.
+- The app uses Steam Web API requests to monitor your friends' match statuses in real-time.
+- **Authentication Options**: Choose between a Steam API Key or Session Token (recommended) for authentication.
+  - **Session Token** (Recommended): Valid for 24 hours, obtained through Steam client integration. No privacy restrictions required.
+  - **API Key**: Permanent but requires your profile and friends list to be public at least once for initial setup.
+- **Smart Connection Process**: After pressing "Join", the app continuously monitors for available slots. When found, it attempts to connect automatically.
+- **CS2 Integration**: If CS2 isn't running, the app can automatically launch it and wait for you to be ready before starting the join process.
 
 ## How to Run
 
 The easiest way to use the application is to download the prebuilt `.exe` from the [Releases](https://github.com/skik4/cs2-casual-enjoyer-electron/releases) page and run it directly.  
-No installation of Node.js or other dependencies is required.
+**No installation of Node.js or other dependencies is required.**
 
 ## How to Use
 
-After the first launch, click on the label **"Steam Web API Token / Key"** in the application.  
-A detailed instruction will be shown on how to obtain your Steam API token or key.
+1. **First Launch**: The app will automatically start with an interactive tutorial to guide you through all features
+2. **Authentication Setup**:
+   - Click on **"Steam Web API Token / Key"** label for detailed setup instructions
+   - Choose between Session Token (recommended) or API Key
+3. **Load Friends**: Click "Update Friends List" to fetch your Steam friends
+4. **Join Games**: Friends playing Casual or Deathmatch will appear in the list - simply click "Join" to connect automatically
+5. **Status Monitoring**:
+   - 🔴 Red dot = No slots available
+   - 🟡 Yellow dot = Attempting to connect
+   - 🟢 Green dot = Successfully connected
+
+### 🎯 Tutorial System
+
+New users will see an interactive tutorial on first launch that covers:
+
+- How to obtain Steam API credentials
+- Friend list management
+- Join process demonstration
+- Status indicator meanings
+- Keyboard shortcuts (Enter/Backspace/Esc for navigation)
+
+You can restart the tutorial anytime by clicking the help button in the interface.
 
 ## Building from Source
 
@@ -27,14 +59,13 @@ If you want to build the application yourself:
 
 - [Node.js](https://nodejs.org/) (v16 or higher recommended)
 - [Git](https://git-scm.com/) (optional, for cloning the repository)
-- A valid Steam API key or session token
 
 ### Installation
 
 1. **Clone the repository:**
 
    ```sh
-   git clone https://github.com/yourusername/cs2-casual-enjoyer-electron.git
+   git clone https://github.com/skik4/cs2-casual-enjoyer-electron.git
    cd cs2-casual-enjoyer-electron
    ```
 
@@ -60,12 +91,32 @@ To build a portable version of the application for Windows:
 npm run dist
 ```
 
-The built files will be located in the `dist` directory.
+## 📄 License
 
-## License
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-MIT
+### What this means
+
+- ✅ **Free to use** for personal and commercial purposes
+- ✅ **Modify and distribute** as you wish
+- ✅ **Include in other projects** without restrictions
+- ⚠️ **No warranty provided** - use at your own risk
+- 📝 **Attribution required** - keep the copyright notice
 
 ---
 
-### Created by skik4
+### 🔗 Links & Support
+
+- **GitHub Repository**: [cs2-casual-enjoyer-electron](https://github.com/skik4/cs2-casual-enjoyer-electron)
+- **Latest Releases**: [Download Page](https://github.com/skik4/cs2-casual-enjoyer-electron/releases)
+- **Steam Profile**: [skik4](https://steamcommunity.com/id/skik4)
+- **Issues & Bug Reports**: [GitHub Issues](https://github.com/skik4/cs2-casual-enjoyer-electron/issues)
+
+### 👨‍💻 Created by skik4
+
+If you find this tool useful, please consider:
+
+- ⭐ Starring the repository
+- 🐛 Reporting any issues you find
+- 💬 Sharing with friends who play CS2
+- 💡 Suggesting new features
