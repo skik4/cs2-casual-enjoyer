@@ -34,7 +34,7 @@ input[type="password"] {
 }
 
 .valid-input:focus {
-    border: var(--border-width) solid #1e8e2e !important;
+    border: var(--border-width) solid var(--green-dark) !important;
     background-color: rgba(30, 142, 46, 0.08) !important;
 }
 
@@ -105,7 +105,7 @@ input[type="password"] {
     display: flex;
     flex-direction: column;
     gap: 0.2em;
-    margin-bottom: 1.5em;
+    margin-bottom: var(--space-lg);
     width: 100%;
 }
 

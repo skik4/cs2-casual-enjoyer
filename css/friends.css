@@ -62,7 +62,7 @@
 
 .personaname {
     font-size: var(--font-size-lg);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--white);
     letter-spacing: 0.2px;
     margin-right: 0.5em;

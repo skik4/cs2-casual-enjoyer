@@ -11,12 +11,11 @@
     padding: 0;
     -webkit-app-region: drag;
     user-select: none;
-    box-shadow: var(--shadow-dark);
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 10000;
+    z-index: var(--z-window-bar);
     border-bottom: var(--border-width) solid var(--panel-outline);
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     box-shadow: 0 2px 12px color-mix(in srgb, var(--black) var(--opacity-40), transparent);
@@ -32,7 +31,7 @@
 
 .window-bar-title {
     font-size: var(--font-size-md);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--text-secondary);
     letter-spacing: 1px;
     pointer-events: none;

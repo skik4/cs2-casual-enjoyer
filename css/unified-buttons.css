@@ -152,7 +152,7 @@
   background: linear-gradient(90deg, var(--blue-primary) 60%, var(--blue-dark) 100%);
   border-color: var(--blue-primary);
   color: var(--white);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--blue-primary) var(--opacity-20), transparent);
 }
 
@@ -191,7 +191,7 @@
   background: var(--red-primary);
   border-color: var(--red-primary);
   color: var(--white);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--red-primary) var(--opacity-20), transparent);
 }
 

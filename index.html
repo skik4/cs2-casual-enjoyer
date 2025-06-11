@@ -21,16 +21,16 @@
         <span class="window-bar-title">CS2 Casual Enjoyer</span>
         <div class="window-bar-btns"> <button class="tutorial-btn-help" id="tutorial-btn" title="Show Tutorial"
                 onclick="startTutorial()">
-                <img src="assets/help_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="?"
+                <img src="assets/icons-svg/help_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="?"
                     style="width: 16px; height: 16px;">
                 Tutorial
             </button>
             <button class="window-btn minimize" title="Minimize" onclick="window.electronAPI.window.minimize()">
-                <img src="assets/minimize_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="−"
+                <img src="assets/icons-svg/minimize_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="−"
                     style="width: 16px; height: 16px;">
             </button>
             <button class="window-btn close" title="Close" onclick="window.electronAPI.window.close()">
-                <img src="assets/close_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="×"
+                <img src="assets/icons-svg/close_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="×"
                     style="width: 16px; height: 16px;">
             </button>
         </div>
@@ -84,12 +84,19 @@
             </div>
         </div>
     </div>
-    <div class="custom-footer-bar"> <span class="footer-app-title">
+    <div class="custom-footer-bar">
+        <span class="footer-app-title">
             <span id="app-version"></span>
-            by
-            <a href="steam://openurl/https://steamcommunity.com/id/skik4"
-                style="color: var(--blue-primary); text-decoration: underline dotted; cursor: pointer;"
-                title="Open skik4's Steam profile">skik4</a>
+            <span class="footer-author-info">
+                <a href="steam://openurl/https://steamcommunity.com/id/skik4" class="footer-social-link"
+                    title="Open skik4's Steam profile">
+                    <img src="assets/logo-svg/steam-white.svg" alt="Steam" class="footer-social-icon">
+                </a>
+                <a href="https://github.com/skik4" class="footer-social-link" title="Open skik4's GitHub profile"
+                    target="_blank">
+                    <img src="assets/logo-svg/github-mark-white.svg" alt="GitHub" class="footer-social-icon">
+                </a>
+            </span>
         </span>
     </div>
     <script type="module" src="src/core/app.js"></script>

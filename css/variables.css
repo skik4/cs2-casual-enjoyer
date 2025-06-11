@@ -10,7 +10,8 @@
     --black: #000;
 
     /* ===== GRAYSCALE PALETTE ===== */
-    --gray-100: #f3f6fa; /* Lightest */
+    --gray-100: #f3f6fa;
+    /* Lightest */
     --gray-200: #e6e9ed;
     --gray-300: #ccc;
     --gray-400: #bfc9d8;
@@ -18,7 +19,8 @@
     --gray-600: #888;
     --gray-700: #666;
     --gray-800: #353a40;
-    --gray-900: #222; /* Darkest */
+    --gray-900: #222;
+    /* Darkest */
 
     /* ===== BRAND COLORS ===== */
     --blue-primary: #2d8cf0;
@@ -27,6 +29,7 @@
     --red-dark: #c0392b;
     --red-light: #ff4444;
     --green-primary: #2ecc40;
+    --green-dark: #1e8e2e;
     --yellow-primary: #f1c40f;
     --purple-primary: #a259f7;
 
@@ -35,56 +38,93 @@
      * Usage: color-mix(in srgb, var(--any-color) var(--opacity-30), transparent)
      * Benefits: Works with any color, shorter syntax, better browser support
      */
-    --opacity-5: 5%;   /* Ultra light */
-    --opacity-10: 10%; /* Very light */
-    --opacity-20: 20%; /* Light */
-    --opacity-30: 30%; /* Medium light */
-    --opacity-40: 40%; /* Medium */
-    --opacity-50: 50%; /* Half */
-    --opacity-60: 60%; /* Medium strong */
-    --opacity-70: 70%; /* Strong */
-    --opacity-80: 80%; /* Very strong */
-    --opacity-90: 90%; /* Almost opaque */
-    --opacity-100: 100%; /* Fully transparent for color-mix */
+    --opacity-5: 5%;
+    /* Ultra light */
+    --opacity-10: 10%;
+    /* Very light */
+    --opacity-20: 20%;
+    /* Light */
+    --opacity-30: 30%;
+    /* Medium light */
+    --opacity-40: 40%;
+    /* Medium */
+    --opacity-50: 50%;
+    /* Half */
+    --opacity-60: 60%;
+    /* Medium strong */
+    --opacity-70: 70%;
+    /* Strong */
+    --opacity-80: 80%;
+    /* Very strong */
+    --opacity-90: 90%;
+    /* Almost opaque */
+    --opacity-100: 100%;
+    /* Fully transparent for color-mix */
 
     /* ============================================= */
     /* SPACING & SIZING TOKENS                     */
     /* ============================================= */
 
     /* ===== SPACING SYSTEM ===== */
-    --space-xxs: 0.25rem; /* 4px */
-    --space-xs: 0.5rem;   /* 8px */
-    --space-sm: 0.75rem;  /* 12px */
-    --space-md: 1rem;     /* 16px */
-    --space-lg: 1.5rem;   /* 24px */
-    --space-xl: 2rem;     /* 32px */
-    --space-xxl: 3rem;    /* 48px */
+    --space-xxs: 0.25rem;
+    /* 4px */
+    --space-xs: 0.5rem;
+    /* 8px */
+    --space-sm: 0.75rem;
+    /* 12px */
+    --space-md: 1rem;
+    /* 16px */
+    --space-lg: 1.5rem;
+    /* 24px */
+    --space-xl: 2rem;
+    /* 32px */
+    --space-xxl: 3rem;
+    /* 48px */
 
     /* ===== POSITIONING ===== */
-    --position-sm: 0.375rem; /* 6px */
-    --position-md: 0.625rem; /* 10px */
-    --position-lg: 1.125rem; /* 18px */
+    --position-sm: 0.375rem;
+    /* 6px */
+    --position-md: 0.625rem;
+    /* 10px */
+    --position-lg: 1.125rem;
+    /* 18px */
 
     /* ===== DIMENSIONS ===== */
-    --border-width: 0.094rem; /* 1.5px */
+    --border-width: 0.094rem;
+    /* 1.5px */
 
     /* ===== BORDER RADIUS ===== */
-    --border-radius-sm: 0.188rem; /* 3px */
-    --border-radius-md: 0.25rem;  /* 4px */
-    --border-radius-lg: 0.375rem; /* 6px */
-    --border-radius-xl: 0.5rem;   /* 8px */
+    --border-radius-sm: 0.188rem;
+    /* 3px */
+    --border-radius-md: 0.25rem;
+    /* 4px */
+    --border-radius-lg: 0.375rem;
+    /* 6px */
+    --border-radius-xl: 0.5rem;
+    /* 8px */
 
     /* ============================================= */
     /* TYPOGRAPHY TOKENS                           */
     /* ============================================= */
-
     /* ===== TYPOGRAPHY SCALE ===== */
-    --font-size-xs: 0.9em;  /* ~14px */
-    --font-size-sm: 0.97em; /* ~15px */
-    --font-size-md: 1.08em; /* ~17px */
-    --font-size-lg: 1.18em; /* ~19px */
-    --font-size-xl: 1.3em;  /* ~21px */
-    --font-size-xxl: 1.6em; /* ~26px */
+    --font-size-xs: 0.9em;
+    /* ~14px */
+    --font-size-sm: 0.97em;
+    /* ~15px */
+    --font-size-md: 1.08em;
+    /* ~17px */
+    --font-size-lg: 1.18em;
+    /* ~19px */
+    --font-size-xl: 1.3em;
+    /* ~21px */
+    --font-size-xxl: 1.6em;
+    /* ~26px */
+
+    /* ===== FONT WEIGHTS ===== */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
 
     /* ============================================= */
     /* ANIMATION TOKENS                            */
@@ -125,8 +165,10 @@
     /* ============================================= */
 
     /* ===== LAYOUT MODULE (layout.css) ===== */
-    --height-window-bar: 2.375rem; /* 38px */
-    --height-footer: 2.25rem;      /* 36px */
+    --height-window-bar: 2.375rem;
+    /* 38px */
+    --height-footer: 2.25rem;
+    /* 36px */
 
     /* ===== FORMS MODULE (forms.css) ===== */
     --input-bg: #181b20;
@@ -135,10 +177,14 @@
     --input-border-invalid: var(--red-primary);
 
     /* ===== STATUS MODULE (status.css) ===== */
-    --status-dot-size: 1.125rem;     /* 18px */
-    --status-pulse-spread: 0.625rem; /* 10px */
-    --spinner-size: 0.875rem;        /* 14px */
-    --spinner-border-width: 0.125rem; /* 2px */
+    --status-dot-size: 1.125rem;
+    /* 18px */
+    --status-pulse-spread: 0.625rem;
+    /* 10px */
+    --spinner-size: 0.875rem;
+    /* 14px */
+    --spinner-border-width: 0.125rem;
+    /* 2px */
 
     /* Status indicator pulse colors */
     --red-primary-30: color-mix(in srgb, var(--red-primary), transparent var(--opacity-70));
@@ -162,6 +208,16 @@
 
     /* ===== COMPLEX GRADIENTS & COMPOSITIONS ===== */
     --panel-bg-gradient: linear-gradient(135deg, var(--bg-panel) 0%, var(--bg-dark) 100%);
-    --panel-shadow: 0 2px 24px 0 color-mix(in srgb, var(--black) var(--opacity-80), transparent), 
-                   0 1.5px 0 0 var(--border-color-strong);
+    --panel-shadow: 0 2px 24px 0 color-mix(in srgb, var(--black) var(--opacity-80), transparent),
+        0 1.5px 0 0 var(--border-color-strong);
+
+    /* ===== Z-INDEX LAYERS ===== */
+    --z-base: 1;
+    --z-dropdown: 10;
+    --z-footer: 11;
+    --z-notification: 1000;
+    --z-tutorial-base: 9997;
+    --z-tutorial-overlay: 9998;
+    --z-tutorial-modal: 9999;
+    --z-window-bar: 10000;
 }
