@@ -307,7 +307,7 @@ export const TUTORIAL_TEMPLATES = {
   async getStepsWithSVG() {
     const steps = [
       {
-        title: "Welcome to CS2 Casual Enjoyer",
+        title: "Welcome to Casual Enjoyer",
         content: `
                     Quick tutorial on main features.<br>
                     Use buttons below to navigate.                
@@ -337,7 +337,7 @@ export const TUTORIAL_TEMPLATES = {
       {
         title: "Paste Token",
         content: `
-                    Paste token into highlighted field.<br>
+                    Paste token (Ctrl+V) into highlighted field.<br>
                     Token expires in 24 hours, get new one when needed.
                 `,
         target: "#auth",

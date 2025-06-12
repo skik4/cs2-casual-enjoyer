@@ -1,6 +1,6 @@
 {
   "name": "cs2-casual-enjoyer",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "CS2 Casual Enjoyer Electron App",
   "keywords": [
     "cs2",
@@ -27,7 +27,7 @@
   },
   "build": {
     "appId": "cs2casualenjoyer",
-    "productName": "CS2-Casual-Enjoyer",
+    "productName": "Casual-Enjoyer",
     "artifactName": "${productName}.${ext}",
     "files": [
       "src/**/*",
