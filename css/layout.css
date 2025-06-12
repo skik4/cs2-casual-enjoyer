@@ -1,110 +1,116 @@
 /* Layout Components */
 
 .main-content {
-    flex: 1 1 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100vw;
-    padding-top: 16px;
-    padding-bottom: var(--height-footer);
-    box-sizing: border-box;
-    background: linear-gradient(135deg, var(--bg-dark-gradient-light) 0%, var(--bg-panel) 30%, var(--bg-dark) 100%);
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  padding-top: 16px;
+  padding-bottom: var(--height-footer);
+  box-sizing: border-box;
+  background: linear-gradient(
+    135deg,
+    var(--bg-dark-gradient-light) 0%,
+    var(--bg-panel) 30%,
+    var(--bg-dark) 100%
+  );
 }
 
 .app-viewport {
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .container {
-    width: 100%;
-    background: transparent;
-    box-shadow: none;
-    border: none;
-    border-radius: var(--border-radius-xl);
-    padding: 2.5em 2.5em 1.5em 2.5em;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+  width: 100%;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  border-radius: var(--border-radius-xl);
+  padding: 2.5em 2.5em 1.5em 2.5em;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .center-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: var(--space-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-sm);
 }
 
 /* Footer */
 .custom-footer-bar {
-    width: 100vw;
-    min-width: 0;
-    height: var(--height-footer);
-    background: var(--bg-panel);
-    border-top: var(--border-width) solid var(--panel-outline);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0 var(--space-xl) 0 0;
-    box-sizing: border-box;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: var(--z-footer);
-    user-select: none;
+  width: 100vw;
+  min-width: 0;
+  height: var(--height-footer);
+  background: var(--bg-panel);
+  border-top: var(--border-width) solid var(--panel-outline);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 var(--space-xl) 0 0;
+  box-sizing: border-box;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-footer);
+  user-select: none;
 }
 
 .footer-app-title {
-    font-size: var(--font-size-sm);
-    font-weight: 400;
-    color: var(--text-secondary);
-    letter-spacing: 0.5px;
-    display: flex;
-    align-items: center;
-    height: 100%;
-    gap: var(--space-sm);
-    opacity: 0.7;
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: var(--space-sm);
+  opacity: 0.7;
 }
 
 .footer-author-info {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-    margin-left: var(--space-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: var(--space-xs);
 }
 
 .footer-social-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2px;
-    border-radius: var(--border-radius-sm);
-    transition: all var(--anim-duration) ease;
-    text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: var(--border-radius-sm);
+  transition: all var(--anim-duration) ease;
+  text-decoration: none;
 }
 
 .footer-social-link:hover {
-    transform: translateY(-1px);
+  transform: translateY(-1px);
 }
 
 .footer-social-link:active {
-    transform: translateY(0);
+  transform: translateY(0);
 }
 
 .footer-social-icon {
-    width: 18px;
-    height: 18px;
-    filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%) hue-rotate(202deg) brightness(91%) contrast(93%);
-    transition: filter var(--anim-duration) ease;
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%)
+    hue-rotate(202deg) brightness(91%) contrast(93%);
+  transition: filter var(--anim-duration) ease;
 }
 
 .footer-social-link:hover .footer-social-icon {
-    filter: brightness(0) saturate(100%) invert(100%);
+  filter: brightness(0) saturate(100%) invert(100%);
 }

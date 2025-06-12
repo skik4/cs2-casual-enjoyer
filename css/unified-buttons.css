@@ -13,7 +13,8 @@
 .tutorial-btn img,
 .window-btn img,
 .notification-close-btn img {
-  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%) hue-rotate(202deg) brightness(91%) contrast(93%);
+  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%)
+    hue-rotate(202deg) brightness(91%) contrast(93%);
   transition: filter var(--anim-duration);
   pointer-events: none;
   display: block;
@@ -27,7 +28,8 @@
 
 .btn-secondary img,
 .tutorial-btn-secondary img {
-  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%) hue-rotate(202deg) brightness(91%) contrast(93%);
+  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%)
+    hue-rotate(202deg) brightness(91%) contrast(93%);
 }
 
 .btn-danger img,
@@ -36,7 +38,8 @@
 }
 
 .window-btn img {
-  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%) hue-rotate(202deg) brightness(91%) contrast(93%);
+  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%)
+    hue-rotate(202deg) brightness(91%) contrast(93%);
 }
 
 .window-btn:hover img {
@@ -44,7 +47,8 @@
 }
 
 .tutorial-btn-help img {
-  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%) hue-rotate(202deg) brightness(91%) contrast(93%);
+  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%)
+    hue-rotate(202deg) brightness(91%) contrast(93%);
 }
 
 .tutorial-btn-help:hover img {
@@ -52,7 +56,8 @@
 }
 
 .notification-close-btn img {
-  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%) hue-rotate(202deg) brightness(91%) contrast(93%);
+  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%)
+    hue-rotate(202deg) brightness(91%) contrast(93%);
   opacity: 0.7;
 }
 
@@ -80,7 +85,12 @@
   cursor: pointer;
   transition: all var(--anim-duration);
   min-width: 75px;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   position: relative;
   overflow: hidden;
   text-align: center;
@@ -133,14 +143,14 @@
   color: var(--gray-600);
 }
 
-.btn>*,
-.tutorial-btn-help>*,
-.tutorial-btn-secondary>*,
-.tutorial-btn-primary>*,
-.tutorial-btn>*,
-.window-btn>*,
-.cancel-btn>*,
-.action-btn>* {
+.btn > *,
+.tutorial-btn-help > *,
+.tutorial-btn-secondary > *,
+.tutorial-btn-primary > *,
+.tutorial-btn > *,
+.window-btn > *,
+.cancel-btn > *,
+.action-btn > * {
   position: relative;
   z-index: 2;
 }
@@ -149,19 +159,29 @@
 .btn-primary,
 .tutorial-btn-primary,
 .action-btn {
-  background: linear-gradient(90deg, var(--blue-primary) 60%, var(--blue-dark) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--blue-primary) 60%,
+    var(--blue-dark) 100%
+  );
   border-color: var(--blue-primary);
   color: var(--white);
   font-weight: var(--font-weight-semibold);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--blue-primary) var(--opacity-20), transparent);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--blue-primary) var(--opacity-20), transparent);
 }
 
 .btn-primary:hover:not(:disabled),
 .tutorial-btn-primary:hover:not(:disabled),
 .action-btn:hover:not(:disabled) {
-  background: linear-gradient(90deg, var(--blue-dark) 60%, var(--blue-primary) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--blue-dark) 60%,
+    var(--blue-primary) 100%
+  );
   border-color: var(--blue-dark);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--blue-primary) var(--opacity-40), transparent);
+  box-shadow: 0 4px 16px
+    color-mix(in srgb, var(--blue-primary) var(--opacity-40), transparent);
   transform: translateY(-2px);
 }
 
@@ -169,7 +189,8 @@
 .tutorial-btn-primary:active:not(:disabled),
 .action-btn:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--blue-primary) var(--opacity-20), transparent);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--blue-primary) var(--opacity-20), transparent);
 }
 
 .btn-secondary,
@@ -192,21 +213,24 @@
   border-color: var(--red-primary);
   color: var(--white);
   font-weight: var(--font-weight-semibold);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--red-primary) var(--opacity-20), transparent);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--red-primary) var(--opacity-20), transparent);
 }
 
 .btn-danger:hover:not(:disabled),
 .cancel-btn:hover:not(:disabled) {
   background: var(--red-dark);
   border-color: var(--red-dark);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--red-primary) var(--opacity-40), transparent);
+  box-shadow: 0 4px 16px
+    color-mix(in srgb, var(--red-primary) var(--opacity-40), transparent);
   transform: translateY(-2px);
 }
 
 .btn-danger:active:not(:disabled),
 .cancel-btn:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--red-primary) var(--opacity-20), transparent);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--red-primary) var(--opacity-20), transparent);
 }
 
 /* ===== SIZE MODIFIERS ===== */
@@ -274,10 +298,15 @@
 
 .btn-help:hover:not(:disabled),
 .tutorial-btn-help:hover:not(:disabled) {
-  background: linear-gradient(90deg, var(--blue-primary) 60%, var(--blue-dark) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--blue-primary) 60%,
+    var(--blue-dark) 100%
+  );
   color: var(--white);
   border-color: var(--blue-primary);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--blue-primary) var(--opacity-30), transparent);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--blue-primary) var(--opacity-30), transparent);
 }
 
 /* Notification close button - minimal styling */
@@ -292,7 +321,10 @@
   background: transparent;
   border: none;
   z-index: 2;
-  transition: color var(--anim-duration), opacity var(--anim-duration), background var(--anim-duration);
+  transition:
+    color var(--anim-duration),
+    opacity var(--anim-duration),
+    background var(--anim-duration);
   line-height: 1;
   padding: 4px;
   border-radius: var(--border-radius-sm);

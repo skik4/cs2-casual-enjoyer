@@ -1,49 +1,50 @@
 /* Window Bar Component */
 
 .window-bar {
-    width: 100vw;
-    min-width: 0;
-    height: var(--height-window-bar);
-    background: var(--bg-panel);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    -webkit-app-region: drag;
-    user-select: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: var(--z-window-bar);
-    border-bottom: var(--border-width) solid var(--panel-outline);
-    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-    box-shadow: 0 2px 12px color-mix(in srgb, var(--black) var(--opacity-40), transparent);
+  width: 100vw;
+  min-width: 0;
+  height: var(--height-window-bar);
+  background: var(--bg-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  -webkit-app-region: drag;
+  user-select: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-window-bar);
+  border-bottom: var(--border-width) solid var(--panel-outline);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  box-shadow: 0 2px 12px
+    color-mix(in srgb, var(--black) var(--opacity-40), transparent);
 }
 
 .window-bar-title-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1 1 auto;
-    text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  text-align: center;
 }
 
 .window-bar-title {
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-secondary);
-    letter-spacing: 1px;
-    pointer-events: none;
-    user-select: none;
-    margin-right: var(--space-xs);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+  pointer-events: none;
+  user-select: none;
+  margin-right: var(--space-xs);
 }
 
 .window-bar-btns {
-    display: flex;
-    gap: var(--space-xs);
-    -webkit-app-region: no-drag;
-    position: absolute;
-    right: var(--position-lg);
-    top: var(--position-sm);
+  display: flex;
+  gap: var(--space-xs);
+  -webkit-app-region: no-drag;
+  position: absolute;
+  right: var(--position-lg);
+  top: var(--position-sm);
 }

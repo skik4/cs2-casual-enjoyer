@@ -2,18 +2,18 @@
 
 /* Широкие экраны - когда окно развернуто на большом мониторе */
 @media (min-width: 1200px) {
-    .app-viewport {
-        max-width: 1000px; /* Немного больше для комфорта на больших экранах */
-    }
+  .app-viewport {
+    max-width: 1000px; /* Немного больше для комфорта на больших экранах */
+  }
 }
 
 /* Очень широкие экраны - 4K мониторы и ультраширокие */
 @media (min-width: 1600px) {
-    .app-viewport {
-        max-width: 1200px;
-    }
-    
-    .container {
-        padding: 3em 3em 2em 3em; /* Больше отступов для комфорта */
-    }
+  .app-viewport {
+    max-width: 1200px;
+  }
+
+  .container {
+    padding: 3em 3em 2em 3em; /* Больше отступов для комфорта */
+  }
 }

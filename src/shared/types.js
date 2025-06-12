@@ -40,4 +40,4 @@
  * @property {Date} expiresDate - Expiration date object
  */
 
-export {}; // Make this a module 
+export {}; // Make this a module

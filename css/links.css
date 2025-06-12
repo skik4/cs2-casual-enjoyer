@@ -6,10 +6,10 @@
 .steam-token-link,
 .steam-profile-link,
 .steam-apikey-link {
-    color: var(--blue-primary) !important;
-    text-decoration: underline !important;
-    font-weight: 500;
-    transition: color var(--anim-duration);
+  color: var(--blue-primary) !important;
+  text-decoration: underline !important;
+  font-weight: 500;
+  transition: color var(--anim-duration);
 }
 
 .steam-link:hover,
@@ -17,15 +17,15 @@
 .steam-token-link:hover,
 .steam-profile-link:hover,
 .steam-apikey-link:hover {
-    color: var(--blue-dark) !important;
+  color: var(--blue-dark) !important;
 }
 
 /* General styling fixes */
 hr,
 .input-row,
 .center-row {
-    border-radius: var(--border-radius-md);
-    border: none;
+  border-radius: var(--border-radius-md);
+  border: none;
 }
 
 /* Commented out placeholder link style */

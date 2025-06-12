@@ -1,108 +1,110 @@
 /* Status Indicators and Animations */
 
 .status-dot {
-    width: var(--status-dot-size);
-    height: var(--status-dot-size);
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: var(--space-xs);
-    box-shadow: var(--status-dot-shadow);
-    border: var(--border-width) solid var(--panel-outline);
-    transition: background var(--anim-duration-slow), box-shadow var(--anim-duration-slow);
+  width: var(--status-dot-size);
+  height: var(--status-dot-size);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: var(--space-xs);
+  box-shadow: var(--status-dot-shadow);
+  border: var(--border-width) solid var(--panel-outline);
+  transition:
+    background var(--anim-duration-slow),
+    box-shadow var(--anim-duration-slow);
 }
 
 .dot-waiting {
-    background: var(--red-primary);
-    animation: pulse-red var(--anim-pulse-duration) infinite;
+  background: var(--red-primary);
+  animation: pulse-red var(--anim-pulse-duration) infinite;
 }
 
 .dot-connecting {
-    background: var(--yellow-primary);
-    animation: pulse-yellow var(--anim-pulse-duration) infinite;
+  background: var(--yellow-primary);
+  animation: pulse-yellow var(--anim-pulse-duration) infinite;
 }
 
 .dot-joined {
-    background: var(--green-primary);
-    animation: pulse-green var(--anim-pulse-duration) infinite;
+  background: var(--green-primary);
+  animation: pulse-green var(--anim-pulse-duration) infinite;
 }
 
 .dot-cancelled {
-    background: var(--gray-600);
+  background: var(--gray-600);
 }
 
 .dot-missing {
-    background: var(--purple-primary);
-    animation: pulse-purple var(--anim-pulse-duration) infinite;
+  background: var(--purple-primary);
+  animation: pulse-purple var(--anim-pulse-duration) infinite;
 }
 
 .dot-inactive {
-    background: var(--gray-600);
-    opacity: var(--opacity-50);
+  background: var(--gray-600);
+  opacity: var(--opacity-50);
 }
 
 /* Pulse Animations */
 @keyframes pulse-red {
-    0% {
-        box-shadow: 0 0 0 0 var(--red-primary-30);
-    }
-    70% {
-        box-shadow: 0 0 0 var(--status-pulse-spread) var(--red-primary-0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 var(--red-primary-0);
-    }
+  0% {
+    box-shadow: 0 0 0 0 var(--red-primary-30);
+  }
+  70% {
+    box-shadow: 0 0 0 var(--status-pulse-spread) var(--red-primary-0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 var(--red-primary-0);
+  }
 }
 
 @keyframes pulse-yellow {
-    0% {
-        box-shadow: 0 0 0 0 var(--yellow-primary-30);
-    }
-    70% {
-        box-shadow: 0 0 0 var(--status-pulse-spread) var(--yellow-primary-0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 var(--yellow-primary-0);
-    }
+  0% {
+    box-shadow: 0 0 0 0 var(--yellow-primary-30);
+  }
+  70% {
+    box-shadow: 0 0 0 var(--status-pulse-spread) var(--yellow-primary-0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 var(--yellow-primary-0);
+  }
 }
 
 @keyframes pulse-green {
-    0% {
-        box-shadow: 0 0 0 0 var(--green-primary-30);
-    }
-    70% {
-        box-shadow: 0 0 0 var(--status-pulse-spread) var(--green-primary-0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 var(--green-primary-0);
-    }
+  0% {
+    box-shadow: 0 0 0 0 var(--green-primary-30);
+  }
+  70% {
+    box-shadow: 0 0 0 var(--status-pulse-spread) var(--green-primary-0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 var(--green-primary-0);
+  }
 }
 
 @keyframes pulse-purple {
-    0% {
-        box-shadow: 0 0 0 0 var(--purple-pulse-30);
-    }
-    70% {
-        box-shadow: 0 0 0 var(--status-pulse-spread) var(--purple-pulse-0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 var(--purple-pulse-0);
-    }
+  0% {
+    box-shadow: 0 0 0 0 var(--purple-pulse-30);
+  }
+  70% {
+    box-shadow: 0 0 0 var(--status-pulse-spread) var(--purple-pulse-0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 var(--purple-pulse-0);
+  }
 }
 
 /* Loading Spinner */
 .loading-spinner {
-    display: inline-block;
-    width: var(--spinner-size);
-    height: var(--spinner-size);
-    border: var(--spinner-border-width) solid var(--text-secondary);
-    border-radius: 50%;
-    border-top-color: var(--blue-primary);
-    animation: spin var(--anim-spin-duration) ease-in-out infinite;
-    margin-right: var(--space-xs);
+  display: inline-block;
+  width: var(--spinner-size);
+  height: var(--spinner-size);
+  border: var(--spinner-border-width) solid var(--text-secondary);
+  border-radius: 50%;
+  border-top-color: var(--blue-primary);
+  animation: spin var(--anim-spin-duration) ease-in-out infinite;
+  margin-right: var(--space-xs);
 }
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }

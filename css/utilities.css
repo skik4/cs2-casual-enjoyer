@@ -2,82 +2,82 @@
 
 /* Vertical Spacing Utilities - Use only margin-bottom for consistency */
 .mb-0 {
-    margin-bottom: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .mb-xxs {
-    margin-bottom: var(--space-xxs) !important;
+  margin-bottom: var(--space-xxs) !important;
 }
 
 .mb-xs {
-    margin-bottom: var(--space-xs) !important;
+  margin-bottom: var(--space-xs) !important;
 }
 
 .mb-sm {
-    margin-bottom: var(--space-sm) !important;
+  margin-bottom: var(--space-sm) !important;
 }
 
 .mb-md {
-    margin-bottom: var(--space-md) !important;
+  margin-bottom: var(--space-md) !important;
 }
 
 .mb-lg {
-    margin-bottom: var(--space-lg) !important;
+  margin-bottom: var(--space-lg) !important;
 }
 
 .mb-xl {
-    margin-bottom: var(--space-xl) !important;
+  margin-bottom: var(--space-xl) !important;
 }
 
 .mb-xxl {
-    margin-bottom: var(--space-xxl) !important;
+  margin-bottom: var(--space-xxl) !important;
 }
 
 /* Common Flexbox Utilities */
 .flex-center {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .flex-center-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .flex-between {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .flex-start {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .flex-end {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 /* Vertical Spacing for specific components - using margin-bottom pattern */
 .form-element {
-    margin-bottom: var(--space-md);
+  margin-bottom: var(--space-md);
 }
 
 .form-element:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .section-spacing {
-    margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-lg);
 }
 
 .section-spacing:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }

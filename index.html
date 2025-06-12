@@ -1,125 +1,199 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
+  <head>
     <title>CS2 Casual Enjoyer</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
-        body {
-            background: var(--bg-dark) !important;
-        }
+      body {
+        background: var(--bg-dark) !important;
+      }
 
-        html {
-            background: var(--bg-dark) !important;
-        }
+      html {
+        background: var(--bg-dark) !important;
+      }
     </style>
-    <link rel="stylesheet" href="css/styles.css">
-</head>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
 
-<body>
+  <body>
     <div class="window-bar">
-        <span class="window-bar-title">CS2 Casual Enjoyer</span>
-        <div class="window-bar-btns"> <button class="tutorial-btn-help" id="tutorial-btn" title="Show Tutorial"
-                onclick="startTutorial()">
-                <img src="assets/icons-svg/help_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="?"
-                    style="width: 16px; height: 16px;">
-                Tutorial
-            </button>
-            <button class="window-btn minimize" title="Minimize" onclick="window.electronAPI.window.minimize()">
-                <img src="assets/icons-svg/minimize_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="−"
-                    style="width: 16px; height: 16px;">
-            </button>
-            <button class="window-btn close" title="Close" onclick="window.electronAPI.window.close()">
-                <img src="assets/icons-svg/close_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="×"
-                    style="width: 16px; height: 16px;">
-            </button>
-        </div>
+      <span class="window-bar-title">CS2 Casual Enjoyer</span>
+      <div class="window-bar-btns">
+        <button
+          class="tutorial-btn-help"
+          id="tutorial-btn"
+          title="Show Tutorial"
+          onclick="startTutorial()"
+        >
+          <img
+            src="assets/icons-svg/help_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg"
+            alt="?"
+            style="width: 16px; height: 16px"
+          />
+          Tutorial
+        </button>
+        <button
+          class="window-btn minimize"
+          title="Minimize"
+          onclick="window.electronAPI.window.minimize()"
+        >
+          <img
+            src="assets/icons-svg/minimize_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg"
+            alt="−"
+            style="width: 16px; height: 16px"
+          />
+        </button>
+        <button
+          class="window-btn close"
+          title="Close"
+          onclick="window.electronAPI.window.close()"
+        >
+          <img
+            src="assets/icons-svg/close_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg"
+            alt="×"
+            style="width: 16px; height: 16px"
+          />
+        </button>
+      </div>
     </div>
     <div class="main-content">
-        <div class="app-viewport">
-            <div class="container">
-                <div id="notifications" class="mb-md"></div>
-                <h1 class="mb-lg" style="display:none;">CS2 Casual Enjoyer</h1>
-                <div class="param-fields-container mb-lg">
-                    <div class="param-label-row" style="margin-bottom: var(--space-xs);">
-                        <div class="param-label-cell" style="padding-bottom: 0;">
-                            <span id="api-key-help" title="Get your Steam Web API Token / Key in Steam"
-                                class="param-label-text"
-                                style="text-decoration: underline; color: inherit; cursor: pointer; margin-bottom: 0; padding-bottom: 0;">
-                                Steam Web API Token / Key
-                            </span>
-                        </div>
-                        <div class="param-label-cell" style="padding-bottom: 0;">
-                            <a id="steam-id-help" href="steam://url/SteamIDMyProfile" target="_self"
-                                title="Open your profile in Steam" class="param-label-text"
-                                style="text-decoration: underline; color: inherit; cursor: pointer; margin-bottom: 0; padding-bottom: 0;">
-                                SteamID64
-                            </a>
-                        </div>
-                    </div>
-                    <div class="param-input-row">
-                        <div class="param-input-cell">
-                            <input id="auth" type="password" autocomplete="off" />
-                        </div>
-                        <div class="param-input-cell">
-                            <input id="steam-id" autocomplete="off" />
-                        </div>
-                    </div>
-                </div>
-                <div class="center-row mb-md">
-                    <button id="update-friends-btn" class="action-btn"
-                        title="Update the complete list of friends from Steam API">Update Friends List</button>
-                </div>
-                <div class="center-row update-hint-container mb-md">
-                    <div id="update-hint" class="update-hint">Click "Update Friends List" to load your friends and start
-                        auto-refresh</div>
-                </div>
-                <div class="center-row mb-sm" id="friend-filter-row">
-                    <input id="friend-filter-input" type="text" placeholder="Filter friends by nickname..."
-                        style="width: 320px; max-width: 100%; font-size: var(--font-size-md); padding: var(--space-xs) var(--space-md);">
-                </div>
-                <div id="cs2-launch-notification" class="cs2-launch-overlay" style="display: none;">
-                </div>
-                <div class="friend-list" id="friends"></div>
+      <div class="app-viewport">
+        <div class="container">
+          <div id="notifications" class="mb-md"></div>
+          <h1 class="mb-lg" style="display: none">CS2 Casual Enjoyer</h1>
+          <div class="param-fields-container mb-lg">
+            <div class="param-label-row" style="margin-bottom: var(--space-xs)">
+              <div class="param-label-cell" style="padding-bottom: 0">
+                <span
+                  id="api-key-help"
+                  title="Get your Steam Web API Token / Key in Steam"
+                  class="param-label-text"
+                  style="
+                    text-decoration: underline;
+                    color: inherit;
+                    cursor: pointer;
+                    margin-bottom: 0;
+                    padding-bottom: 0;
+                  "
+                >
+                  Steam Web API Token / Key
+                </span>
+              </div>
+              <div class="param-label-cell" style="padding-bottom: 0">
+                <a
+                  id="steam-id-help"
+                  href="steam://url/SteamIDMyProfile"
+                  target="_self"
+                  title="Open your profile in Steam"
+                  class="param-label-text"
+                  style="
+                    text-decoration: underline;
+                    color: inherit;
+                    cursor: pointer;
+                    margin-bottom: 0;
+                    padding-bottom: 0;
+                  "
+                >
+                  SteamID64
+                </a>
+              </div>
             </div>
+            <div class="param-input-row">
+              <div class="param-input-cell">
+                <input id="auth" type="password" autocomplete="off" />
+              </div>
+              <div class="param-input-cell">
+                <input id="steam-id" autocomplete="off" />
+              </div>
+            </div>
+          </div>
+          <div class="center-row mb-md">
+            <button
+              id="update-friends-btn"
+              class="action-btn"
+              title="Update the complete list of friends from Steam API"
+            >
+              Update Friends List
+            </button>
+          </div>
+          <div class="center-row update-hint-container mb-md">
+            <div id="update-hint" class="update-hint">
+              Click "Update Friends List" to load your friends and start
+              auto-refresh
+            </div>
+          </div>
+          <div class="center-row mb-sm" id="friend-filter-row">
+            <input
+              id="friend-filter-input"
+              type="text"
+              placeholder="Filter friends by nickname..."
+              style="
+                width: 320px;
+                max-width: 100%;
+                font-size: var(--font-size-md);
+                padding: var(--space-xs) var(--space-md);
+              "
+            />
+          </div>
+          <div
+            id="cs2-launch-notification"
+            class="cs2-launch-overlay"
+            style="display: none"
+          ></div>
+          <div class="friend-list" id="friends"></div>
         </div>
+      </div>
     </div>
     <div class="custom-footer-bar">
-        <span class="footer-app-title">
-            <span id="app-version"></span>
-            <span class="footer-author-info">
-                <a href="steam://openurl/https://steamcommunity.com/id/skik4" class="footer-social-link"
-                    title="Open skik4's Steam profile">
-                    <img src="assets/logo-svg/steam-white.svg" alt="Steam" class="footer-social-icon">
-                </a>
-                <a href="https://github.com/skik4" class="footer-social-link" title="Open skik4's GitHub profile"
-                    target="_blank">
-                    <img src="assets/logo-svg/github-mark-white.svg" alt="GitHub" class="footer-social-icon">
-                </a>
-            </span>
+      <span class="footer-app-title">
+        <span id="app-version"></span>
+        <span class="footer-author-info">
+          <a
+            href="steam://openurl/https://steamcommunity.com/id/skik4"
+            class="footer-social-link"
+            title="Open skik4's Steam profile"
+          >
+            <img
+              src="assets/logo-svg/steam-white.svg"
+              alt="Steam"
+              class="footer-social-icon"
+            />
+          </a>
+          <a
+            href="https://github.com/skik4"
+            class="footer-social-link"
+            title="Open skik4's GitHub profile"
+            target="_blank"
+          >
+            <img
+              src="assets/logo-svg/github-mark-white.svg"
+              alt="GitHub"
+              class="footer-social-icon"
+            />
+          </a>
         </span>
+      </span>
     </div>
     <script type="module" src="src/core/app.js"></script>
     <script type="module">
-        import tutorialManager from './src/ui/tutorial/tutorial-manager.js';
+      import tutorialManager from "./src/ui/tutorial/tutorial-manager.js";
 
-        // Global function to start tutorial using singleton
-        window.startTutorial = function () {
-            tutorialManager.start();
-        };
+      // Global function to start tutorial using singleton
+      window.startTutorial = function () {
+        tutorialManager.start();
+      };
 
-        // Make tutorialManager globally accessible
-        window.tutorialManager = tutorialManager;
+      // Make tutorialManager globally accessible
+      window.tutorialManager = tutorialManager;
     </script>
     <script>
-        // Initialize app version display
-        if (window.electronAPI && window.electronAPI.app.getVersion) {
-            window.electronAPI.app.getVersion().then(function (version) {
-                const el = document.getElementById('app-version');
-                if (el && version) el.textContent = 'v' + version + ' ';
-            });
-        }
+      // Initialize app version display
+      if (window.electronAPI && window.electronAPI.app.getVersion) {
+        window.electronAPI.app.getVersion().then(function (version) {
+          const el = document.getElementById("app-version");
+          if (el && version) el.textContent = "v" + version + " ";
+        });
+      }
     </script>
-</body>
-
+  </body>
 </html>

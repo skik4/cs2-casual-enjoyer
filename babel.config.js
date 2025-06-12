@@ -1,10 +1,10 @@
 export default {
   presets: [
     [
-      '@babel/preset-env',
+      "@babel/preset-env",
       {
         targets: {
-          node: 'current',
+          node: "current",
         },
         modules: false,
       },
@@ -14,12 +14,12 @@ export default {
     test: {
       presets: [
         [
-          '@babel/preset-env',
+          "@babel/preset-env",
           {
             targets: {
-              node: 'current',
+              node: "current",
             },
-            modules: 'auto',
+            modules: "auto",
           },
         ],
       ],

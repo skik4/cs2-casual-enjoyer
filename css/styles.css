@@ -1,45 +1,45 @@
 /* Main Styles File - Modular CSS Architecture */
 
 /* Import Inter and Noto Color Emoji locally */
-@import url('../node_modules/@fontsource/inter/index.css');
+@import url("../node_modules/@fontsource/inter/index.css");
 /* @import url('../node_modules/@fontsource/noto-emoji/index.css');
 @import url('../node_modules/@fontsource/noto-color-emoji/index.css'); */
 
 /* CSS Variables and Design Tokens */
-@import url('./variables.css');
+@import url("./variables.css");
 
 /* Base styles (reset, typography, html/body) */
-@import url('./base.css');
+@import url("./base.css");
 
 /* Utility classes */
-@import url('./utilities.css');
+@import url("./utilities.css");
 
 /* Layout components */
-@import url('./layout.css');
+@import url("./layout.css");
 
 /* Window bar component */
-@import url('./window-bar.css');
+@import url("./window-bar.css");
 
 /* Form components */
-@import url('./forms.css');
+@import url("./forms.css");
 
 /* Friend list component */
-@import url('./friends.css');
+@import url("./friends.css");
 
 /* Status indicators and animations */
-@import url('./status.css');
+@import url("./status.css");
 
 /* Notifications */
-@import url('./notifications.css');
+@import url("./notifications.css");
 
 /* Tutorial components */
-@import url('./tutorial.css');
+@import url("./tutorial.css");
 
 /* Links and additional components */
-@import url('./links.css');
+@import url("./links.css");
 
 /* Button components (existing unified buttons) */
-@import url('./unified-buttons.css');
+@import url("./unified-buttons.css");
 
 /* Responsive design */
-@import url('./responsive.css');
+@import url("./responsive.css");

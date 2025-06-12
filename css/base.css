@@ -2,58 +2,58 @@
 
 html,
 body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    background: var(--bg-dark);
-    overflow-y: auto;
-    overflow-x: hidden;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-dark);
+  overflow-y: auto;
+  overflow-x: hidden;
 
-    ::-webkit-scrollbar {
-        display: none;
-    }
+  ::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 body {
-    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-    color: var(--text-primary);
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: stretch;
-    width: 100vw;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    background: var(--bg-dark);
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  color: var(--text-primary);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  width: 100vw;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  background: var(--bg-dark);
 }
 
 /* Typography */
 h1 {
-    text-align: center;
-    font-weight: var(--font-weight-bold);
-    font-size: var(--font-size-xxl);
-    letter-spacing: 1.2px;
-    margin: 0;
-    margin-bottom: var(--space-md);
-    color: var(--white);
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xxl);
+  letter-spacing: 1.2px;
+  margin: 0;
+  margin-bottom: var(--space-md);
+  color: var(--white);
 }
 
 label {
-    display: block;
-    margin-bottom: var(--space-md);
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    color: var(--text-secondary);
-    position: relative;
+  display: block;
+  margin-bottom: var(--space-md);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-secondary);
+  position: relative;
 }
 
 /* Scrollbar Styling */
 ::-webkit-scrollbar-thumb {
-    background: var(--border-color-strong);
-    border-radius: var(--border-radius-md);
+  background: var(--border-color-strong);
+  border-radius: var(--border-radius-md);
 }

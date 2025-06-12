@@ -1,85 +1,89 @@
 /* Friend List Component */
 
 .friend-list {
-    margin: 0;
-    max-height: none;
-    overflow-y: visible;
-    position: relative;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    border-radius: 0;
+  margin: 0;
+  max-height: none;
+  overflow-y: visible;
+  position: relative;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .friend {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--bg-item);
-    border-radius: var(--border-radius-lg);
-    padding: var(--space-md) 1.5em;
-    box-shadow: 0 var(--border-width) 0 0 var(--border-color-strong);
-    border: var(--border-width) solid var(--panel-outline);
-    transition: box-shadow var(--anim-duration), background var(--anim-duration);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-item);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-md) 1.5em;
+  box-shadow: 0 var(--border-width) 0 0 var(--border-color-strong);
+  border: var(--border-width) solid var(--panel-outline);
+  transition:
+    box-shadow var(--anim-duration),
+    background var(--anim-duration);
 }
 
 /* Add spacing between friends, but not after the last one */
 .friend:not(:last-child) {
-    margin-bottom: var(--space-xs);
+  margin-bottom: var(--space-xs);
 }
 
 .friend:hover {
-    box-shadow: 0 2px 12px color-mix(in srgb, var(--black) var(--opacity-60), transparent);
-    background: var(--bg-panel);
-    border-color: var(--blue-primary);
+  box-shadow: 0 2px 12px
+    color-mix(in srgb, var(--black) var(--opacity-60), transparent);
+  background: var(--bg-panel);
+  border-color: var(--blue-primary);
 }
 
 .friend-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .friend-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--border-radius-lg);
-    object-fit: cover;
-    margin-right: 0.7em;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--black) var(--opacity-30), transparent);
-    background: var(--gray-900);
-    flex-shrink: 0;
-    border: var(--border-width) solid var(--panel-outline);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-lg);
+  object-fit: cover;
+  margin-right: 0.7em;
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--black) var(--opacity-30), transparent);
+  background: var(--gray-900);
+  flex-shrink: 0;
+  border: var(--border-width) solid var(--panel-outline);
 }
 
 .friend-info-row {
-    display: flex;
-    align-items: center;
-    gap: 1em;
+  display: flex;
+  align-items: center;
+  gap: 1em;
 }
 
 .personaname {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--white);
-    letter-spacing: 0.2px;
-    margin-right: 0.5em;
-    word-break: break-all;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--white);
+  letter-spacing: 0.2px;
+  margin-right: 0.5em;
+  word-break: break-all;
 }
 
 .status {
-    margin: 0;
-    margin-bottom: var(--space-xs);
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    color: var(--blue-primary);
+  margin: 0;
+  margin-bottom: var(--space-xs);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--blue-primary);
 }
 
 .join-section {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 140px;
 }
