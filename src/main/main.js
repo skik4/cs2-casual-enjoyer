@@ -221,9 +221,9 @@ const appManager = new AppManager();
 
 // App event handlers
 app.whenReady().then(async () => {
-  MainLogger.info("Application starting...");
+  MainLogger.info("Electron app ready, initializing main process...");
   await appManager.initialize();
-  MainLogger.info("Application initialized successfully");
+  MainLogger.info("Main process initialized, creating application window");
 });
 
 app.on("window-all-closed", () => {
