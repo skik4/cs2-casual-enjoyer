@@ -81,3 +81,23 @@
 .section-spacing:last-child {
   margin-bottom: 0;
 }
+
+/* Visibility helpers */
+.hidden {
+  display: none !important;
+}
+
+/* Pointer and text helpers */
+.clickable {
+  cursor: pointer !important;
+}
+
+.underline {
+  text-decoration: underline !important;
+}
+
+/* Icon sizing */
+.icon-16 {
+  width: 16px !important;
+  height: 16px !important;
+}

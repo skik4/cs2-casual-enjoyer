@@ -172,7 +172,11 @@ class CS2Manager {
   launchCS2() {
     try {
       const launchUrl = "steam://run/730/";
-      window.open(launchUrl);
+      if (window.electronAPI?.shell?.openExternal) {
+        window.electronAPI.shell.openExternal(launchUrl);
+      } else {
+        window.open(launchUrl);
+      }
       logger.info("CS2Manager", "Launching CS2...", { launchUrl });
     } catch (error) {
       logger.error("CS2Manager", "Error launching CS2", {

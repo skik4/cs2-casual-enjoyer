@@ -62,6 +62,20 @@ const electronAPI = {
     debug: (context, message, data) =>
       ipcRenderer.send("log-debug", context, message, data),
   },
+
+  /**
+   * Shell helpers
+   */
+  shell: {
+    openExternal: async (url) => {
+      try {
+        return await ipcRenderer.invoke("open-external", url);
+      } catch (error) {
+        console.error("Failed to open external URL:", error);
+        return false;
+      }
+    },
+  },
 };
 
 // Expose API to renderer process

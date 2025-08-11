@@ -32,6 +32,9 @@ class AppEventManager {
    */
   setupEventListeners() {
     const updateFriendsBtn = DOMUtils.getElementById("update-friends-btn");
+    const tutorialBtn = DOMUtils.getElementById("tutorial-btn");
+    const minimizeBtn = DOMUtils.getElementById("window-minimize");
+    const closeBtn = DOMUtils.getElementById("window-close");
     const steamIdInput = DOMUtils.getElementById("steam-id");
     const authInput = DOMUtils.getElementById("auth");
 
@@ -39,6 +42,20 @@ class AppEventManager {
       updateFriendsBtn.addEventListener("click", () =>
         this.friendsManager.updateFriendsList()
       );
+    }
+
+    if (tutorialBtn) {
+      tutorialBtn.addEventListener("click", () => tutorialManager.start());
+    }
+
+    if (minimizeBtn && window.electronAPI?.window?.minimize) {
+      minimizeBtn.addEventListener("click", () =>
+        window.electronAPI.window.minimize()
+      );
+    }
+
+    if (closeBtn && window.electronAPI?.window?.close) {
+      closeBtn.addEventListener("click", () => window.electronAPI.window.close());
     }
 
     if (steamIdInput && this.inputManager) {

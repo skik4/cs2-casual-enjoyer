@@ -158,6 +158,16 @@ class App {
       // Call validateInputs at the end to set proper status and UI state
       this.inputManager.validateInputs();
       logger.info("App", "Input validation completed");
+      // Initialize app version display (moved from inline script for CSP)
+      try {
+        if (window.electronAPI && window.electronAPI.app.getVersion) {
+          const version = await window.electronAPI.app.getVersion();
+          const el = document.getElementById("app-version");
+          if (el && version) el.textContent = "v" + version + " ";
+        }
+      } catch (e) {
+        logger.warn("App", "Unable to read app version", e?.message);
+      }
       this.initialized = true;
       logger.info(
         "App",

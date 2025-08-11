@@ -202,9 +202,13 @@ class JoinManager {
         // We have connect info, try to join
         this.updateJoinState(friend_id, { status: STATUS_TYPES.CONNECTING });
 
-        // Attempt to join via Steam protocol
+        // Attempt to join via Steam protocol through main process
         const url = `steam://rungame/730/${friend_id}/${currentConnect}`;
-        window.open(url, "_self");
+        if (window.electronAPI?.shell?.openExternal) {
+          await window.electronAPI.shell.openExternal(url);
+        } else {
+          window.open(url, "_self");
+        }
 
         await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
 

@@ -258,6 +258,7 @@ class NotificationManager {
       };
 
       // Show overlay
+      overlay.classList.remove("hidden");
       overlay.style.display = "flex";
 
       // Handle launch button click
@@ -366,6 +367,7 @@ class NotificationManager {
         currentDisplay: overlay.style.display,
       });
       overlay.style.display = "none";
+      overlay.classList.add("hidden");
       logger.info("NotificationManager", "CS2 notification overlay hidden");
     } else {
       logger.warn(

@@ -20,6 +20,12 @@
   color: var(--blue-dark) !important;
 }
 
+/* Inline-link look for neutral color with underline */
+.link-underline {
+  text-decoration: underline !important;
+  color: inherit !important;
+}
+
 /* General styling fixes */
 hr,
 .input-row,

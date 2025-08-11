@@ -174,6 +174,17 @@ class IPCManager {
       return app.getVersion();
     });
 
+    // External links handler (open directly, no protocol filtering by request)
+    ipcMain.handle("open-external", (event, url) => {
+      try {
+        shell.openExternal(url);
+        return true;
+      } catch (error) {
+        MainLogger.error("Failed to open external URL", { url, error });
+        return false;
+      }
+    });
+
     // Logging handlers - receive logs from renderer process
     ipcMain.on("log-error", (event, context, message, data) => {
       MainLogger.error(`[${context}] ${message}`, data);

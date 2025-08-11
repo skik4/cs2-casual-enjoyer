@@ -167,6 +167,10 @@ input[type="password"] {
   background: var(--input-bg) !important;
   color: var(--text-primary) !important;
   transition: border var(--anim-duration);
+  width: 320px;
+  max-width: 100%;
+  font-size: var(--font-size-md);
+  padding: var(--space-xs) var(--space-md);
 }
 
 #friend-filter-input:focus {
