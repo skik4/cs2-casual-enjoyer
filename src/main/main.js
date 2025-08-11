@@ -108,7 +108,7 @@ class WindowManager {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        preload: fileURLToPath(new URL("preload.js", import.meta.url)),
+        preload: fileURLToPath(new URL("preload.cjs", import.meta.url)),
       },
     });
 
