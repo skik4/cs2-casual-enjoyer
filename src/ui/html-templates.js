@@ -172,7 +172,7 @@ export const HELP_TEMPLATES = {
                         Option 1: Quick Link (Recommended)
                     </div>                  
                     <div style="margin-bottom:8px;">
-                        <a href="steam://url/SteamIDMyProfile" class="steam-profile-link" target="_self" title="Open your Steam profile in the Steam client.">Open your Steam profile in the Steam client.</a>
+                        <a href="steam://url/SteamIDMyProfile" class="steam-profile-link" target="_self" title="Open your Steam profile in the Steam client.">Open your Steam profile in the Steam client</a>
                     </div>
                     <div style="margin-bottom:8px;color:#f3f6fa;">
                         Your profile will open in the Steam client. Click on the URL in the address bar at the top of the Steam window - this automatically copies it to your clipboard. Then paste it into the <strong>SteamID64</strong> field below.
@@ -214,7 +214,7 @@ export const HELP_TEMPLATES = {
                     Option 1: Token (Recommended)
                 </div>                  
                 <div style="margin-bottom:8px;">
-                    <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="Get your Steam Web API Token in the Steam client.">Get your Steam Web API Token in the Steam client.</a>
+                    <a id="steam-token-help-link" href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="Get your Steam Web API Token in the Steam client.">Get your Steam Web API Token in the Steam client</a>
                 </div>
                 <div style="margin-bottom:8px;color:#f3f6fa;">
                     On the opened page (may appear blank / black), press <strong>Ctrl+A</strong> then <strong>Ctrl+C</strong> to copy, and <strong>Ctrl+V</strong> to paste into the Token field.
@@ -231,7 +231,7 @@ export const HELP_TEMPLATES = {
                     Option 2: API Key
                 </div>                  
                 <div style="margin-bottom:8px;">
-                    <a href="steam://openurl/https://steamcommunity.com/dev/apikey" class="steam-apikey-link" target="_self" title="Get your Steam Web API Key in the Steam client.">Get your Steam Web API Key in the Steam client.</a>
+                    <a href="steam://openurl/https://steamcommunity.com/dev/apikey" class="steam-apikey-link" target="_self" title="Get your Steam Web API Key in the Steam client.">Get your Steam Web API Key in the Steam client</a>
                 </div>
                 <div style="margin-bottom:8px;color:#f3f6fa;">
                     Register a new API key by entering <strong>localhost</strong> as your domain, accept the terms, and copy your key.
@@ -331,7 +331,7 @@ export const TUTORIAL_TEMPLATES = {
                     Click highlighted text to open Steam.<br>
                     It may appear black - press Ctrl+A then Ctrl+C to copy token.
                 `,
-        target: ".steam-token-link",
+        target: "#steam-token-help-link",
         icon: "🌐",
       },
       {

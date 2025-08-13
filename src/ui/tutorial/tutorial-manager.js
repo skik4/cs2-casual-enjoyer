@@ -141,7 +141,7 @@ class TutorialManager {
    */
   handleStepHighlighting(stepIndex, step) {
     // Special handling for step 2 (Get Steam Web API Token) - use immediate method
-    if (stepIndex === 2 && step.target === ".steam-token-link") {
+    if (stepIndex === 2 && step.target === "#steam-token-help-link") {
       this.waitForElementAndHighlightImmediate(step.target);
     } else if (stepIndex === 6 && step.target === "#friends") {
       // Special handling for Friends List Display step - force position above
