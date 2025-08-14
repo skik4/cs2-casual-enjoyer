@@ -1,5 +1,6 @@
 // Shared constants
 import { STATUS_TYPES } from "../shared/constants.js";
+import STRINGS from "../i18n/strings.js";
 
 // UI and utilities
 import DOMUtils from "../utils/dom-utils.js";
@@ -61,10 +62,10 @@ class StatusManager {
       status === STATUS_TYPES.MISSING;
 
     if (isActive) {
-      btn.textContent = "Cancel";
+      btn.textContent = STRINGS.common.cancel;
       btn.classList.add("cancel-btn");
     } else {
-      btn.textContent = "Join";
+      btn.textContent = STRINGS.common.join;
       btn.classList.remove("cancel-btn");
     }
 

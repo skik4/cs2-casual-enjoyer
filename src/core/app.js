@@ -14,6 +14,7 @@ import UIManager from "../ui/ui-manager.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import DOMUtils from "../utils/dom-utils.js";
 import logger from "../utils/logger.js";
+import { applyStaticStrings } from "../i18n/dom-text.js";
 
 /**
  * Main application module
@@ -54,7 +55,10 @@ class App {
     logger.info("App", "Starting frontend application initialization...");
 
     try {
-      logger.info("App", "Step 1: Disabling UI elements during initialization");
+      logger.info("App", "Step 1: Applying static UI strings");
+      applyStaticStrings();
+
+      logger.info("App", "Step 2: Disabling UI elements during initialization");
       // Disable update button initially
       const updateFriendsBtn = DOMUtils.getElementById("update-friends-btn");
       if (updateFriendsBtn) {
@@ -63,12 +67,12 @@ class App {
       } else {
         logger.warn("App", "Update friends button not found");
       }
-      logger.info("App", "Step 2: Setting up event listeners");
+      logger.info("App", "Step 3: Setting up event listeners");
       // Setup event listeners
       this.eventManager.setupEventListeners();
       logger.info("App", "Event listeners configured successfully");
 
-      logger.info("App", "Step 3: Configuring JoinManager UI callbacks");
+      logger.info("App", "Step 4: Configuring JoinManager UI callbacks");
       // Setup JoinManager UI callbacks
       joinManager.setUICallbacks(
         (friendId, status) => UIManager.updateDot(friendId, status),
@@ -76,24 +80,24 @@ class App {
       );
       logger.info("App", "JoinManager UI callbacks set");
 
-      logger.info("App", "Step 4: Initializing CS2Manager");
+      logger.info("App", "Step 5: Initializing CS2Manager");
       // Initialize CS2Manager first
       this.cs2Manager.initialize(this.inputManager);
       logger.info("App", "CS2Manager initialized");
 
-      logger.info("App", "Step 5: Connecting JoinManager with CS2Manager");
+      logger.info("App", "Step 6: Connecting JoinManager with CS2Manager");
       // Set CS2Manager for JoinManager
       joinManager.setCS2Manager(this.cs2Manager);
       logger.info("App", "JoinManager connected to CS2Manager");
 
-      logger.info("App", "Step 6: Setting CS2 launch callback");
+      logger.info("App", "Step 7: Setting CS2 launch callback");
       // Set CS2 launch callback
       joinManager.setCS2LaunchCallback(async (friendId) => {
         return UIManager.showCS2LaunchNotification(friendId, this.cs2Manager);
       });
       logger.info("App", "CS2 launch callback configured");
 
-      logger.info("App", "Step 7: Loading saved settings from storage");
+      logger.info("App", "Step 8: Loading saved settings from storage");
       // Load settings
       const savedSettings = await window.electronAPI.settings.load();
       logger.info(
@@ -113,7 +117,7 @@ class App {
       appStateManager.setState("savedSettings", savedSettings);
       logger.info("App", "Settings loaded and state updated");
 
-      logger.info("App", "Step 8: Checking for first-time run and tutorial");
+      logger.info("App", "Step 9: Checking for first-time run and tutorial");
       // Check if this is the first run (no saved settings) and start tutorial
       const isFirstRun = !savedSettings;
       if (isFirstRun) {
@@ -124,7 +128,7 @@ class App {
         logger.info("App", "Settings found - skipping tutorial auto-start");
       }
       if (savedSettings) {
-        logger.info("App", "Step 9: Restoring saved configuration to UI");
+        logger.info("App", "Step 10: Restoring saved configuration to UI");
         // Fill inputs with saved data
         const steamIdInput = DOMUtils.getElementById("steam-id");
         const authInput = DOMUtils.getElementById("auth");
@@ -154,7 +158,7 @@ class App {
       } else {
         logger.info("App", "Step 9: No saved settings to restore");
       }
-      logger.info("App", "Step 10: Final validation and UI state setup");
+      logger.info("App", "Step 11: Final validation and UI state setup");
       // Call validateInputs at the end to set proper status and UI state
       this.inputManager.validateInputs();
       logger.info("App", "Input validation completed");
@@ -179,7 +183,10 @@ class App {
         "Error during frontend app initialization: " + error.message
       );
       logger.error("App", "Stack trace: " + error.stack);
-      UIManager.showError("Failed to initialize app: " + error.message);
+      UIManager.showError(
+        (await import("../i18n/strings.js")).default.common
+          .failedToInitializeAppPrefix + error.message
+      );
     }
   }
 }

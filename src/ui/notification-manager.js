@@ -9,6 +9,7 @@ import {
 import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
 import logger from "../utils/logger.js";
+import STRINGS from "../i18n/strings.js";
 
 /**
  * Notification Manager module

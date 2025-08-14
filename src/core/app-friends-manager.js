@@ -12,6 +12,7 @@ import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import logger from "../utils/logger.js";
+import STRINGS from "../i18n/strings.js";
 
 /**
  * Friends management module
@@ -107,7 +108,7 @@ class AppFriendsManager {
     auth = Validators.extractApiKeyOrToken(auth);
 
     if (!steam_id || !auth) {
-      UIManager.showError("Please enter your SteamID64 and API Key");
+      UIManager.showError(STRINGS.errors.pleaseEnterSteamIdAndApiKey);
       return;
     }
 
@@ -132,7 +133,7 @@ class AppFriendsManager {
     const updateBtn = DOMUtils.getElementById("update-friends-btn");
     if (updateBtn) {
       updateBtn.disabled = true;
-      updateBtn.textContent = "Updating...";
+      updateBtn.textContent = STRINGS.index.updateFriendsButtonUpdating;
     }
 
     try {
@@ -146,11 +147,11 @@ class AppFriendsManager {
       } finally {
         if (updateBtn) {
           updateBtn.disabled = false;
-          updateBtn.textContent = "Update Friends List";
+          updateBtn.textContent = STRINGS.index.updateFriendsButton;
         }
       }
       if (!allFriendIds.length) {
-        UIManager.showError("No friends found in your friends list.", steam_id);
+        UIManager.showError(STRINGS.errors.noFriendsFound, steam_id);
         return;
       }
 
@@ -206,7 +207,7 @@ class AppFriendsManager {
     } finally {
       if (updateBtn) {
         updateBtn.disabled = false;
-        updateBtn.textContent = "Update Friends List";
+        updateBtn.textContent = STRINGS.index.updateFriendsButton;
       }
     }
   }

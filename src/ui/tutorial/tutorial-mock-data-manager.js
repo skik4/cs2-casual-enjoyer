@@ -6,6 +6,7 @@ import appStateManager from "../../core/app-state-manager.js";
 
 // UI and utilities
 import NotificationManager from "../notification-manager.js";
+import STRINGS from "../../i18n/strings.js";
 
 /**
  * Tutorial Mock Data Manager
@@ -219,7 +220,7 @@ export class TutorialMockDataManager {
     const mockFriendId = TUTORIAL_MOCK_FRIEND.steamid;
     const btn = document.getElementById("join-btn-" + mockFriendId);
     if (btn) {
-      btn.textContent = "Cancel";
+      btn.textContent = STRINGS.common.cancel;
       btn.classList.add("cancel-btn");
       btn.disabled = false;
     }
@@ -232,7 +233,7 @@ export class TutorialMockDataManager {
     const mockFriendId = TUTORIAL_MOCK_FRIEND.steamid;
     const btn = document.getElementById("join-btn-" + mockFriendId);
     if (btn) {
-      btn.textContent = "Join";
+      btn.textContent = STRINGS.common.join;
       btn.classList.remove("cancel-btn");
       btn.disabled = false;
     }

@@ -1,5 +1,6 @@
 // Shared constants
 import { VALIDATION_PATTERNS } from "../shared/constants.js";
+import STRINGS from "../i18n/strings.js";
 
 /**
  * Input validation utilities
@@ -135,11 +136,11 @@ class Validators {
    */
   static validateSteamUrl(url) {
     if (typeof url !== "string") {
-      return { valid: false, error: "URL must be a string" };
+      return { valid: false, error: STRINGS.validation.urlMustBeString };
     }
 
     if (!url.includes("steamcommunity.com")) {
-      return { valid: false, error: "Not a Steam Community URL" };
+      return { valid: false, error: STRINGS.validation.notSteamCommunityUrl };
     }
 
     // Check for direct Steam ID URL
@@ -162,7 +163,7 @@ class Validators {
       };
     }
 
-    return { valid: false, error: "Unrecognized Steam URL format" };
+    return { valid: false, error: STRINGS.validation.unrecognizedSteamUrl };
   }
 
   /**
@@ -180,12 +181,12 @@ class Validators {
 
     if (!steamId || !this.validateSteamId(steamId)) {
       result.valid = false;
-      result.errors.push("Valid SteamID64 is required");
+      result.errors.push(STRINGS.validation.validSteamIdRequired);
     }
 
     if (!auth || !this.validateApiAuth(auth)) {
       result.valid = false;
-      result.errors.push("Valid API Key or Token is required");
+      result.errors.push(STRINGS.validation.validAuthRequired);
     }
 
     return result;
