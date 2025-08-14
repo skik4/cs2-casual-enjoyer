@@ -15,36 +15,32 @@ import Validators from "../utils/validators.js";
  */
 class SteamAPIClient {
   // ===== BATCHING/DEDUP/CACHE STATE =====
-  /** @type {Map<string, { ids: Set<string>, resolvers: Array<{ids: string[], resolve: Function, reject: Function}>, timer: any }>} */
-  static _batchers = new Map();
-
-  /** @type {Map<string, { promise: Promise<Map<string, Object|null>> , ids: Set<string> }>} */
-  static _inFlight = new Map();
-
-  /** @type {Map<string, Map<string, { raw: Object|null, ts: number }>>} */
-  static _cache = new Map();
-
   static _BATCH_WINDOW_MS = 10; // micro-batching window within a tick
   static _SHORT_TTL_MS = Math.max(1, Math.floor((API_CONFIG?.JOIN_LOOP_INTERVAL_MS || 200) / 2));
 
-	/**
-	 * Get global cache map
-	 * @returns {Map<string, {raw: Object|null, ts: number}>}
-	 */
-	static _getGlobalCache() {
-		const key = "__global__";
-    if (!this._cache.has(key)) {
-      this._cache.set(key, new Map());
-		}
-    return this._cache.get(key);
-	}
+  /**
+   * Single batch coordinator (no namespacing required)
+   * @type {{ ids: Set<string>, resolvers: Array<{ids: string[], resolve: Function, reject: Function}>, timer: any }}
+   */
+  static _batcher = { ids: new Set(), resolvers: [], timer: null };
+
+  /**
+   * In-flight aggregate request state or null when none
+   * @type {{ promise: Promise<Map<string, Object|null>>, ids: Set<string> } | null}
+   */
+  static _inFlight = null;
+
+  /**
+   * Short-lived cache steamid -> { raw, ts }
+   * @type {Map<string, { raw: Object|null, ts: number }>}
+   */
+  static _cache = new Map();
 
 	/**
 	 * Read cached raw response for steamid (short TTL)
 	 */
 	static _getCachedRaw(steamid) {
-		const cache = this._getGlobalCache();
-		const entry = cache.get(String(steamid));
+		const entry = this._cache.get(String(steamid));
 		if (!entry) return null;
 		const isFresh = Date.now() - entry.ts < this._SHORT_TTL_MS;
 		return isFresh ? entry.raw : null;
@@ -54,8 +50,7 @@ class SteamAPIClient {
 	 * Write cached raw response for steamid
 	 */
 	static _setCachedRaw(steamid, raw) {
-		const cache = this._getGlobalCache();
-		cache.set(String(steamid), { raw, ts: Date.now() });
+		this._cache.set(String(steamid), { raw, ts: Date.now() });
 	}
 
   /**
@@ -105,7 +100,7 @@ class SteamAPIClient {
     }
 
     // Check if there is an in-flight batch that already includes some/all of the missingIds
-    const inFlight = this._inFlight.get("__global__");
+    const inFlight = this._inFlight;
     if (inFlight && inFlight.ids) {
       const inFlightIds = inFlight.ids;
       const covered = missingIds.filter((id) => inFlightIds.has(id));
@@ -153,15 +148,7 @@ class SteamAPIClient {
    * @returns {Promise<Map<string, Object|null>>}
    */
   static _scheduleBatchForIds(ids, auth, context = {}) {
-    const authKey = "__global__";
-    if (!this._batchers.has(authKey)) {
-      this._batchers.set(authKey, {
-        ids: new Set(),
-        resolvers: [],
-        timer: null,
-      });
-    }
-    const batcher = this._batchers.get(authKey);
+    const batcher = this._batcher;
 
     ids.forEach((id) => batcher.ids.add(String(id)));
 
@@ -180,10 +167,10 @@ class SteamAPIClient {
           let mapById = new Map();
           let promiseResolve;
           const inFlightPromise = new Promise((res) => (promiseResolve = res));
-          this._inFlight.set(authKey, {
+          this._inFlight = {
             promise: inFlightPromise,
             ids: new Set(requestIds),
-          });
+          };
 
           try {
             const rawData = await this._getPlayerLinkDetails(requestIds, auth, {
@@ -209,7 +196,7 @@ class SteamAPIClient {
             // Resolve in-flight promise for any waiters
             promiseResolve(mapById);
             // Clear in-flight entry
-            this._inFlight.delete(authKey);
+            this._inFlight = null;
           }
 
           // Fan-out results to individual resolvers
