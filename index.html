@@ -9,24 +9,24 @@
 
   <body>
     <div class="window-bar">
-      <span class="window-bar-title">Casual Enjoyer</span>
+      <span class="window-bar-title" data-i18n-text="common.appTitle">Casual Enjoyer</span>
       <div class="window-bar-btns">
         <button
           class="tutorial-btn-help"
           id="tutorial-btn"
-          title="Show Tutorial"
+          data-i18n-title="common.showTutorialTitle"
         >
           <img
             src="assets/icons-svg/help_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg"
             alt="?"
             class="icon-16"
           />
-          Tutorial
+          <span data-i18n-text="common.tutorial">Tutorial</span>
         </button>
         <button
           class="window-btn minimize"
           id="window-minimize"
-          title="Minimize"
+          data-i18n-title="common.minimize"
           >
           <img
             src="assets/icons-svg/minimize_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg"
@@ -37,7 +37,7 @@
         <button
           class="window-btn close"
           id="window-close"
-          title="Close"
+          data-i18n-title="common.close"
         >
           <img
             src="assets/icons-svg/close_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg"
@@ -51,28 +51,26 @@
       <div class="app-viewport">
         <div class="container">
           <div id="notifications" class="mb-md"></div>
-          <h1 class="mb-lg hidden">CS2 Casual Enjoyer</h1>
+          <h1 class="mb-lg hidden" data-i18n-text="index.hiddenH1Title">CS2 Casual Enjoyer</h1>
           <div class="param-fields-container mb-lg">
             <div class="param-label-row mb-xs">
               <div class="param-label-cell">
                 <span
                   id="api-key-help"
-                  title="Get your Steam Web API Token / Key in Steam"
+                  data-i18n-title="index.apiTokenKeyTitle"
                   class="param-label-text link-underline clickable"
-                >
-                  Steam Web API Token / Key
-                </span>
+                  data-i18n-text="index.apiTokenKeyLabel"
+                >Steam Web API Token / Key</span>
               </div>
               <div class="param-label-cell">
                 <a
                   id="steam-id-help"
                   href="steam://url/SteamIDMyProfile"
                   target="_self"
-                  title="Open your profile in Steam"
+                  data-i18n-title="index.steamId64Title"
                   class="param-label-text link-underline clickable"
-                >
-                  SteamID64
-                </a>
+                  data-i18n-text="index.steamId64Label"
+                >SteamID64</a>
               </div>
             </div>
             <div class="param-input-row">
@@ -88,22 +86,19 @@
             <button
               id="update-friends-btn"
               class="action-btn"
-              title="Update the complete list of friends from Steam API"
-            >
-              Update Friends List
-            </button>
+              data-i18n-title="index.updateFriendsButtonTitle"
+              data-i18n-text="index.updateFriendsButton"
+            >Update Friends List</button>
           </div>
           <div class="center-row update-hint-container mb-md">
-            <div id="update-hint" class="update-hint">
-              Click "Update Friends List" to load your friends and start
-              auto-refresh
-            </div>
+            <div id="update-hint" class="update-hint" data-i18n-text="index.updateHint">Click "Update Friends List" to load your friends and start auto-refresh</div>
           </div>
           <div class="center-row mb-sm" id="friend-filter-row">
             <input
               id="friend-filter-input"
               type="text"
-              placeholder="Filter friends by nickname..."
+              data-i18n-placeholder="index.friendFilterPlaceholder"
+              placeholder=""
             />
           </div>
           <div
@@ -121,7 +116,7 @@
           <a
             href="steam://openurl/https://steamcommunity.com/id/skik4"
             class="footer-social-link"
-            title="Open skik4's Steam profile"
+            data-i18n-title="index.footerSteamProfileTitle"
           >
             <img
               src="assets/logo-svg/steam-white.svg"
@@ -132,7 +127,7 @@
           <a
             href="https://github.com/skik4"
             class="footer-social-link"
-            title="Open skik4's GitHub profile"
+            data-i18n-title="index.footerGithubProfileTitle"
             target="_blank"
           >
             <img

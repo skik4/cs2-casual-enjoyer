@@ -14,7 +14,7 @@ import UIManager from "../ui/ui-manager.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import DOMUtils from "../utils/dom-utils.js";
 import logger from "../utils/logger.js";
-import { applyStaticStrings } from "../i18n/dom-text.js";
+import { applyI18nToDom } from "../i18n/dom-i18n.js";
 
 /**
  * Main application module
@@ -55,8 +55,8 @@ class App {
     logger.info("App", "Starting frontend application initialization...");
 
     try {
-      logger.info("App", "Step 1: Applying static UI strings");
-      applyStaticStrings();
+      logger.info("App", "Step 1: Applying static UI strings (data-i18n)");
+      applyI18nToDom();
 
       logger.info("App", "Step 2: Disabling UI elements during initialization");
       // Disable update button initially
