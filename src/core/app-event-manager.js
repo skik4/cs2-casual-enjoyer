@@ -33,6 +33,7 @@ class AppEventManager {
   setupEventListeners() {
     const updateFriendsBtn = DOMUtils.getElementById("update-friends-btn");
     const tutorialBtn = DOMUtils.getElementById("tutorial-btn");
+    const languageBtn = DOMUtils.getElementById("language-btn");
     const minimizeBtn = DOMUtils.getElementById("window-minimize");
     const closeBtn = DOMUtils.getElementById("window-close");
     const steamIdInput = DOMUtils.getElementById("steam-id");
@@ -46,6 +47,12 @@ class AppEventManager {
 
     if (tutorialBtn) {
       tutorialBtn.addEventListener("click", () => tutorialManager.start());
+    }
+
+    if (languageBtn) {
+      import("../i18n/dom-i18n.js").then((mod) => {
+        languageBtn.addEventListener("click", () => mod.toggleLanguageAndApply());
+      });
     }
 
     if (minimizeBtn && window.electronAPI?.window?.minimize) {

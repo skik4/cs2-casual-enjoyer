@@ -1,4 +1,5 @@
 import STRINGS from "./strings.js";
+import i18n from "./i18n-manager.js";
 
 function resolvePath(object, path) {
   return path.split(".").reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), object);
@@ -83,3 +84,45 @@ export function applyI18nToDom() {
 }
 
 export default { applyI18nToDom };
+
+export async function toggleLanguageAndApply() {
+  try {
+    const next = i18n.toggleLanguage();
+    applyI18nToDom();
+    // Update static texts rendered outside data-i18n (templates read STRINGS at runtime)
+    // Also update language button label
+    const langBtn = document.getElementById("language-btn");
+    if (langBtn) langBtn.textContent = next.toUpperCase();
+    // Ask NotificationManager to refresh any open notifications' texts
+    try {
+      const mod = await import('../ui/notification-manager.js');
+      if (mod?.default?.refreshTextsAfterLanguageChange) {
+        await mod.default.refreshTextsAfterLanguageChange();
+      }
+    } catch {}
+    // Refresh tutorial modal if it's open
+    try {
+      const tmod = await import('../ui/tutorial/tutorial-manager.js');
+      if (tmod?.default?.refreshTextsAfterLanguageChange) {
+        await tmod.default.refreshTextsAfterLanguageChange();
+      }
+    } catch {}
+    await i18n.persistLanguageToSettings(next);
+  } catch {}
+}
+
+export function setupInitialLanguage(preferredLanguage) {
+  const chosen = i18n.initLanguage(preferredLanguage);
+  try {
+    const langBtn = document.getElementById("language-btn");
+    if (langBtn) langBtn.textContent = i18n.getLanguage().toUpperCase();
+  } catch {}
+  // Subscribe to language change to re-apply i18n on static DOM
+  try {
+    i18n.onLanguageChange(() => applyI18nToDom());
+  } catch {}
+}
+
+export function getLanguage() {
+  return i18n.getLanguage();
+}

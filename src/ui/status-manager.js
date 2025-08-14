@@ -63,9 +63,11 @@ class StatusManager {
 
     if (isActive) {
       btn.textContent = STRINGS.common.cancel;
+      btn.setAttribute("data-i18n-text", "common.cancel");
       btn.classList.add("cancel-btn");
     } else {
       btn.textContent = STRINGS.common.join;
+      btn.setAttribute("data-i18n-text", "common.join");
       btn.classList.remove("cancel-btn");
     }
 

@@ -11,6 +11,7 @@ import tutorialUIManager from "./tutorial-ui-manager.js";
 import tutorialHighlightManager from "./tutorial-highlight-manager.js";
 import tutorialMockDataManager from "./tutorial-mock-data-manager.js";
 import tutorialEventManager from "./tutorial-event-manager.js";
+import i18n from "../../i18n/i18n-manager.js";
 
 /**
  * Tutorial Manager
@@ -23,6 +24,11 @@ class TutorialManager {
     this.highlightManager = tutorialHighlightManager;
     this.mockDataManager = tutorialMockDataManager;
     this.eventManager = tutorialEventManager;
+    try {
+      i18n.onLanguageChange(() => {
+        this.refreshTextsAfterLanguageChange();
+      });
+    } catch {}
   }
 
   /**
@@ -290,6 +296,19 @@ class TutorialManager {
         appFriendsManager.startAutoRefresh();
       }, 500); // Small delay to ensure tutorial cleanup is complete
     }
+  }
+
+  /**
+   * Rebuild tutorial steps and refresh current modal after language change
+   */
+  async refreshTextsAfterLanguageChange() {
+    try {
+      if (!this.stateManager.getIsActive()) return;
+      const idx = this.stateManager.getCurrentStep();
+      const svgSteps = await TUTORIAL_TEMPLATES.getStepsWithSVG();
+      this.stateManager.steps = svgSteps;
+      await this.showStep(idx, idx);
+    } catch {}
   }
 }
 

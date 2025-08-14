@@ -2,20 +2,22 @@
 import {
   NOTIFICATION_TEMPLATES,
   HELP_TEMPLATES,
-  processEmojisInTemplate,
 } from "./html-templates.js";
 
 // UI and utilities
 import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
 import logger from "../utils/logger.js";
-import STRINGS from "../i18n/strings.js";
+import i18n from "../i18n/i18n-manager.js";
 
 /**
  * Notification Manager module
  * Handles all notifications, errors, token information display, and help information
  */
 class NotificationManager {
+  // Keep lightweight state to re-render texts on language change
+  static _lastMain = null; // { kind: 'help-steamid'|'help-apikey'|'privacy'|'error', payload?: any }
+  static _lastTokenInfo = null; // {steamid, expires, expiresDate}
   /**
    * Show a notification with close button (with SVG emoji support)
    * @param {string} html - HTML content of the notification
@@ -37,6 +39,7 @@ class NotificationManager {
     if (closeBtn) {
       closeBtn.onclick = () => {
         notificationElement.style.display = "none";
+        NotificationManager._lastMain = null;
       };
     }
   }
@@ -46,6 +49,7 @@ class NotificationManager {
    * @param {{steamid: string, expires: number, expiresDate: Date}} tokenInfo
    */
   static showTokenInfoNotification(tokenInfo) {
+    NotificationManager._lastTokenInfo = tokenInfo;
     this.hideTokenInfoNotification();
     const notificationElement = DOMUtils.getElementById("notifications");
     if (!notificationElement) return;
@@ -96,6 +100,7 @@ class NotificationManager {
         NOTIFICATION_TEMPLATES.ERROR_MESSAGE(errorMessage),
         "error"
       );
+      NotificationManager._lastMain = { kind: "error", payload: { errorMessage } };
     }
   }
 
@@ -115,6 +120,7 @@ class NotificationManager {
       : "";
 
     this.showNotification(this.getPrivacyWarningHtml(linkHtml), "error");
+    NotificationManager._lastMain = { kind: "privacy", payload: { privacyUrl } };
   }
 
   /**
@@ -142,6 +148,7 @@ class NotificationManager {
   static async showSteamIdHelp() {
     const content = await HELP_TEMPLATES.STEAM_ID_HELP();
     await this.showNotification(content, "info");
+    NotificationManager._lastMain = { kind: "help-steamid" };
   }
 
   /**
@@ -150,6 +157,7 @@ class NotificationManager {
   static async showApiKeyHelp() {
     const content = await HELP_TEMPLATES.API_KEY_HELP();
     await this.showNotification(content, "info");
+    NotificationManager._lastMain = { kind: "help-apikey" };
   }
 
   /**
@@ -377,6 +385,72 @@ class NotificationManager {
       );
     }
   }
+
+  /**
+   * Re-render texts for currently visible notifications after language change
+   */
+  static async refreshTextsAfterLanguageChange() {
+    try {
+      // Refresh token info notification if present
+      const tokenInfoDiv = DOMUtils.getElementById("token-info-notification");
+      if (tokenInfoDiv && NotificationManager._lastTokenInfo) {
+        const info = NotificationManager._lastTokenInfo;
+        const now = Date.now();
+        const expiresMs = info.expires * 1000;
+        const expired = expiresMs < now;
+        const expiresStr = info.expiresDate.toLocaleString();
+        const warnHtml = expired ? NOTIFICATION_TEMPLATES.TOKEN_EXPIRED_WARNING : "";
+        tokenInfoDiv.innerHTML = NOTIFICATION_TEMPLATES.TOKEN_INFO(
+          info.steamid,
+          expiresStr,
+          warnHtml
+        );
+      }
+
+      // Refresh main notification if visible and we know its kind
+      const main = NotificationManager._lastMain;
+      const notificationElement = DOMUtils.getElementById("notifications");
+      const isVisible = notificationElement && notificationElement.style.display === "block";
+      if (!main || !isVisible) return;
+
+      switch (main.kind) {
+        case "help-steamid": {
+          const content = await HELP_TEMPLATES.STEAM_ID_HELP();
+          await this.showNotification(content, "info");
+          break;
+        }
+        case "help-apikey": {
+          const content = await HELP_TEMPLATES.API_KEY_HELP();
+          await this.showNotification(content, "info");
+          break;
+        }
+        case "privacy": {
+          const privacyUrl = main.payload?.privacyUrl || "";
+          const linkHtml = privacyUrl
+            ? NOTIFICATION_TEMPLATES.PRIVACY_LINK(privacyUrl)
+            : "";
+          await this.showNotification(this.getPrivacyWarningHtml(linkHtml), "error");
+          break;
+        }
+        case "error": {
+          const errorMessage = main.payload?.errorMessage || "";
+          await this.showNotification(NOTIFICATION_TEMPLATES.ERROR_MESSAGE(errorMessage), "error");
+          break;
+        }
+        default:
+          break;
+      }
+    } catch {}
+  }
 }
+
+// Subscribe to language changes for automatic refresh
+try {
+  i18n.onLanguageChange(async () => {
+    try {
+      await NotificationManager.refreshTextsAfterLanguageChange();
+    } catch {}
+  });
+} catch {}
 
 export default NotificationManager;

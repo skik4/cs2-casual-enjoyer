@@ -288,7 +288,7 @@ export const FRIENDS_TEMPLATES = {
             </div>
             <div class="join-section" id="join-section-${steamid}">
                 <span class="status-dot ${isMissing ? "dot-missing" : "dot-cancelled"}" id="dot-${steamid}"></span>
-                <button id="join-btn-${steamid}" class="action-btn${isActive ? " cancel-btn" : ""}">${isActive ? STRINGS.common.cancel : STRINGS.common.join}</button>
+                <button id="join-btn-${steamid}" class="action-btn${isActive ? " cancel-btn" : ""}" data-i18n-text="${isActive ? "common.cancel" : "common.join"}">${isActive ? STRINGS.common.cancel : STRINGS.common.join}</button>
             </div>
         </div>
     `,

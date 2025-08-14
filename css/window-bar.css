@@ -40,6 +40,15 @@
   margin-right: var(--space-xs);
 }
 
+.window-bar-left {
+  position: absolute;
+  left: var(--position-lg);
+  top: var(--position-sm);
+  display: flex;
+  gap: var(--space-xs);
+  -webkit-app-region: no-drag;
+}
+
 .window-bar-btns {
   display: flex;
   gap: var(--space-xs);
