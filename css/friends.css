@@ -15,6 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-sm);
   background: var(--bg-item);
   border-radius: var(--border-radius-lg);
   padding: var(--space-md) 1.5em;
@@ -62,6 +63,7 @@
   display: flex;
   align-items: center;
   gap: 1em;
+  min-width: 0;
 }
 
 .personaname {
@@ -71,6 +73,11 @@
   letter-spacing: 0.2px;
   margin-right: 0.5em;
   word-break: break-all;
+}
+
+/* Allow game status to wrap without affecting the controls */
+.friend-info .game-status {
+  word-break: break-word;
 }
 
 .status {
@@ -86,4 +93,10 @@
   align-items: center;
   gap: var(--space-sm);
   min-width: 140px;
+  flex: 0 0 auto;
+}
+
+/* Prevent the status dot from shrinking within the controls */
+.join-section .status-dot {
+  flex-shrink: 0;
 }
