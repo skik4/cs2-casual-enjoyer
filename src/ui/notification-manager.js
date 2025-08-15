@@ -18,6 +18,27 @@ class NotificationManager {
   // Keep lightweight state to re-render texts on language change
   static _lastMain = null; // { kind: 'help-steamid'|'help-apikey'|'privacy'|'error', payload?: any }
   static _lastTokenInfo = null; // {steamid, expires, expiresDate}
+
+  /**
+   * Format date as numeric: "DD.MM.YYYY HH:mm" in 24-hour format
+   * @param {Date|number|string} date
+   * @returns {string}
+   */
+  static formatDateTime(date) {
+    const d = date instanceof Date ? date : new Date(date);
+    const dateStr = d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const timeStr = d.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    return `${dateStr} ${timeStr}`;
+  }
+
   /**
    * Show a notification with close button (with SVG emoji support)
    * @param {string} html - HTML content of the notification
@@ -56,7 +77,7 @@ class NotificationManager {
 
     const now = Date.now();
     const expiresMs = tokenInfo.expires * 1000;
-    const expiresStr = tokenInfo.expiresDate.toLocaleString();
+    const expiresStr = NotificationManager.formatDateTime(tokenInfo.expiresDate);
     let expired = expiresMs < now;
     let warnHtml = "";
     if (expired) {
@@ -398,7 +419,7 @@ class NotificationManager {
         const now = Date.now();
         const expiresMs = info.expires * 1000;
         const expired = expiresMs < now;
-        const expiresStr = info.expiresDate.toLocaleString();
+        const expiresStr = NotificationManager.formatDateTime(info.expiresDate);
         const warnHtml = expired ? NOTIFICATION_TEMPLATES.TOKEN_EXPIRED_WARNING : "";
         tokenInfoDiv.innerHTML = NOTIFICATION_TEMPLATES.TOKEN_INFO(
           info.steamid,
@@ -440,7 +461,7 @@ class NotificationManager {
         default:
           break;
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -449,8 +470,8 @@ try {
   i18n.onLanguageChange(async () => {
     try {
       await NotificationManager.refreshTextsAfterLanguageChange();
-    } catch {}
+    } catch { }
   });
-} catch {}
+} catch { }
 
 export default NotificationManager;
