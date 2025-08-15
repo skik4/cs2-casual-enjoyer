@@ -1,6 +1,6 @@
 // Shared constants
 import { STATUS_TYPES } from "../shared/constants.js";
-import STRINGS from "../i18n/strings.js";
+import { t } from "../i18n/i18n-manager.js";
 
 // UI and utilities
 import DOMUtils from "../utils/dom-utils.js";
@@ -62,12 +62,14 @@ class StatusManager {
       status === STATUS_TYPES.MISSING;
 
     if (isActive) {
-      btn.textContent = STRINGS.common.cancel;
-      btn.setAttribute("data-i18n-text", "common.cancel");
+      btn.textContent = t("common.cancel");
+      btn.setAttribute("data-i18n", "common.cancel");
+      btn.setAttribute("data-i18n-attr", "text");
       btn.classList.add("cancel-btn");
     } else {
-      btn.textContent = STRINGS.common.join;
-      btn.setAttribute("data-i18n-text", "common.join");
+      btn.textContent = t("common.join");
+      btn.setAttribute("data-i18n", "common.join");
+      btn.setAttribute("data-i18n-attr", "text");
       btn.classList.remove("cancel-btn");
     }
 

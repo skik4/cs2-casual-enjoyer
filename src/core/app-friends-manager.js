@@ -12,7 +12,7 @@ import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import logger from "../utils/logger.js";
-import STRINGS from "../i18n/strings.js";
+import { t } from "../i18n/i18n-manager.js";
 
 /**
  * Friends management module
@@ -108,7 +108,7 @@ class AppFriendsManager {
     auth = Validators.extractApiKeyOrToken(auth);
 
     if (!steam_id || !auth) {
-      UIManager.showError(STRINGS.errors.pleaseEnterSteamIdAndApiKey);
+      UIManager.showError(t("errors.pleaseEnterSteamIdAndApiKey"));
       return;
     }
 
@@ -133,7 +133,7 @@ class AppFriendsManager {
     const updateBtn = DOMUtils.getElementById("update-friends-btn");
     if (updateBtn) {
       updateBtn.disabled = true;
-      updateBtn.textContent = STRINGS.index.updateFriendsButtonUpdating;
+      updateBtn.textContent = t("index.updateFriendsButtonUpdating");
     }
 
     try {
@@ -147,11 +147,11 @@ class AppFriendsManager {
       } finally {
         if (updateBtn) {
           updateBtn.disabled = false;
-          updateBtn.textContent = STRINGS.index.updateFriendsButton;
+          updateBtn.textContent = t("index.updateFriendsButton");
         }
       }
       if (!allFriendIds.length) {
-        UIManager.showError(STRINGS.errors.noFriendsFound, steam_id);
+        UIManager.showError(t("errors.noFriendsFound"), steam_id);
         return;
       }
 
@@ -207,7 +207,7 @@ class AppFriendsManager {
     } finally {
       if (updateBtn) {
         updateBtn.disabled = false;
-        updateBtn.textContent = STRINGS.index.updateFriendsButton;
+        updateBtn.textContent = t("index.updateFriendsButton");
       }
     }
   }

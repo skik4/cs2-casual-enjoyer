@@ -13,27 +13,30 @@
         <button
           class="tutorial-btn-help"
           id="language-btn"
-          data-i18n-title="common.languageSwitchTitle"
+          data-i18n="common.languageSwitchTitle"
+          data-i18n-attr="title"
         >EN</button>
       </div>
-      <span class="window-bar-title" data-i18n-text="common.appTitle">Casual Enjoyer</span>
+      <span class="window-bar-title" data-i18n="common.appTitle" data-i18n-attr="text">Casual Enjoyer</span>
       <div class="window-bar-btns">
         <button
           class="tutorial-btn-help"
           id="tutorial-btn"
-          data-i18n-title="common.showTutorialTitle"
+          data-i18n="common.showTutorialTitle"
+          data-i18n-attr="title"
         >
           <img
             src="assets/icons-svg/help_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg"
             alt="?"
             class="icon-16"
           />
-          <span data-i18n-text="common.tutorial">Tutorial</span>
+          <span data-i18n="common.tutorial" data-i18n-attr="text">Tutorial</span>
         </button>
         <button
           class="window-btn minimize"
           id="window-minimize"
-          data-i18n-title="common.minimize"
+          data-i18n="common.minimize"
+          data-i18n-attr="title"
           >
           <img
             src="assets/icons-svg/minimize_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg"
@@ -44,7 +47,8 @@
         <button
           class="window-btn close"
           id="window-close"
-          data-i18n-title="common.close"
+          data-i18n="common.close"
+          data-i18n-attr="title"
         >
           <img
             src="assets/icons-svg/close_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg"
@@ -58,15 +62,17 @@
       <div class="app-viewport">
         <div class="container">
           <div id="notifications" class="mb-md"></div>
-          <h1 class="mb-lg hidden" data-i18n-text="index.hiddenH1Title">CS2 Casual Enjoyer</h1>
+          <h1 class="mb-lg hidden" data-i18n="index.hiddenH1Title" data-i18n-attr="text">CS2 Casual Enjoyer</h1>
           <div class="param-fields-container mb-lg">
             <div class="param-label-row mb-xs">
               <div class="param-label-cell">
                 <span
                   id="api-key-help"
-                  data-i18n-title="index.apiTokenKeyTitle"
+                  data-i18n="index.apiTokenKeyTitle"
+                  data-i18n-attr="title"
                   class="param-label-text link-underline clickable"
-                  data-i18n-text="index.apiTokenKeyLabel"
+                  data-i18n-attr-second="text"
+                  data-i18n-second="index.apiTokenKeyLabel"
                 >Steam Web API Token / Key</span>
               </div>
               <div class="param-label-cell">
@@ -74,9 +80,11 @@
                   id="steam-id-help"
                   href="steam://url/SteamIDMyProfile"
                   target="_self"
-                  data-i18n-title="index.steamId64Title"
+                  data-i18n="index.steamId64Title"
+                  data-i18n-attr="title"
                   class="param-label-text link-underline clickable"
-                  data-i18n-text="index.steamId64Label"
+                  data-i18n-second="index.steamId64Label"
+                  data-i18n-attr-second="text"
                 >SteamID64</a>
               </div>
             </div>
@@ -93,18 +101,21 @@
             <button
               id="update-friends-btn"
               class="action-btn"
-              data-i18n-title="index.updateFriendsButtonTitle"
-              data-i18n-text="index.updateFriendsButton"
+              data-i18n="index.updateFriendsButtonTitle"
+              data-i18n-attr="title"
+              data-i18n-second="index.updateFriendsButton"
+              data-i18n-attr-second="text"
             >Update Friends List</button>
           </div>
           <div class="center-row update-hint-container mb-md">
-            <div id="update-hint" class="update-hint" data-i18n-text="index.updateHint">Click "Update Friends List" to load your friends and start auto-refresh</div>
+            <div id="update-hint" class="update-hint" data-i18n="index.updateHint" data-i18n-attr="text">Click "Update Friends List" to load your friends and start auto-refresh</div>
           </div>
           <div class="center-row mb-sm" id="friend-filter-row">
             <input
               id="friend-filter-input"
               type="text"
-              data-i18n-placeholder="index.friendFilterPlaceholder"
+              data-i18n="index.friendFilterPlaceholder"
+              data-i18n-attr="placeholder"
               placeholder=""
             />
           </div>
@@ -123,7 +134,8 @@
           <a
             href="steam://openurl/https://steamcommunity.com/id/skik4"
             class="footer-social-link"
-            data-i18n-title="index.footerSteamProfileTitle"
+            data-i18n="index.footerSteamProfileTitle"
+            data-i18n-attr="title"
           >
             <img
               src="assets/logo-svg/steam-white.svg"
@@ -134,7 +146,8 @@
           <a
             href="https://github.com/skik4"
             class="footer-social-link"
-            data-i18n-title="index.footerGithubProfileTitle"
+            data-i18n="index.footerGithubProfileTitle"
+            data-i18n-attr="title"
             target="_blank"
           >
             <img

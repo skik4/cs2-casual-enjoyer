@@ -190,9 +190,9 @@ class App {
         "Error during frontend app initialization: " + error.message
       );
       logger.error("App", "Stack trace: " + error.stack);
+      const { t } = await import("../i18n/i18n-manager.js");
       UIManager.showError(
-        (await import("../i18n/strings.js")).default.common
-          .failedToInitializeAppPrefix + error.message
+        t("common.failedToInitializeAppPrefix") + error.message
       );
     }
   }

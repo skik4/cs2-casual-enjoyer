@@ -1,22 +1,15 @@
-import STRINGS, { EN, RU_OVERRIDES } from "./strings.js";
+import { LOCALES } from "./locales/index.js";
+
+// =============================================================================
+// STATE
+// =============================================================================
 
 let currentLanguage = "en";
 const listeners = new Set();
 
-function deepClone(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
-
-function buildLocale(locale) {
-  if (locale === "ru") {
-    const merged = deepClone(EN);
-    for (const key of Object.keys(RU_OVERRIDES)) {
-      merged[key] = { ...(merged[key] || {}), ...RU_OVERRIDES[key] };
-    }
-    return merged;
-  }
-  return deepClone(EN);
-}
+// =============================================================================
+// INTERNAL HELPERS
+// =============================================================================
 
 function getSystemLanguage() {
   try {
@@ -29,27 +22,52 @@ function getSystemLanguage() {
   }
 }
 
+function resolvePath(object, path) {
+  return path
+    .split(".")
+    .reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), object);
+}
+
+function formatString(template, params = {}) {
+  if (typeof template !== "string") return template ?? "";
+  return template.replace(/\{(\w+)\}/g, (_, key) => (params[key] !== undefined ? String(params[key]) : ""));
+}
+
+function notifyListeners() {
+  listeners.forEach((callback) => {
+    try {
+      callback(currentLanguage);
+    } catch {}
+  });
+}
+
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem("app_language", currentLanguage);
+  } catch {}
+}
+
+// =============================================================================
+// PUBLIC API
+// =============================================================================
+
 export function getLanguage() {
   return currentLanguage;
+}
+
+export function t(key, params = {}) {
+  const raw = resolvePath(LOCALES[currentLanguage], key);
+  return formatString(typeof raw === "string" ? raw : "", params);
 }
 
 export function setLanguage(lang) {
   const next = lang === "ru" ? "ru" : "en";
   if (next === currentLanguage) return currentLanguage;
-  const newStrings = buildLocale(next);
-  Object.keys(STRINGS).forEach((k) => delete STRINGS[k]);
-  Object.assign(STRINGS, newStrings);
+  
   currentLanguage = next;
-  try {
-    localStorage.setItem("app_language", currentLanguage);
-  } catch {}
-  try {
-    listeners.forEach((cb) => {
-      try {
-        cb(currentLanguage);
-      } catch {}
-    });
-  } catch {}
+  saveToLocalStorage();
+  notifyListeners();
+  
   return currentLanguage;
 }
 
@@ -73,7 +91,7 @@ export async function persistLanguageToSettings(lang) {
       const current = await window.electronAPI.settings.load();
       const updated = { ...(current || {}), language: lang };
       await window.electronAPI.settings.save(updated);
-    } catch {}
+    } catch { }
   }
 }
 
@@ -87,7 +105,7 @@ export function onLanguageChange(callback) {
     listeners.add(callback);
     return () => listeners.delete(callback);
   }
-  return () => {};
+  return () => { };
 }
 
 export function offLanguageChange(callback) {
@@ -102,6 +120,5 @@ export default {
   persistLanguageToSettings,
   onLanguageChange,
   offLanguageChange,
+  t,
 };
-
-

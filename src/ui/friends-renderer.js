@@ -1,7 +1,7 @@
 // Shared constants
 import { FRIENDS_TEMPLATES } from "./html-templates.js";
 import { TUTORIAL_MOCK_FRIEND } from "../shared/constants.js";
-import STRINGS from "../i18n/strings.js";
+import { t } from "../i18n/i18n-manager.js";
 
 // Core singletons
 import appStateManager from "../core/app-state-manager.js";
@@ -210,7 +210,7 @@ class FriendsRenderer {
     // Update game status
     const statusSpan = element.querySelector(".game-status");
     const statusText = isMissing
-      ? STRINGS.friends.temporarilyNotSupported
+      ? t("friends.temporarilyNotSupported")
       : friend.status;
     const hasStatus = friend.status || isMissing;
 
@@ -280,7 +280,7 @@ class FriendsRenderer {
 
     // Update join button
     if (joinButton) {
-      const newButtonText = isActive ? STRINGS.common.cancel : STRINGS.common.join;
+      const newButtonText = isActive ? t("common.cancel") : t("common.join");
       const shouldHaveCancelClass = isActive;
       const currentlyHasCancelClass =
         joinButton.classList.contains("cancel-btn");
@@ -324,7 +324,7 @@ class FriendsRenderer {
         isMissing);
 
     const statusText = isMissing
-      ? STRINGS.friends.temporarilyNotSupported
+      ? t("friends.temporarilyNotSupported")
       : friend.status;
     const hasStatus = friend.status || isMissing;
 

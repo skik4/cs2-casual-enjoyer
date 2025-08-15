@@ -5,7 +5,7 @@
 
 import { ICON_PATHS } from "../shared/icon-paths.js";
 import { replaceEmojisWithSVG, getEmojiSVG } from "../utils/emoji-svg.js";
-import STRINGS from "../i18n/strings.js";
+import { t } from "../i18n/i18n-manager.js";
 
 // =============================================================================
 // EMOJI PROCESSING HELPERS
@@ -43,15 +43,15 @@ export const NOTIFICATION_TEMPLATES = {
   /**
    * Close button for notifications
    */
-  CLOSE_BUTTON: `<div class="notification-header"><span class="notification-close-btn" title="${STRINGS.notifications.closeButtonTitle}"><img src="${ICON_PATHS.CLOSE_BOLD}" alt="×" style="width: 14px; height: 14px;"></span></div>`,
+  CLOSE_BUTTON: `<div class="notification-header"><span class="notification-close-btn" title="${t("notifications.closeButtonTitle")}"><img src="${ICON_PATHS.CLOSE_BOLD}" alt="×" style="width: 14px; height: 14px;"></span></div>`,
 
   /**
    * Warning for expired token
    */
   TOKEN_EXPIRED_WARNING: `
         <div style="color:#f1c40f;font-weight:500;margin-top:8px;">
-            ${STRINGS.notifications.tokenExpired.message}<br>
-            <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="${STRINGS.notifications.tokenExpired.getNewLinkTitle}">${STRINGS.notifications.tokenExpired.getNewLinkText}</a><br>
+            ${t("notifications.tokenExpired.message")}<br>
+            <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="${t("notifications.tokenExpired.getNewLinkTitle")}">${t("notifications.tokenExpired.getNewLinkText")}</a><br>
         </div>
     `,
 
@@ -65,9 +65,9 @@ export const NOTIFICATION_TEMPLATES = {
   TOKEN_INFO: (steamid, expiresStr, warnHtml) => `
         <div class="notification-content info">
             <div style="color:#2d8cf0;font-weight:500;">
-                ${STRINGS.notifications.tokenInfo.detected}<br>
-                <span style="font-size:0.98em;">${STRINGS.notifications.tokenInfo.steamIdLabel} <b>${steamid}</b></span><br>
-                <span style="font-size:0.98em;">${STRINGS.notifications.tokenInfo.expiresLabel} <b>${expiresStr}</b></span>
+                ${t("notifications.tokenInfo.detected")}<br>
+                <span style="font-size:0.98em;">${t("notifications.tokenInfo.steamIdLabel")} <b>${steamid}</b></span><br>
+                <span style="font-size:0.98em;">${t("notifications.tokenInfo.expiresLabel")} <b>${expiresStr}</b></span>
             </div>
             ${warnHtml}
         </div>
@@ -87,7 +87,7 @@ export const NOTIFICATION_TEMPLATES = {
    * @returns {string} Privacy link HTML
    */
   PRIVACY_LINK: (privacyUrl) => `
-        <a href="${privacyUrl}" class="privacy-link" target="_self" title="${STRINGS.notifications.privacy.linkTitle}">${STRINGS.notifications.privacy.linkText}</a>
+        <a href="${privacyUrl}" class="privacy-link" target="_self" title="${t("notifications.privacy.linkTitle")}">${t("notifications.privacy.linkText")}</a>
     `,
 
   /**
@@ -97,13 +97,13 @@ export const NOTIFICATION_TEMPLATES = {
    */
   PRIVACY_WARNING: (linkHtml) => `
         <div class="notification-main-text" style="color:#ff4444;font-weight:500;">
-            ${STRINGS.notifications.privacy.warningMain}
+            ${t("notifications.privacy.warningMain")}
         </div>            
         <div style="margin:8px 0 8px 0;">
             ${linkHtml}
         </div>            
         <div class="note" style="color:#aaa;font-size:0.95em;margin-bottom:2px;margin-top:15px;border-top:1px solid #353a40;padding-top:10px;">
-            ${STRINGS.notifications.privacy.note}
+            ${t("notifications.privacy.note")}
         </div>
     `,
 
@@ -115,22 +115,22 @@ export const NOTIFICATION_TEMPLATES = {
      * Initial state when asking user to launch CS2
      */
     INITIAL: {
-      title: STRINGS.notifications.cs2Launch.initial.title,
-      message: STRINGS.notifications.cs2Launch.initial.message,
-      hint: STRINGS.notifications.cs2Launch.initial.hint,
-      launchButton: STRINGS.notifications.cs2Launch.initial.launchButton,
-      closeButton: STRINGS.notifications.cs2Launch.initial.closeButton,
+      title: t("notifications.cs2Launch.initial.title"),
+      message: t("notifications.cs2Launch.initial.message"),
+      hint: t("notifications.cs2Launch.initial.hint"),
+      launchButton: t("notifications.cs2Launch.initial.launchButton"),
+      closeButton: t("notifications.cs2Launch.initial.closeButton"),
     },
 
     /**
      * Loading state when CS2 is being launched
      */
     LAUNCHING: {
-      title: STRINGS.notifications.cs2Launch.launching.title,
-      message: STRINGS.notifications.cs2Launch.launching.message,
-      hint: STRINGS.notifications.cs2Launch.launching.hint,
-      launchButton: STRINGS.notifications.cs2Launch.launching.launchButtonHtml,
-      closeButton: STRINGS.notifications.cs2Launch.launching.closeButton,
+      title: t("notifications.cs2Launch.launching.title"),
+      message: t("notifications.cs2Launch.launching.message"),
+      hint: t("notifications.cs2Launch.launching.hint"),
+      launchButton: t("notifications.cs2Launch.launching.launchButtonHtml"),
+      closeButton: t("notifications.cs2Launch.launching.closeButton"),
     },
 
     /**
@@ -163,37 +163,37 @@ export const HELP_TEMPLATES = {
     const keyEmoji = await createNotificationEmoji("🆔");
     return `
             <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
-                ${keyEmoji} ${STRINGS.help.steamId.title}
+                ${keyEmoji} ${t("help.steamId.title")}
             </div>
             <div style="margin:10px 0;text-align:left;">
                 <div style="margin-bottom:15px;">
                     <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
-                        ${STRINGS.help.steamId.option1Title}
+                        ${t("help.steamId.option1Title")}
                     </div>                  
                     <div style="margin-bottom:8px;">
-                        <a href="steam://url/SteamIDMyProfile" class="steam-profile-link" target="_self" title="${STRINGS.help.steamId.openProfileLinkTitle}">${STRINGS.help.steamId.openProfileLinkText}</a>
+                        <a href="steam://url/SteamIDMyProfile" class="steam-profile-link" target="_self" title="${t("help.steamId.openProfileLinkTitle")}">${t("help.steamId.openProfileLinkText")}</a>
                     </div>
                     <div style="margin-bottom:8px;color:#f3f6fa;">
-                        ${STRINGS.help.steamId.option1Body}
+                        ${t("help.steamId.option1Body")}
                     </div>                
                     <ul style="color:#bfc9d8;font-size:0.95em;margin-left:10px;padding-left:20px;">
-                        <li>${STRINGS.help.steamId.option1Bullet1}</li>
-                        <li>${STRINGS.help.steamId.option1Bullet2}</li>
-                        <li>${STRINGS.help.steamId.option1Bullet3}</li>
+                        <li>${t("help.steamId.option1Bullet1")}</li>
+                        <li>${t("help.steamId.option1Bullet2")}</li>
+                        <li>${t("help.steamId.option1Bullet3")}</li>
                     </ul>
                 </div>
                 
                 <div>
                     <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
-                        ${STRINGS.help.steamId.option2Title}
+                        ${t("help.steamId.option2Title")}
                     </div>
                     <div style="margin-bottom:8px;color:#f3f6fa;">
-                        ${STRINGS.help.steamId.option2Body}
+                        ${t("help.steamId.option2Body")}
                     </div>
                 </div>
             </div>            
             <div class="note" style="color:#aaa;font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid #353a40;padding-top:10px;">
-                ${STRINGS.help.steamId.note}
+                ${t("help.steamId.note")}
             </div>
         `;
   },
@@ -205,49 +205,49 @@ export const HELP_TEMPLATES = {
     const keyEmoji = await createNotificationEmoji("🔑");
     return `
         <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
-            ${keyEmoji} ${STRINGS.help.apiKey.title}
+            ${keyEmoji} ${t("help.apiKey.title")}
         </div>
                 <div style="margin:10px 0;text-align:left;">
             <div style="margin-bottom:15px;">                
             <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
-                    ${STRINGS.help.apiKey.option1Title}
+                    ${t("help.apiKey.option1Title")}
                 </div>                  
                 <div style="margin-bottom:8px;">
-                    <a id="steam-token-help-link" href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="${STRINGS.help.apiKey.getTokenLinkTitle}">${STRINGS.help.apiKey.getTokenLinkText}</a>
+                    <a id="steam-token-help-link" href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="${t("help.apiKey.getTokenLinkTitle")}">${t("help.apiKey.getTokenLinkText")}</a>
                 </div>
                 <div style="margin-bottom:8px;color:#f3f6fa;">
-                    ${STRINGS.help.apiKey.option1Body}
+                    ${t("help.apiKey.option1Body")}
                 </div>                
                 <ul style="color:#bfc9d8;font-size:0.95em;margin-left:10px;padding-left:20px;">
-                    <li>${STRINGS.help.apiKey.option1Bullet1}</li>
-                    <li>${STRINGS.help.apiKey.option1Bullet2}</li>
-                    <li>${STRINGS.help.apiKey.option1Bullet3}</li>
+                    <li>${t("help.apiKey.option1Bullet1")}</li>
+                    <li>${t("help.apiKey.option1Bullet2")}</li>
+                    <li>${t("help.apiKey.option1Bullet3")}</li>
                 </ul>
             </div>
             
             <div>
                 <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
-                    ${STRINGS.help.apiKey.option2Title}
+                    ${t("help.apiKey.option2Title")}
                 </div>                  
                 <div style="margin-bottom:8px;">
-                    <a href="steam://openurl/https://steamcommunity.com/dev/apikey" class="steam-apikey-link" target="_self" title="${STRINGS.help.apiKey.getApiKeyLinkTitle}">${STRINGS.help.apiKey.getApiKeyLinkText}</a>
+                    <a href="steam://openurl/https://steamcommunity.com/dev/apikey" class="steam-apikey-link" target="_self" title="${t("help.apiKey.getApiKeyLinkTitle")}">${t("help.apiKey.getApiKeyLinkText")}</a>
                 </div>
                 <div style="margin-bottom:8px;color:#f3f6fa;">
-                    ${STRINGS.help.apiKey.option2Body1}
+                    ${t("help.apiKey.option2Body1")}
                 </div>
                 <div style="margin-bottom:8px;color:#f3f6fa;">
-                    ${STRINGS.help.apiKey.option2Body2}
+                    ${t("help.apiKey.option2Body2")}
                 </div>                
                 <ul style="color:#bfc9d8;font-size:0.95em;margin-left:10px;padding-left:20px;">
-                    <li>${STRINGS.help.apiKey.option2Bullet1}</li>
-                    <li>${STRINGS.help.apiKey.option2Bullet2}</li>
-                    <li>${STRINGS.help.apiKey.option2Bullet3}</li>
+                    <li>${t("help.apiKey.option2Bullet1")}</li>
+                    <li>${t("help.apiKey.option2Bullet2")}</li>
+                    <li>${t("help.apiKey.option2Bullet3")}</li>
                 </ul>
             </div>
         </div>            
         <div class="note" style="color:#aaa;font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid #353a40;padding-top:10px;">
-            ${STRINGS.help.apiKey.note1}<br>
-            ${STRINGS.help.apiKey.note2}
+            ${t("help.apiKey.note1")}<br>
+            ${t("help.apiKey.note2")}
         </div>
         `;
   },
@@ -288,7 +288,7 @@ export const FRIENDS_TEMPLATES = {
             </div>
             <div class="join-section" id="join-section-${steamid}">
                 <span class="status-dot ${isMissing ? "dot-missing" : "dot-cancelled"}" id="dot-${steamid}"></span>
-                <button id="join-btn-${steamid}" class="action-btn${isActive ? " cancel-btn" : ""}" data-i18n-text="${isActive ? "common.cancel" : "common.join"}">${isActive ? STRINGS.common.cancel : STRINGS.common.join}</button>
+                <button id="join-btn-${steamid}" class="action-btn${isActive ? " cancel-btn" : ""}" data-i18n="${isActive ? "common.cancel" : "common.join"}" data-i18n-attr="text">${isActive ? t("common.cancel") : t("common.join")}</button>
             </div>
         </div>
     `,
@@ -306,88 +306,88 @@ export const TUTORIAL_TEMPLATES = {
   async getStepsWithSVG() {
     const steps = [
       {
-        title: STRINGS.tutorial.step1Title,
+        title: t("tutorial.step1Title"),
         content: `
-                    ${STRINGS.tutorial.step1Content}               
+                    ${t("tutorial.step1Content")}               
                     <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                        ${STRINGS.tutorial.keyHint}
+                        ${t("tutorial.keyHint")}
                     </div>
                 `,
         target: null,
         icon: "🎮",
       },
       {
-        title: STRINGS.tutorial.step2Title,
-        content: STRINGS.tutorial.step2Content,
+        title: t("tutorial.step2Title"),
+        content: t("tutorial.step2Content"),
         target: "#api-key-help",
         icon: "🔑",
       },
       {
-        title: STRINGS.tutorial.step3Title,
+        title: t("tutorial.step3Title"),
         content: `
-                    ${STRINGS.tutorial.step3Content}
+                    ${t("tutorial.step3Content")}
                 `,
         target: "#steam-token-help-link",
         icon: "🌐",
       },
       {
-        title: STRINGS.tutorial.step4Title,
+        title: t("tutorial.step4Title"),
         content: `
-                    ${STRINGS.tutorial.step4Content}
+                    ${t("tutorial.step4Content")}
                 `,
         target: "#auth",
         icon: "📋",
       },
       {
-        title: STRINGS.tutorial.step5Title,
-        content: STRINGS.tutorial.step5Content,
+        title: t("tutorial.step5Title"),
+        content: t("tutorial.step5Content"),
         target: "#update-friends-btn",
         icon: "🔄",
       },
       {
-        title: STRINGS.tutorial.step6Title,
-        content: STRINGS.tutorial.step6Content,
+        title: t("tutorial.step6Title"),
+        content: t("tutorial.step6Content"),
         target: "#friend-filter-input",
         icon: "🔍",
       },
       {
-        title: STRINGS.tutorial.step7Title,
-        content: STRINGS.tutorial.step7Content,
+        title: t("tutorial.step7Title"),
+        content: t("tutorial.step7Content"),
         target: "#friends",
         icon: "👥",
       },
       {
-        title: STRINGS.tutorial.step8Title,
+        title: t("tutorial.step8Title"),
         content: `
-                    ${STRINGS.tutorial.step8Content}
+                    ${t("tutorial.step8Content")}
                 `,
         target: ".friend .action-btn",
         icon: "🚀",
       },
       {
-        title: STRINGS.tutorial.step9Title,
+        title: t("tutorial.step9Title"),
         content: `
-                    ${STRINGS.tutorial.step9ContentTop}
+                    ${t("tutorial.step9ContentTop")}
                     <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                        ${STRINGS.tutorial.step9ContentNote1}<br>
-                        ${STRINGS.tutorial.step9ContentNote2}<br>
-                        ${STRINGS.tutorial.step9ContentNote3}
+                        ${t("tutorial.step9ContentNote1")}<br>
+                        ${t("tutorial.step9ContentNote2")}<br>
+                        ${t("tutorial.step9ContentNote3")}
                     </div>
                 `,
         target: ".status-dot",
         icon: "🟡",
       },
       {
-        title: STRINGS.tutorial.step10Title,
+        title: t("tutorial.step10Title"),
         content: `
-                    ${STRINGS.tutorial.step10ContentTop}
+                    ${t("tutorial.step10ContentTop")}
                     <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                        ${STRINGS.tutorial.step10ContentNote1}<br>
-                        ${STRINGS.tutorial.step10ContentNote2}
+                        ${t("tutorial.step10ContentNote1")}<br>
+                        ${t("tutorial.step10ContentNote2")}
                     </div>
                     <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
                         <span id='github-releases-link' style='color:#2d8cf0;cursor:pointer;text-decoration:underline;'>
-                            ${STRINGS.tutorial.githubReleases}
+                            ${t("tutorial.githubReleases")}
                         </span>
                     </div>
                 `,
@@ -440,7 +440,7 @@ export const TUTORIAL_TEMPLATES = {
                 ${title}
             </h3>
             <div class="tutorial-progress">
-                <span class="tutorial-step-counter">${STRINGS.tutorial.stepCounter.replace("{current}", currentStepNumber).replace("{total}", totalSteps)}</span>
+                <span class="tutorial-step-counter">${t("tutorial.stepCounter", { current: currentStepNumber, total: totalSteps })}</span>
                 <div class="tutorial-progress-bar">
                     <div class="tutorial-progress-fill" style="width: ${(currentStepNumber / totalSteps) * 100}%"></div>
                 </div>
@@ -449,15 +449,15 @@ export const TUTORIAL_TEMPLATES = {
         <div class="tutorial-content">${processedContent}</div>        
         <div class="tutorial-controls">
             <button class="tutorial-btn tutorial-btn-secondary">
-                ${STRINGS.common.skipTutorial}
+                ${t("common.skipTutorial")}
             </button>            
             <div class="tutorial-nav-buttons">
                 <button class="tutorial-btn tutorial-btn-secondary" 
                         ${isFirstStep ? "disabled" : ""}>
-                    ${STRINGS.common.previous}
+                    ${t("common.previous")}
                 </button>
                 <button class="tutorial-btn tutorial-btn-primary">
-                    ${isLastStep ? STRINGS.common.finish : STRINGS.common.next}
+                    ${isLastStep ? t("common.finish") : t("common.next")}
                 </button>
             </div>
         </div>`;
