@@ -50,7 +50,7 @@ class NotificationManager {
 
     // HTML already processed in templates, no need for additional processing
     notificationElement.innerHTML =
-      NOTIFICATION_TEMPLATES.CLOSE_BUTTON +
+      NOTIFICATION_TEMPLATES.CLOSE_BUTTON() +
       `<div class="notification-content ${type}">${html}</div>`;
     notificationElement.style.display = "block";
 
@@ -81,7 +81,7 @@ class NotificationManager {
     let expired = expiresMs < now;
     let warnHtml = "";
     if (expired) {
-      warnHtml = NOTIFICATION_TEMPLATES.TOKEN_EXPIRED_WARNING;
+      warnHtml = NOTIFICATION_TEMPLATES.TOKEN_EXPIRED_WARNING();
     }
 
     const html = NOTIFICATION_TEMPLATES.TOKEN_INFO(
@@ -218,18 +218,16 @@ class NotificationManager {
       const message = overlay.querySelector(".cs2-launch-message");
       const hint = overlay.querySelector(".cs2-launch-hint");
 
-      if (title)
-        title.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.title;
-      if (message)
-        message.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.message;
-      if (hint)
-        hint.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.hint;
+      const initial = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL();
+      if (title) title.textContent = initial.title;
+      if (message) message.textContent = initial.message;
+      if (hint) hint.textContent = initial.hint;
 
       // Reset button states
       if (launchBtn) {
         launchBtn.disabled = false;
-        launchBtn.innerHTML =
-          NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.launchButton;
+        const initial2 = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL();
+        launchBtn.innerHTML = initial2.launchButton;
       }
 
       logger.debug("NotificationManager", "UI reset to initial state");
@@ -302,18 +300,15 @@ class NotificationManager {
         const message = overlay.querySelector(".cs2-launch-message");
         const hint = overlay.querySelector(".cs2-launch-hint");
 
-        if (title)
-          title.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING.title;
-        if (message)
-          message.textContent =
-            NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING.message;
-        if (hint)
-          hint.textContent = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING.hint;
+        const launching = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING();
+        if (title) title.textContent = launching.title;
+        if (message) message.textContent = launching.message;
+        if (hint) hint.textContent = launching.hint;
 
         // Update button to loading state
         launchBtn.disabled = true;
-        launchBtn.innerHTML =
-          NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING.launchButton;
+        const launching2 = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING();
+        launchBtn.innerHTML = launching2.launchButton;
 
         // Use CS2Manager to handle launch and monitoring
         try {
@@ -420,12 +415,33 @@ class NotificationManager {
         const expiresMs = info.expires * 1000;
         const expired = expiresMs < now;
         const expiresStr = NotificationManager.formatDateTime(info.expiresDate);
-        const warnHtml = expired ? NOTIFICATION_TEMPLATES.TOKEN_EXPIRED_WARNING : "";
+        const warnHtml = expired ? NOTIFICATION_TEMPLATES.TOKEN_EXPIRED_WARNING() : "";
         tokenInfoDiv.innerHTML = NOTIFICATION_TEMPLATES.TOKEN_INFO(
           info.steamid,
           expiresStr,
           warnHtml
         );
+      }
+
+      // Refresh CS2 launch overlay texts if visible
+      const overlay = DOMUtils.getElementById("cs2-launch-notification");
+      if (overlay && overlay.style.display !== "none") {
+        const titleEl = overlay.querySelector(".cs2-launch-title");
+        const messageEl = overlay.querySelector(".cs2-launch-message");
+        const hintEl = overlay.querySelector(".cs2-launch-hint");
+        const launchBtn = DOMUtils.getElementById("launch-cs2-btn");
+        const closeBtn = DOMUtils.getElementById("close-cs2-launch");
+
+        const isLaunching = !!launchBtn && launchBtn.disabled === true;
+        const tpl = isLaunching
+          ? NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING()
+          : NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL();
+
+        if (titleEl) titleEl.textContent = tpl.title;
+        if (messageEl) messageEl.textContent = tpl.message;
+        if (hintEl) hintEl.textContent = tpl.hint;
+        if (launchBtn) launchBtn.innerHTML = tpl.launchButton;
+        if (closeBtn) closeBtn.textContent = tpl.closeButton;
       }
 
       // Refresh main notification if visible and we know its kind
@@ -434,28 +450,39 @@ class NotificationManager {
       const isVisible = notificationElement && notificationElement.style.display === "block";
       if (!main || !isVisible) return;
 
+      // Update close button tooltip without rebuilding DOM
+      const closeBtn = notificationElement.querySelector(".notification-close-btn");
+      if (closeBtn) {
+        try { closeBtn.title = i18n.t("notifications.closeButtonTitle"); } catch {}
+      }
+
+      const contentDiv = notificationElement.querySelector(".notification-content");
+      if (!contentDiv) return;
+
       switch (main.kind) {
         case "help-steamid": {
           const content = await HELP_TEMPLATES.STEAM_ID_HELP();
-          await this.showNotification(content, "info");
+          contentDiv.className = "notification-content info";
+          contentDiv.innerHTML = content;
           break;
         }
         case "help-apikey": {
           const content = await HELP_TEMPLATES.API_KEY_HELP();
-          await this.showNotification(content, "info");
+          contentDiv.className = "notification-content info";
+          contentDiv.innerHTML = content;
           break;
         }
         case "privacy": {
           const privacyUrl = main.payload?.privacyUrl || "";
-          const linkHtml = privacyUrl
-            ? NOTIFICATION_TEMPLATES.PRIVACY_LINK(privacyUrl)
-            : "";
-          await this.showNotification(this.getPrivacyWarningHtml(linkHtml), "error");
+          const linkHtml = privacyUrl ? NOTIFICATION_TEMPLATES.PRIVACY_LINK(privacyUrl) : "";
+          contentDiv.className = "notification-content error";
+          contentDiv.innerHTML = this.getPrivacyWarningHtml(linkHtml);
           break;
         }
         case "error": {
           const errorMessage = main.payload?.errorMessage || "";
-          await this.showNotification(NOTIFICATION_TEMPLATES.ERROR_MESSAGE(errorMessage), "error");
+          contentDiv.className = "notification-content error";
+          contentDiv.innerHTML = NOTIFICATION_TEMPLATES.ERROR_MESSAGE(errorMessage);
           break;
         }
         default:

@@ -43,12 +43,13 @@ export const NOTIFICATION_TEMPLATES = {
   /**
    * Close button for notifications
    */
-  CLOSE_BUTTON: `<div class="notification-header"><span class="notification-close-btn" title="${t("notifications.closeButtonTitle")}"><img src="${ICON_PATHS.CLOSE_BOLD}" alt="×" style="width: 14px; height: 14px;"></span></div>`,
+  CLOSE_BUTTON: () =>
+    `<div class="notification-header"><span class="notification-close-btn" title="${t("notifications.closeButtonTitle")}"><img src="${ICON_PATHS.CLOSE_BOLD}" alt="×" style="width: 14px; height: 14px;"></span></div>`,
 
   /**
    * Warning for expired token
    */
-  TOKEN_EXPIRED_WARNING: `
+  TOKEN_EXPIRED_WARNING: () => `
         <div style="color:#f1c40f;font-weight:500;margin-top:8px;">
             ${t("notifications.tokenExpired.message")}<br>
             <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="${t("notifications.tokenExpired.getNewLinkTitle")}">${t("notifications.tokenExpired.getNewLinkText")}</a><br>
@@ -114,40 +115,43 @@ export const NOTIFICATION_TEMPLATES = {
     /**
      * Initial state when asking user to launch CS2
      */
-    INITIAL: {
+    INITIAL: () => ({
       title: t("notifications.cs2Launch.initial.title"),
       message: t("notifications.cs2Launch.initial.message"),
       hint: t("notifications.cs2Launch.initial.hint"),
       launchButton: t("notifications.cs2Launch.initial.launchButton"),
       closeButton: t("notifications.cs2Launch.initial.closeButton"),
-    },
+    }),
 
     /**
      * Loading state when CS2 is being launched
      */
-    LAUNCHING: {
+    LAUNCHING: () => ({
       title: t("notifications.cs2Launch.launching.title"),
       message: t("notifications.cs2Launch.launching.message"),
       hint: t("notifications.cs2Launch.launching.hint"),
       launchButton: t("notifications.cs2Launch.launching.launchButtonHtml"),
       closeButton: t("notifications.cs2Launch.launching.closeButton"),
-    },
+    }),
 
     /**
      * Complete CS2 launch notification HTML template
      * @returns {string} Complete CS2 notification HTML
      */
-    FULL_TEMPLATE: () => `
+    FULL_TEMPLATE: () => {
+      const initial = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL();
+      return `
             <div class="cs2-launch-content">
-                <div class="cs2-launch-title">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.title}</div>
-                <div class="cs2-launch-message">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.message}</div>                
+                <div class="cs2-launch-title">${initial.title}</div>
+                <div class="cs2-launch-message">${initial.message}</div>                
                 <div class="cs2-launch-buttons">
-                    <button id="launch-cs2-btn" class="action-btn btn-primary">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.launchButton}</button>
-                    <button id="close-cs2-launch" class="action-btn cancel-btn">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.closeButton}</button>
+                    <button id="launch-cs2-btn" class="action-btn btn-primary">${initial.launchButton}</button>
+                    <button id="close-cs2-launch" class="action-btn cancel-btn">${initial.closeButton}</button>
                 </div>
-                <div class="cs2-launch-hint">${NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL.hint}</div>
+                <div class="cs2-launch-hint">${initial.hint}</div>
             </div>
-        `,
+        `;
+    },
   },
 };
 
