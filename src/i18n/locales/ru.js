@@ -125,6 +125,12 @@ export default {
 
   friends: {
     temporarilyNotSupported: "Временно не в поддерживаемом режиме",
+    addVirtualFriend: "Добавить виртуального друга",
+    virtualFriendSteamIdPlaceholder: "Введи Steam ID друга (17 цифр)",
+    addButton: "Добавить",
+    invalidSteamId: "Введи корректный Steam ID из 17 цифр",
+    alreadyInList: "Этот Steam ID уже есть в твоём списке друзей",
+    virtualFriendAdded: "Виртуальный друг успешно добавлен",
   },
 
   errors: {

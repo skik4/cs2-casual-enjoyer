@@ -26,6 +26,9 @@
 /* Friend list component */
 @import url("./friends.css");
 
+/* Virtual Friends */
+@import url("./virtual-friends.css");
+
 /* Status indicators and animations */
 @import url("./status.css");
 

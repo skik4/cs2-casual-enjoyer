@@ -124,6 +124,34 @@
             class="cs2-launch-overlay hidden"
           ></div>
           <div class="friend-list" id="friends"></div>
+          <div id="virtual-friend-section" class="virtual-friend-add">
+            <div class="virtual-friend-add-header">
+              <h3 data-i18n="friends.addVirtualFriend">Add Virtual Friend</h3>
+            </div>
+            <div class="virtual-friend-add-content">
+              <div class="virtual-friend-input-wrapper">
+                <input
+                  id="virtual-friend-steamid"
+                  type="text"
+                  data-i18n="friends.virtualFriendSteamIdPlaceholder"
+                  data-i18n-attr="placeholder"
+                  placeholder=""
+                />
+                <div
+                  id="virtual-friend-error"
+                  class="error-message hidden"
+                ></div>
+              </div>
+              <button
+                id="add-virtual-friend-btn"
+                class="action-btn"
+                data-i18n="friends.addButton"
+                data-i18n-attr="text"
+              >
+                Add
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

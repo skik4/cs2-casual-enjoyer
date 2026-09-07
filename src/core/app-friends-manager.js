@@ -6,6 +6,7 @@ import joinManager from "../game/join-manager.js";
 
 // UI and utilities
 import UIManager from "../ui/ui-manager.js";
+import VirtualFriendsManager from "../ui/virtual-friends-manager.js";
 import SteamAPI from "../steam/steam-api.js";
 import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
@@ -63,11 +64,13 @@ class AppFriendsManager {
     }
 
     try {
-      const allStatuses = await SteamAPI.getFriendsStatuses(friendIds, auth);
-
-      const supportedFriends = allStatuses.filter(
-        (friend) => friend.in_casual_mode
+      const allStatuses = await SteamAPI.getFriendsStatuses(
+        VirtualFriendsManager.mergeIds(friendIds),
+        auth
       );
+
+      const supportedFriends =
+        VirtualFriendsManager.withVirtualFriends(allStatuses);
 
       appStateManager.setState("friendsData", supportedFriends);
       const joinStates = keepStates ? joinManager.getJoinStates() : {};
@@ -162,17 +165,27 @@ class AppFriendsManager {
       });
 
       // Get friend statuses (avatars will be loaded only for supported players)
-      const statuses = await SteamAPI.getFriendsStatuses(allFriendIds, auth);
-      const supportedFriends = statuses.filter(
-        (friend) => friend.in_casual_mode
+      const statuses = await SteamAPI.getFriendsStatuses(
+        VirtualFriendsManager.mergeIds(allFriendIds),
+        auth
       );
+      const supportedFriends =
+        VirtualFriendsManager.withVirtualFriends(statuses);
 
       // Save settings without avatars (they will be loaded on demand)
-      const saveResult = await window.electronAPI.settings.save({
+      // Merge into the stored settings - a bare save replaces the whole file
+      // (SettingsManager.writeSettings), which would drop language and
+      // virtual_friend_ids.
+      const currentSettings =
+        (await window.electronAPI.settings.load()) || {};
+      const updatedSettings = {
+        ...currentSettings,
         steam_id,
-        auth: auth,
+        auth,
         friends_ids: allFriendIds,
-      });
+      };
+      await window.electronAPI.settings.save(updatedSettings);
+      appStateManager.setState("savedSettings", updatedSettings);
 
       // Reset join states
       joinManager.resetAll();
@@ -224,7 +237,9 @@ class AppFriendsManager {
 
     const auth = this.inputManager ? this.inputManager.getAuth() : "";
 
-    const savedFriendsIds = appStateManager.getState("savedFriendsIds");
+    const savedFriendsIds = VirtualFriendsManager.mergeIds(
+      appStateManager.getState("savedFriendsIds") || []
+    );
     if (
       !savedFriendsIds ||
       !Array.isArray(savedFriendsIds) ||
@@ -256,8 +271,9 @@ class AppFriendsManager {
         }
 
         const usingSavedFriends = appStateManager.getState("usingSavedFriends");
-        const currentSavedFriendsIds =
-          appStateManager.getState("savedFriendsIds");
+        const currentSavedFriendsIds = VirtualFriendsManager.mergeIds(
+          appStateManager.getState("savedFriendsIds") || []
+        );
 
         if (usingSavedFriends && currentSavedFriendsIds.length) {
           try {

@@ -1,10 +1,17 @@
 // Game singletons
 import joinManager from "../game/join-manager.js";
 
+// Core singletons
+import appStateManager from "./app-state-manager.js";
+
 // UI and utilities
 import UIManager from "../ui/ui-manager.js";
+import VirtualFriendsManager from "../ui/virtual-friends-manager.js";
 import DOMUtils from "../utils/dom-utils.js";
+import Validators from "../utils/validators.js";
+import ErrorHandler from "../utils/error-handler.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
+import { t } from "../i18n/i18n-manager.js";
 
 /**
  * Event management module
@@ -114,8 +121,86 @@ class AppEventManager {
       });
     }
 
+    // Virtual friend controls
+    const addVirtualFriendBtn = DOMUtils.getElementById(
+      "add-virtual-friend-btn"
+    );
+    const virtualFriendInput = DOMUtils.getElementById(
+      "virtual-friend-steamid"
+    );
+    if (addVirtualFriendBtn && virtualFriendInput) {
+      addVirtualFriendBtn.addEventListener("click", () =>
+        this.addVirtualFriend(virtualFriendInput)
+      );
+      virtualFriendInput.addEventListener("input", () =>
+        this.setVirtualFriendError(virtualFriendInput, null)
+      );
+    }
+
     // Setup friend listeners using event delegation
     this.setupFriendListeners();
+  }
+
+  /**
+   * Show or clear the virtual friend validation error
+   * @param {HTMLInputElement} input - Steam ID input
+   * @param {string|null} messageKey - i18n key, or null to clear the error
+   */
+  setVirtualFriendError(input, messageKey) {
+    DOMUtils.setText("virtual-friend-error", messageKey ? t(messageKey) : "");
+    DOMUtils.toggleClass("virtual-friend-error", "hidden", !messageKey);
+    input.classList.toggle("invalid-input", Boolean(messageKey));
+  }
+
+  /**
+   * Validate and persist a manually tracked Steam ID
+   * @param {HTMLInputElement} input - Steam ID input
+   */
+  async addVirtualFriend(input) {
+    if (tutorialManager.stateManager.getIsActive()) return;
+
+    const steamId = input.value.trim();
+
+    if (!Validators.validateSteamId(steamId)) {
+      this.setVirtualFriendError(input, "friends.invalidSteamId");
+      return;
+    }
+
+    const ownSteamId =
+      (this.inputManager && this.inputManager.getSteamId()) ||
+      appStateManager.getState("savedSettings")?.steam_id;
+    if (steamId === ownSteamId) {
+      this.setVirtualFriendError(input, "friends.alreadyInList");
+      return;
+    }
+
+    let added;
+    try {
+      added = await VirtualFriendsManager.addId(steamId);
+    } catch (error) {
+      ErrorHandler.logError("AppEventManager.addVirtualFriend", error);
+      UIManager.showError(error.message || error);
+      return;
+    }
+
+    if (!added) {
+      this.setVirtualFriendError(input, "friends.alreadyInList");
+      return;
+    }
+
+    this.setVirtualFriendError(input, null);
+    input.value = "";
+    UIManager.showNotification(
+      `<span>${t("friends.virtualFriendAdded")}</span>`,
+      "info"
+    );
+
+    // Pick the new ID up on the next poll so its real Steam status shows
+    if (this.friendsManager) {
+      this.friendsManager.startAutoRefresh().catch((error) => {
+        ErrorHandler.logError("AppEventManager.addVirtualFriend", error);
+      });
+    }
   }
 
   /**

@@ -1,0 +1,39 @@
+/* Virtual Friends - manually tracked Steam IDs */
+
+.virtual-friend-add {
+  margin-top: var(--space-md);
+  border-top: var(--border-width) solid var(--border-color);
+  padding: var(--space-md);
+}
+
+.virtual-friend-add-header {
+  margin-bottom: var(--space-sm);
+}
+
+.virtual-friend-add-header h3 {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.virtual-friend-add-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.virtual-friend-input-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Input styling comes from forms.css; the invalid state uses the shared
+   .invalid-input class so it matches every other field in the app. */
+
+.virtual-friend-add-content .error-message {
+  color: var(--red-primary);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-xxs);
+}
