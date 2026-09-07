@@ -12,6 +12,7 @@ class CS2Manager {
     this.isInitialized = false;
     this.statusCheckInterval = null;
     this.isMonitoring = false;
+    this._pendingLobbyResolve = null;
   }
 
   /**
@@ -235,9 +236,11 @@ class CS2Manager {
     if (this.statusCheckInterval) {
       clearInterval(this.statusCheckInterval);
       this.statusCheckInterval = null;
-      this.isMonitoring = false;
       logger.info("CS2Manager", "CS2 status monitoring stopped");
     }
+    // Kept outside the guard so the flag cannot drift from reality and
+    // permanently block startStatusMonitoring.
+    this.isMonitoring = false;
   }
 
   /**
@@ -247,6 +250,10 @@ class CS2Manager {
    */
   async launchAndWaitForLobby(onProgress = null) {
     return new Promise((resolve) => {
+      // Remember the waiter so a cancel can settle it, instead of leaving
+      // the caller suspended on a promise that can never resolve.
+      this._pendingLobbyResolve = resolve;
+
       // Launch CS2
       this.launchCS2();
 
@@ -257,6 +264,7 @@ class CS2Manager {
       // Start monitoring for lobby entry
       const onStatusChange = (isInCS2AndLobby) => {
         if (isInCS2AndLobby) {
+          this._pendingLobbyResolve = null;
           this.stopStatusMonitoring();
           logger.info("CS2Manager", "User successfully entered CS2 and lobby");
           if (onProgress) {
@@ -272,9 +280,22 @@ class CS2Manager {
           "CS2Manager",
           "Failed to start monitoring for lobby entry"
         );
+        this._pendingLobbyResolve = null;
         resolve(false);
       }
     });
+  }
+
+  /**
+   * Settle a pending launchAndWaitForLobby waiter, if there is one
+   * @param {boolean} value - Value to resolve the pending promise with
+   * @private
+   */
+  _settlePendingLobbyWait(value) {
+    const resolve = this._pendingLobbyResolve;
+    if (!resolve) return;
+    this._pendingLobbyResolve = null;
+    resolve(value);
   }
 
   /**
@@ -282,6 +303,7 @@ class CS2Manager {
    */
   cancelLaunchOperations() {
     this.stopStatusMonitoring();
+    this._settlePendingLobbyWait(false);
     logger.info("CS2Manager", "Launch operations cancelled");
   }
 
@@ -290,6 +312,7 @@ class CS2Manager {
    */
   destroy() {
     this.stopStatusMonitoring();
+    this._settlePendingLobbyWait(false);
     this.appInputManager = null;
     this.isInitialized = false;
     logger.info("CS2Manager", "CS2Manager destroyed");

@@ -75,31 +75,44 @@ class JoinManager {
         throw new Error("Steam ID and API auth are required");
       }
 
-      this.joinStates[friend_id] = {
+      // The CS2 check above is a network round trip, during which the
+      // button still reads Join - a second click would otherwise start a
+      // second loop and orphan the first interval.
+      const existing = this.joinStates[friend_id];
+      if (existing && !existing.cancelled) {
+        console.log("JoinManager: Join already in progress for:", friend_id);
+        return;
+      }
+      if (existing?.interval) clearInterval(existing.interval);
+
+      const state = {
         status: STATUS_TYPES.WAITING,
         cancelled: false,
         interval: null,
       };
+      this.joinStates[friend_id] = state;
 
       if (this.onUpdateJoinButton)
         this.onUpdateJoinButton(friend_id, STATUS_TYPES.WAITING);
       if (this.onUpdateDot) this.onUpdateDot(friend_id, STATUS_TYPES.WAITING);
 
-      // Setup periodic UI updates
-      this.joinStates[friend_id].interval = setInterval(() => {
-        const currentState = this.joinStates[friend_id];
-        if (currentState) {
-          if (this.onUpdateDot)
-            this.onUpdateDot(friend_id, currentState.status);
-          if (this.onUpdateJoinButton)
-            this.onUpdateJoinButton(friend_id, currentState.status);
+      // Periodic UI re-assert. Closes over its own state and timer id so it
+      // always clears itself, never whichever id the current state holds.
+      state.interval = setInterval(() => {
+        if (this.joinStates[friend_id] !== state) {
+          clearInterval(state.interval);
+          return;
+        }
 
-          if (
-            currentState.status === STATUS_TYPES.JOINED ||
-            currentState.status === STATUS_TYPES.CANCELLED
-          ) {
-            clearInterval(currentState.interval);
-          }
+        if (this.onUpdateDot) this.onUpdateDot(friend_id, state.status);
+        if (this.onUpdateJoinButton)
+          this.onUpdateJoinButton(friend_id, state.status);
+
+        if (
+          state.status === STATUS_TYPES.JOINED ||
+          state.status === STATUS_TYPES.CANCELLED
+        ) {
+          clearInterval(state.interval);
         }
       }, 1000);
 
@@ -119,6 +132,7 @@ class JoinManager {
    */
   async joinLoop(friend_id, user_steam_id, auth) {
     let missingSince = null;
+    let failingSince = null;
     let lastKnownPersona = null;
     let lastKnownAvatar = null;
 
@@ -157,6 +171,9 @@ class JoinManager {
           friend_id,
           auth
         );
+
+        // Got through the API calls - the failure streak is over
+        failingSince = null;
 
         if (!currentConnect) {
           // Check if the friend is still in casual
@@ -236,6 +253,20 @@ class JoinManager {
           friend_id,
           user_steam_id,
         });
+
+        // A call that keeps throwing (expired token, network down) never
+        // reaches the missing-friend timeout below, so it would otherwise
+        // retry forever. Give up on the same budget.
+        if (!failingSince) failingSince = Date.now();
+        if (Date.now() - failingSince > API_CONFIG.MISSING_TIMEOUT_MS) {
+          console.log(
+            "JoinManager: Giving up after repeated errors for:",
+            friend_id
+          );
+          this.cancelJoin(friend_id);
+          break;
+        }
+
         await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
       }
     }
@@ -255,8 +286,19 @@ class JoinManager {
    * @param {Partial<import('../shared/types.js').JoinState>} updates - State updates
    */
   updateJoinState(friend_id, updates) {
-    if (this.joinStates[friend_id]) {
-      Object.assign(this.joinStates[friend_id], updates);
+    const state = this.joinStates[friend_id];
+    if (!state) return;
+
+    const previousStatus = state.status;
+    Object.assign(state, updates);
+
+    // Notify immediately. Without this the UI only catches up on the next
+    // 1s tick, so CONNECTING is never drawn and JOINED can be missed
+    // entirely inside its 1.5s display window.
+    if (updates.status !== undefined && updates.status !== previousStatus) {
+      if (this.onUpdateDot) this.onUpdateDot(friend_id, state.status);
+      if (this.onUpdateJoinButton)
+        this.onUpdateJoinButton(friend_id, state.status);
     }
   }
 
@@ -271,14 +313,11 @@ class JoinManager {
     if (state.interval) {
       clearInterval(state.interval);
     }
+    // updateJoinState pushes the CANCELLED status to the UI
     this.updateJoinState(friend_id, {
       status: STATUS_TYPES.CANCELLED,
       cancelled: true,
     });
-
-    if (this.onUpdateDot) this.onUpdateDot(friend_id, STATUS_TYPES.CANCELLED);
-    if (this.onUpdateJoinButton)
-      this.onUpdateJoinButton(friend_id, STATUS_TYPES.CANCELLED);
 
     // Reset button and dot after a short time
     setTimeout(() => {
