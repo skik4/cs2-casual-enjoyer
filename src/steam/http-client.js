@@ -16,7 +16,12 @@ class SteamAPIHttpClient {
         ...options,
       });
     } catch (error) {
-      throw new Error(`HTTP request failed: ${error.message}`);
+      // Keep a deliberate cancellation recognisable, and preserve the
+      // original error as the cause so DNS/TLS/offline stay distinguishable.
+      if (error?.name === "AbortError") throw error;
+      throw new Error(`HTTP request failed: ${error.message}`, {
+        cause: error,
+      });
     }
   }
 

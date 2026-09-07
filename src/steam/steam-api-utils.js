@@ -1,13 +1,7 @@
 // Shared constants
-import {
-  VALIDATION_PATTERNS,
-  API_CONFIG,
-  ERROR_CODES,
-  GAME_MODES,
-} from "../shared/constants.js";
+import { ERROR_CODES, GAME_MODES } from "../shared/constants.js";
 
 // UI and utilities
-import Validators from "../utils/validators.js";
 import logger from "../utils/logger.js";
 
 /**
@@ -21,11 +15,14 @@ class SteamAPIUtils {
    * @returns {Object} - Parsed rich presence fields
    */
   static parseRichPresence(kv) {
+    // Steam omits rich_presence_kv entirely for players who are not in a
+    // game, so coerce here rather than making every caller pass `|| ""`.
+    const source = typeof kv === "string" ? kv : "";
     function extract(key) {
       const re = new RegExp(
-        '"' + key.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&") + '"\\s+"([^"]+)"'
+        '"' + key.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&") + '"\\s+"([^"]+)"'
       );
-      const m = kv.match(re);
+      const m = source.match(re);
       return m ? m[1] : null;
     }
     return {
@@ -37,53 +34,6 @@ class SteamAPIUtils {
       connect: extract("connect"),
       game_server_steam_id: extract("game_server_steam_id"),
     };
-  }
-
-  /**
-   * Build URL with parameters for Steam API request
-   * @param {Object} config - Request configuration
-   * @param {string} auth - API key or token
-   * @returns {string} - Complete URL with parameters
-   */
-  static buildApiUrl(config, auth) {
-    const isToken = Validators.isWebApiToken(auth);
-
-    // Handle unified configuration (when key and token use same endpoint/params)
-    let authConfig;
-    if (config.unified) {
-      authConfig = config.unified;
-    } else {
-      authConfig = isToken ? config.token : config.key;
-    }
-
-    if (!authConfig) {
-      throw new Error(
-        `No ${isToken ? "token" : "key"} configuration provided for ${config.method}`
-      );
-    }
-
-    // Build URL and parameters
-    let url = `${API_CONFIG.STEAM_API_BASE}${authConfig.endpoint}`;
-    const params = new URLSearchParams();
-
-    // Add authentication
-    if (isToken) {
-      params.append("access_token", auth);
-    } else {
-      params.append("key", auth);
-    }
-
-    // Add method-specific parameters
-    if (authConfig.params) {
-      Object.entries(authConfig.params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          params.append(key, value);
-        }
-      });
-    }
-
-    // Construct final URL
-    return `${url}?${params.toString()}`;
   }
 
   /**
@@ -294,8 +244,9 @@ class SteamAPIUtils {
     if (!privateData) return false;
 
     // Parse rich presence to get game mode
-    const richPresence = this.parseRichPresence(privateData.rich_presence);
-    if (!richPresence) return false; // Check if game mode is competitive or premier
+    const richPresence = this.parseRichPresence(privateData.rich_presence_kv);
+
+    // Check if game mode is competitive or premier
     const gameMode = richPresence.game_mode;
     const isCompetitive =
       gameMode === GAME_MODES.COMPETITIVE || gameMode === GAME_MODES.PREMIER;
@@ -303,7 +254,7 @@ class SteamAPIUtils {
     logger.debug("SteamAPIUtils", "Checking competitive/premier mode", {
       game_mode: gameMode,
       isCompetitive,
-      rich_presence: privateData.rich_presence,
+      rich_presence_kv: privateData.rich_presence_kv,
     });
 
     return isCompetitive;

@@ -467,36 +467,6 @@ class SteamAPIResponseProcessor {
     return isInCompetitiveOrPremier;
   }
 
-  /**
-   * Process friends statuses with avatar fetching capabilities
-   * @param {Object} rawData - Raw response from Steam API
-   * @param {Object} avatarsCache - Cache of avatar data
-   * @param {Object} apiClient - Reference to API client for fetching additional data
-   * @returns {Promise<import('../shared/types.js').Friend[]>} - Array of processed friend objects
-   */
-  static async processFriendsStatusesWithAvatars(
-    rawData,
-    avatarsCache = {},
-    apiClient = null
-  ) {
-    logger.debug(
-      "SteamAPIResponseProcessor",
-      "Processing friends statuses response with avatar fetching"
-    );
-
-    // Create callback for fetching additional avatars if API client is provided
-    const getPlayerSummariesCallback = apiClient
-      ? async (steamids) =>
-          await apiClient.getPlayerSummaries(steamids, apiClient._lastUsedAuth)
-      : null;
-
-    return await this.processFriendsStatusesResponse(
-      rawData,
-      avatarsCache,
-      getPlayerSummariesCallback
-    );
-  }
-
   // Private helper methods
   /**
    * Extract Steam IDs of players in supported modes (casual and deathmatch)
@@ -543,7 +513,18 @@ class SteamAPIResponseProcessor {
           "SteamAPIResponseProcessor",
           `Fetching avatars for ${missingAvatars.length} supported players`
         );
-        const fetchedAvatars = await getPlayerSummariesCallback(missingAvatars);
+        // Avatars are cosmetic: a failed fetch must not discard the friend
+        // statuses that were already retrieved successfully.
+        let fetchedAvatars = {};
+        try {
+          fetchedAvatars = await getPlayerSummariesCallback(missingAvatars);
+        } catch (error) {
+          logger.warn(
+            "SteamAPIResponseProcessor",
+            "Avatar fetch failed, continuing without new avatars",
+            { error: error.message, count: missingAvatars.length }
+          );
+        }
         avatarMap = { ...avatarsCache, ...fetchedAvatars };
         logger.info(
           "SteamAPIResponseProcessor",

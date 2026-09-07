@@ -19,39 +19,66 @@ class SteamAPIClient {
   static _SHORT_TTL_MS = Math.max(1, Math.floor((API_CONFIG?.JOIN_LOOP_INTERVAL_MS || 200) / 2));
 
   /**
-   * Single batch coordinator (no namespacing required)
-   * @type {{ ids: Set<string>, resolvers: Array<{ids: string[], resolve: Function, reject: Function}>, timer: any }}
+   * Max steamids per GetPlayerLinkDetails request.
+   * Each id costs ~35 bytes once `steamids[N]` is URL-encoded, so 100 keeps the
+   * query string near 3.5 KB - well inside the 8 KB request-line limit a full
+   * friends list would otherwise blow past. Same chunk size GetPlayerSummaries
+   * already uses.
    */
-  static _batcher = { ids: new Set(), resolvers: [], timer: null };
+  static _MAX_IDS_PER_REQUEST = 100;
 
   /**
-   * In-flight aggregate request state or null when none
-   * @type {{ promise: Promise<Map<string, Object|null>>, ids: Set<string> } | null}
+   * Batch coordinators keyed by auth - ids authenticated with different
+   * credentials must never be merged into a single request.
+   * @type {Map<string, { ids: Set<string>, resolvers: Array<{ids: string[], resolve: Function}>, timer: any }>}
    */
-  static _inFlight = null;
+  static _batchers = new Map();
 
   /**
-   * Short-lived cache steamid -> { raw, ts }
+   * Every batch currently awaiting its response. Each batch removes only its
+   * own entry, so overlapping batches cannot clear the coverage of another.
+   * @type {Set<{ promise: Promise<Map<string, Object|null>>, ids: Set<string> }>}
+   */
+  static _inFlight = new Set();
+
+  /**
+   * Short-lived cache steamid -> { raw, ts }. `raw` is null when Steam returned
+   * no account for that id - a real answer, and worth caching.
    * @type {Map<string, { raw: Object|null, ts: number }>}
    */
   static _cache = new Map();
 
-	/**
-	 * Read cached raw response for steamid (short TTL)
-	 */
-	static _getCachedRaw(steamid) {
-		const entry = this._cache.get(String(steamid));
-		if (!entry) return null;
-		const isFresh = Date.now() - entry.ts < this._SHORT_TTL_MS;
-		return isFresh ? entry.raw : null;
-	}
+  /**
+   * Avatar data by steamid, reused across refreshes so GetPlayerSummaries runs
+   * only for players whose avatar is not known yet.
+   * @type {Object<string, Object>}
+   */
+  static _avatarCache = {};
 
-	/**
-	 * Write cached raw response for steamid
-	 */
-	static _setCachedRaw(steamid, raw) {
-		this._cache.set(String(steamid), { raw, ts: Date.now() });
-	}
+  /**
+   * Read the cached entry for steamid, or null when absent or stale.
+   * Returns the entry rather than entry.raw so a cached negative result stays
+   * distinguishable from a cache miss.
+   * @param {string} steamid
+   * @returns {{ raw: Object|null, ts: number }|null}
+   */
+  static _getCachedEntry(steamid) {
+    const key = String(steamid);
+    const entry = this._cache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.ts >= this._SHORT_TTL_MS) {
+      this._cache.delete(key);
+      return null;
+    }
+    return entry;
+  }
+
+  /**
+   * Write cached raw response for steamid
+   */
+  static _setCachedRaw(steamid, raw) {
+    this._cache.set(String(steamid), { raw, ts: Date.now() });
+  }
 
   /**
    * Normalize raw GetPlayerLinkDetails response to map steamid -> raw-like object
@@ -71,7 +98,7 @@ class SteamAPIClient {
   /**
    * Schedule a batched GetPlayerLinkDetails for a set of steamids under one auth
    * Implements micro-batching, in-flight dedup for overlapping ids, and short TTL cache
-   * @param {string[]} steamids
+   * @param {string[]|string} steamids
    * @param {string} auth
    * @param {Object} context
    * @returns {Promise<Map<string, Object|null>>} map steamid -> raw-like object (or null if not found)
@@ -83,133 +110,157 @@ class SteamAPIClient {
       .filter((v) => v && v.length > 0);
     if (!ids.length) return new Map();
 
-    // First, serve from short-lived cache where possible
-    const cachedMap = new Map();
-    const missingIds = [];
+    // Serve from the short-lived cache first. An entry whose raw is null is a
+    // real answer, so it must not be re-requested as if it were a miss.
+    const result = new Map();
+    let missingIds = [];
     for (const id of ids) {
-      const cached = this._getCachedRaw(id);
-      if (cached) {
-        cachedMap.set(id, cached);
+      const entry = this._getCachedEntry(id);
+      if (entry) {
+        result.set(id, entry.raw);
       } else {
         missingIds.push(id);
       }
     }
+    if (!missingIds.length) return result;
 
-    if (missingIds.length === 0) {
-      return cachedMap;
+    // Reuse any in-flight batch that already covers some of the missing ids
+    const pending = [];
+    for (const batch of this._inFlight) {
+      if (!missingIds.some((id) => batch.ids.has(id))) continue;
+      pending.push(batch.promise);
+      missingIds = missingIds.filter((id) => !batch.ids.has(id));
+      if (!missingIds.length) break;
     }
 
-    // Check if there is an in-flight batch that already includes some/all of the missingIds
-    const inFlight = this._inFlight;
-    if (inFlight && inFlight.ids) {
-      const inFlightIds = inFlight.ids;
-      const covered = missingIds.filter((id) => inFlightIds.has(id));
-      const notCovered = missingIds.filter((id) => !inFlightIds.has(id));
-
-      if (covered.length && notCovered.length === 0) {
-        // Entire request is covered by existing in-flight batch
-        const mapFromInFlight = await inFlight.promise;
-        const res = new Map(cachedMap);
-        for (const id of ids) {
-          if (!res.has(id)) res.set(id, mapFromInFlight.get(id) || null);
-        }
-        return res;
-      }
-
-      if (covered.length && notCovered.length) {
-        // Partially covered: wait for in-flight for covered, schedule batch for notCovered
-        const [fromInFlight, fromNewBatch] = await Promise.all([
-          inFlight.promise,
-          this._scheduleBatchForIds(notCovered, auth, context),
-        ]);
-        const res = new Map(cachedMap);
-        for (const id of ids) {
-          const v = (fromNewBatch.get(id) || fromInFlight.get(id)) ?? null;
-          if (!res.has(id)) res.set(id, v);
-        }
-        return res;
-      }
+    // Whatever no batch covers gets a batch of its own
+    if (missingIds.length) {
+      pending.push(this._scheduleBatchForIds(missingIds, auth, context));
     }
 
-    // No in-flight coverage: schedule a new batch for missing ids
-    const fromBatch = await this._scheduleBatchForIds(missingIds, auth, context);
-    const res = new Map(cachedMap);
+    const maps = await Promise.all(pending);
     for (const id of ids) {
-      if (!res.has(id)) res.set(id, fromBatch.get(id) || null);
+      if (result.has(id)) continue;
+      let value = null;
+      for (const map of maps) {
+        const found = map.get(id);
+        if (found) {
+          value = found;
+          break;
+        }
+      }
+      result.set(id, value);
     }
-    return res;
+    return result;
   }
 
   /**
-   * Internal: schedule a batch for given ids
+   * Internal: schedule a batch for given ids under one auth
    * @param {string[]} ids
    * @param {string} auth
    * @param {Object} context
    * @returns {Promise<Map<string, Object|null>>}
    */
   static _scheduleBatchForIds(ids, auth, context = {}) {
-    const batcher = this._batcher;
+    const key = String(auth ?? "");
+    let batcher = this._batchers.get(key);
+    if (!batcher) {
+      batcher = { ids: new Set(), resolvers: [], timer: null };
+      this._batchers.set(key, batcher);
+    }
 
     ids.forEach((id) => batcher.ids.add(String(id)));
 
-    return new Promise((resolve, reject) => {
-      batcher.resolvers.push({ ids: ids.map(String), resolve, reject });
+    return new Promise((resolve) => {
+      batcher.resolvers.push({ ids: ids.map(String), resolve });
 
-      if (!batcher.timer) {
-        batcher.timer = setTimeout(async () => {
-          const requestIds = Array.from(batcher.ids);
-          const resolvers = batcher.resolvers.slice();
-          batcher.ids.clear();
-          batcher.resolvers = [];
-          batcher.timer = null;
+      if (batcher.timer) return;
 
-          // Perform one HTTP request for all ids
-          let mapById = new Map();
-          let promiseResolve;
-          const inFlightPromise = new Promise((res) => (promiseResolve = res));
-          this._inFlight = {
-            promise: inFlightPromise,
-            ids: new Set(requestIds),
-          };
+      batcher.timer = setTimeout(async () => {
+        const requestIds = Array.from(batcher.ids);
+        const resolvers = batcher.resolvers.slice();
+        // Drop the coordinator so later callers start a fresh one
+        this._batchers.delete(key);
 
-          try {
-            const rawData = await this._getPlayerLinkDetails(requestIds, auth, {
-              ...context,
-              batched: true,
-              batchSize: requestIds.length,
-            });
-            mapById = this._splitRawBySteamId(rawData);
+        let settle;
+        const batch = {
+          promise: new Promise((res) => (settle = res)),
+          ids: new Set(requestIds),
+        };
+        this._inFlight.add(batch);
 
-            // Cache results with short TTL
-            for (const id of requestIds) {
-              const raw = mapById.get(id) || null;
-              this._setCachedRaw(id, raw);
-            }
-          } catch (error) {
-            // On failure, fill nulls for requested ids (processors handle nulls/empty)
-            mapById = new Map();
-            for (const id of requestIds) {
-              mapById.set(id, null);
-              this._setCachedRaw(id, null);
-            }
-          } finally {
-            // Resolve in-flight promise for any waiters
-            promiseResolve(mapById);
-            // Clear in-flight entry
-            this._inFlight = null;
+        let mapById;
+        try {
+          mapById = await this._fetchLinkDetailsInChunks(
+            requestIds,
+            auth,
+            context
+          );
+        } finally {
+          // Remove only this batch, never the entry belonging to another
+          this._inFlight.delete(batch);
+        }
+
+        // Cache results, negatives included, with a short TTL
+        for (const id of requestIds) {
+          this._setCachedRaw(id, mapById.get(id) || null);
+        }
+
+        // Resolve in-flight promise for any waiters
+        settle(mapById);
+
+        // Fan-out results to individual resolvers
+        for (const { ids: reqIds, resolve } of resolvers) {
+          const partial = new Map();
+          for (const id of reqIds) {
+            partial.set(id, mapById.get(id) || null);
           }
-
-          // Fan-out results to individual resolvers
-          for (const { ids: reqIds, resolve } of resolvers) {
-            const partial = new Map();
-            for (const id of reqIds) {
-              partial.set(id, mapById.get(id) || null);
-            }
-            resolve(partial);
-          }
-        }, this._BATCH_WINDOW_MS);
-      }
+          resolve(partial);
+        }
+      }, this._BATCH_WINDOW_MS);
     });
+  }
+
+  /**
+   * Fetch link details in chunks small enough to keep the query string inside
+   * normal request-line limits, merging the results.
+   * Never rejects: ids belonging to a failed chunk are simply absent from the
+   * returned map, so one bad chunk cannot void what the other chunks resolved.
+   * @param {string[]} requestIds
+   * @param {string} auth
+   * @param {Object} context
+   * @returns {Promise<Map<string, Object|null>>}
+   */
+  static async _fetchLinkDetailsInChunks(requestIds, auth, context = {}) {
+    const merged = new Map();
+    const size = this._MAX_IDS_PER_REQUEST;
+    const totalChunks = Math.ceil(requestIds.length / size);
+
+    for (let i = 0; i < requestIds.length; i += size) {
+      const chunk = requestIds.slice(i, i + size);
+      const chunkIndex = Math.floor(i / size) + 1;
+
+      try {
+        const rawData = await this._getPlayerLinkDetails(chunk, auth, {
+          ...context,
+          batched: true,
+          batchSize: chunk.length,
+          chunkIndex,
+          totalChunks,
+        });
+        for (const [id, raw] of this._splitRawBySteamId(rawData)) {
+          merged.set(id, raw);
+        }
+      } catch (error) {
+        SteamAPILogger.logError("GetPlayerLinkDetails", error, {
+          chunkIndex,
+          totalChunks,
+          chunkSize: chunk.length,
+        });
+      }
+    }
+
+    return merged;
   }
 
   /**
@@ -438,14 +489,20 @@ class SteamAPIClient {
       }
       const data = { response: { accounts } };
 
+      // Reuse avatars fetched on earlier refreshes; anything the caller
+      // supplies explicitly wins over the module cache.
+      const avatars = { ...this._avatarCache, ...avatarsCache };
+
       // Create callback for fetching additional avatars
       const getPlayerSummariesCallback = async (steamids) => {
-        return await this.getPlayerSummaries(steamids, auth);
+        const fetched = await this.getPlayerSummaries(steamids, auth);
+        Object.assign(this._avatarCache, fetched);
+        return fetched;
       };
 
       return await SteamAPIResponseProcessor.processFriendsStatusesResponse(
         data,
-        avatarsCache,
+        avatars,
         getPlayerSummariesCallback
       );
     } catch (error) {
