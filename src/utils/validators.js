@@ -154,7 +154,7 @@ class Validators {
     }
 
     // Check for vanity URL
-    const vanityMatch = url.match(/\/id\/([^\/]+)/);
+    const vanityMatch = url.match(/\/id\/([^/]+)/);
     if (vanityMatch && vanityMatch[1]) {
       return {
         valid: true,
