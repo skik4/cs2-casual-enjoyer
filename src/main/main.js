@@ -1,10 +1,11 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
-import { WINDOW_CONFIG } from "../shared/constants.js";
+import { JOIN_JOURNAL_CONFIG, WINDOW_CONFIG } from "../shared/constants.js";
 import GsiService from "./gsi-service.js";
 import SettingsStore from "./settings-store.js";
 import { isAllowedExternalUrl } from "./external-links.js";
+import { appendJoinJournal } from "./join-journal-file.js";
 import {
   readMapFinderStore,
   writeMapFinderStore,
@@ -15,6 +16,10 @@ const GSI_STORE_PATH = path.join(app.getPath("userData"), "gsi.json");
 const MAP_FINDER_STORE_PATH = path.join(
   app.getPath("userData"),
   "map-finder.json"
+);
+const JOIN_JOURNAL_PATH = path.join(
+  app.getPath("userData"),
+  JOIN_JOURNAL_CONFIG.FILE_NAME
 );
 
 /**
@@ -152,6 +157,11 @@ class IPCManager {
     );
     ipcMain.handle("map-finder-save", (event, data) =>
       writeMapFinderStore(MAP_FINDER_STORE_PATH, data)
+    );
+
+    // Join journal: lines about join attempts, appended to a local file
+    ipcMain.handle("join-journal-append", (event, lines) =>
+      appendJoinJournal(JOIN_JOURNAL_PATH, lines)
     );
 
     // Settings handlers: the renderer reads the file and sends patches

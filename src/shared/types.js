@@ -33,6 +33,8 @@
  * @property {boolean} inSupportedMode - Whether the player is in a casual match
  * @property {string|null} connect - Validated connect string, null when there is none to use
  * @property {string|null} serverId - Game server Steam ID
+ * @property {string} statusKey - Everything Steam shows about the player's
+ *   game; it changes whenever any of it does
  */
 
 /**
@@ -63,6 +65,8 @@
  * @property {boolean} inSupportedMode - Whether there is anything to join right now
  * @property {string|null} connect - Connect string to join with
  * @property {string|null} joinAs - SteamID64 the connect string belongs to
+ * @property {string|null} statusKey - What Steam shows about the player the
+ *   connect belongs to; a connect is only sent again once it changes
  * @property {Function} isJoined - Tells from the user's info whether the join succeeded
  */
 

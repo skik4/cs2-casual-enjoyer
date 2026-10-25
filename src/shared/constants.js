@@ -19,6 +19,20 @@ export const API_CONFIG = {
   NO_SERVER_ADDRESS_TTL_MS: 60 * 1000,
 };
 
+/**
+ * Join journal: what happens during join attempts, written to a local file
+ */
+export const JOIN_JOURNAL_CONFIG = {
+  FILE_NAME: "join-journal.log",
+  // A bigger file is renamed to <name>.old, replacing the previous one
+  MAX_BYTES: 5 * 1024 * 1024,
+  FLUSH_MS: 1000,
+  // CS2's states are kept this long after an attempt ends, to see the join land
+  TRAIL_MS: 60000,
+  MAX_LINES_PER_APPEND: 500,
+  MAX_LINE_LENGTH: 8 * 1024,
+};
+
 export const GSI_CONFIG = {
   SERVICE_NAME: "Casual Enjoyer",
   CFG_FILE_NAME: "gamestate_integration_casualenjoyer.cfg",

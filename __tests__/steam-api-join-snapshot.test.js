@@ -154,6 +154,7 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
           inSupportedMode: true,
           connect: null,
           serverId: "8000",
+          statusKey: expect.any(String),
         },
         friend: {
           personaname: "Friend",
@@ -162,6 +163,7 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
           inSupportedMode: true,
           connect: VALID_CONNECT,
           serverId: "9001",
+          statusKey: expect.any(String),
         },
       });
     });
@@ -179,6 +181,7 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
         inSupportedMode: false,
         connect: null,
         serverId: null,
+        statusKey: expect.any(String),
       });
     });
 

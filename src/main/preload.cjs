@@ -115,6 +115,20 @@ const electronAPI = {
   },
 
   /**
+   * Join journal: what happens during join attempts, appended to a local file
+   */
+  joinJournal: {
+    append: async (lines) => {
+      try {
+        return await ipcRenderer.invoke("join-journal-append", lines);
+      } catch (error) {
+        console.error("Failed to write the join journal:", error);
+        return false;
+      }
+    },
+  },
+
+  /**
    * Shell helpers
    */
   shell: {

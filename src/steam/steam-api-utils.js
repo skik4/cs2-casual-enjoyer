@@ -56,6 +56,20 @@ class SteamAPIUtils {
   }
 
   /**
+   * Rich presence reduced to a string that changes whenever any of its values
+   * does, whatever order Steam lists them in
+   * @param {string|null|undefined} kv - Key-value string from Steam rich presence
+   * @returns {string}
+   */
+  static richPresenceKey(kv) {
+    const pairs = [];
+    for (const match of String(kv ?? "").matchAll(/"([^"]*)"\s+"([^"]*)"/g)) {
+      pairs.push(`${match[1]}=${match[2]}`);
+    }
+    return pairs.sort().join("\n");
+  }
+
+  /**
    * Whether rich presence describes a casual match that may be on one of
    * Valve's own servers. Rich presence alone can pass a community server off
    * as one: many report "kv" and a known map. A server logged on with a login

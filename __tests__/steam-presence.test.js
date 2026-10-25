@@ -9,6 +9,7 @@ jest.mock("../src/utils/validators.js");
 jest.mock("../src/utils/error-handler.js");
 
 import SteamAPIClient from "../src/steam/steam-api-client.js";
+import SteamAPIResponseProcessor from "../src/steam/steam-api-response-processor.js";
 import SteamAPIUtils from "../src/steam/steam-api-utils.js";
 import Validators from "../src/utils/validators.js";
 
@@ -213,6 +214,46 @@ describe("official server address", () => {
     await SteamAPIClient.getPresence([B], KEY);
 
     expect(addressLookups()).toHaveLength(0);
+  });
+});
+
+describe("status key", () => {
+  const joinInfo = (kv, serverId) =>
+    SteamAPIResponseProcessor.processJoinInfoResponse({
+      response: {
+        accounts: [
+          {
+            public_data: { steamid: A },
+            private_data: { game_id: "730", rich_presence_kv: kv, game_server_steam_id: serverId },
+          },
+        ],
+      },
+    });
+
+  test("changes with any value and ignores the order Steam lists them in", () => {
+    const key = (kv) => SteamAPIUtils.richPresenceKey(kv);
+
+    expect(key('"a" "1" "b" "2"')).toBe(key('"b" "2" "a" "1"'));
+    expect(key('"a" "1" "b" "2"')).not.toBe(key('"a" "1" "b" "3"'));
+    expect(key(null)).toBe("");
+  });
+
+  test("a player's key covers the whole rich presence and the server", () => {
+    const base = joinInfo(OFFICIAL_CASUAL).statusKey;
+
+    expect(joinInfo(OFFICIAL_CASUAL).statusKey).toBe(base);
+    // A new score shows in the status line before anything else changes
+    expect(joinInfo(OFFICIAL_CASUAL.replace("[ 3 : 1 ]", "[ 4 : 1 ]")).statusKey).not.toBe(
+      base
+    );
+    // The server id can come from outside rich presence and still counts
+    const withoutId = OFFICIAL_CASUAL.replace(
+      ' "game_server_steam_id" "90071992547409921"',
+      ""
+    );
+    expect(joinInfo(withoutId, "90071992547409921").statusKey).not.toBe(
+      joinInfo(withoutId, "90071992547409922").statusKey
+    );
   });
 });
 

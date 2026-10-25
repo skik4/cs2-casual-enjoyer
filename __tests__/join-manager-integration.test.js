@@ -289,12 +289,16 @@ describe("JoinManager - Real-world Competitive/Premier Scenarios", () => {
   });
 
   describe("Scenario 5: Performance and timing", () => {
+    const loop = API_CONFIG.JOIN_LOOP_INTERVAL_MS;
+    const retry = API_CONFIG.JOIN_RETRY_INTERVAL_MS;
     test.each([
-      ["a full server", API_CONFIG.JOIN_LOOP_INTERVAL_MS, friendOnFullServer],
-      ["a free slot", API_CONFIG.JOIN_RETRY_INTERVAL_MS, friendWithFreeSlot],
+      ["a full server", friendOnFullServer, [loop, loop, loop, loop]],
+      // After the connect the friend's status stays the same, so the loop
+      // goes on asking at its own pace without connecting again
+      ["a free slot", friendWithFreeSlot, [retry, loop, loop, loop]],
     ])(
-      "one request at a time: after an answer about %s the next request waits %i ms",
-      async (_label, pause, friend) => {
+      "one request at a time: the pauses after answers about %s",
+      async (_label, friend, pauses) => {
         steam.friends[FRIEND_ID] = friend();
 
         joinManager.startJoin(FRIEND_ID);
@@ -305,7 +309,7 @@ describe("JoinManager - Real-world Competitive/Premier Scenarios", () => {
         const gaps = requests
           .slice(1)
           .map(({ sentAt }, i) => sentAt - requests[i].answeredAt);
-        expect(gaps).toEqual([pause, pause, pause, pause]);
+        expect(gaps).toEqual(pauses);
       }
     );
 

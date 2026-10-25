@@ -9,6 +9,7 @@ import appStateManager from "./app-state-manager.js";
 import joinManager from "../game/join-manager.js";
 import cs2Manager from "../game/cs2-manager.js";
 import gsiManager from "../game/gsi-manager.js";
+import joinJournal from "../game/join-journal.js";
 import mapFinder from "../game/map-finder.js";
 
 // UI and utilities
@@ -107,6 +108,7 @@ class App {
         .catch((error) =>
           logger.warn("App", "GSI initialization failed", error?.message)
         );
+      joinJournal.initialize();
 
       logger.info("App", "Step 5.2: Setting up view tabs and the map finder");
       mapFinder.configure({

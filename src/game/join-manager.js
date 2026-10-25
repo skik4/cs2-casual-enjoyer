@@ -9,6 +9,9 @@ import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
 
+// Game singletons
+import joinJournal from "./join-journal.js";
+
 /**
  * Statuses of a join attempt that is still running
  */
@@ -48,6 +51,7 @@ class JoinManager {
     this.onUpdateJoinButton = null;
     this.cs2Manager = null;
     this.onRequestCS2Launch = null; // Callback for requesting CS2 launch from UI layer
+    this.journal = joinJournal;
   }
 
   /**
@@ -137,6 +141,7 @@ class JoinManager {
         inSupportedMode: friend.inSupportedMode,
         connect: friend.connect,
         joinAs: friend_id,
+        statusKey: friend.statusKey ?? null,
         isJoined: (userInfo) =>
           Boolean(userInfo.serverId && userInfo.serverId === friend.serverId),
       },
@@ -185,6 +190,7 @@ class JoinManager {
         inSupportedMode: onMap.length > 0,
         connect: pick?.connect ?? null,
         joinAs: pick?.steamid ?? null,
+        statusKey: pick ? `${pick.steamid}\n${pick.statusKey ?? pick.connect}` : null,
         isJoined: (userInfo) => {
           if (!userInfo.serverId) return false;
           if (target.serverId) return userInfo.serverId === target.serverId;
@@ -271,6 +277,7 @@ class JoinManager {
         interval: null,
       };
       this.joinStates[join_id] = state;
+      this.journal.attemptStarted(join_id);
 
       if (this.onUpdateJoinButton)
         this.onUpdateJoinButton(join_id, STATUS_TYPES.WAITING);
@@ -304,7 +311,7 @@ class JoinManager {
       // Only this attempt's own state - an error before it existed must not
       // cancel an attempt that is already running for the friend
       if (state && this.joinStates[join_id] === state) {
-        this.cancelJoin(join_id);
+        this.cancelJoin(join_id, "error");
       }
     }
   }
@@ -337,11 +344,21 @@ class JoinManager {
     let failingSince = null;
     // When this attempt first asked CS2 to connect
     let firstConnectAt = null;
+    // What Steam showed about the target when the last connect went out, until
+    // it shows something else. A connect on the same status would only be
+    // turned away again or - while CS2 is still connecting - run after the
+    // join as a second connect, so the next one waits for a new status.
+    let connectedOn = null;
+    // Facts of the last snapshot written to the journal
+    let journaled = null;
 
     // Counts a failed iteration; true once the budget is spent and the attempt
     // has been cancelled
     const giveUpAfterFailure = () => {
-      if (!failingSince) failingSince = Date.now();
+      if (!failingSince) {
+        failingSince = Date.now();
+        this.journal.record("no-answer", { join: join_id });
+      }
       if (Date.now() - failingSince <= API_CONFIG.MISSING_TIMEOUT_MS) {
         return false;
       }
@@ -349,7 +366,7 @@ class JoinManager {
         "JoinManager: Giving up after repeated errors for:",
         join_id
       );
-      this.cancelJoin(join_id);
+      this.cancelJoin(join_id, "no-answer");
       return true;
     };
 
@@ -367,6 +384,14 @@ class JoinManager {
           continue;
         }
         failingSince = null;
+        journaled = this._journalSnapshot(join_id, user, target, journaled);
+
+        // Any change in what Steam shows about the target makes the next
+        // connect worth sending, even one that changes back
+        const targetStatus = target.statusKey ?? target.connect ?? null;
+        if (connectedOn !== null && targetStatus !== connectedOn) {
+          connectedOn = null;
+        }
 
         // CS2 reports the user's own game the moment it changes, while
         // Steam's copy of it lags by seconds - a fresh GSI state wins
@@ -381,7 +406,7 @@ class JoinManager {
             "JoinManager: User no longer in CS2, stopping join process for:",
             join_id
           );
-          this.cancelJoin(join_id);
+          this.cancelJoin(join_id, "left-cs2");
           break;
         }
 
@@ -390,7 +415,7 @@ class JoinManager {
             "JoinManager: User is in Competitive/Premier mode, stopping join process for:",
             join_id
           );
-          this.cancelJoin(join_id);
+          this.cancelJoin(join_id, "competitive");
           break;
         }
 
@@ -398,6 +423,7 @@ class JoinManager {
         // should be never gets another connect
         if (target.isJoined(user)) {
           this.updateJoinState(join_id, { status: STATUS_TYPES.JOINED });
+          this.journal.attemptEnded(join_id, "joined");
 
           // Stop all other join loops
           this.cancelAllExcept(join_id);
@@ -421,7 +447,7 @@ class JoinManager {
 
           // If missing for more than timeout, cancel
           if (Date.now() - missingSince > API_CONFIG.MISSING_TIMEOUT_MS) {
-            this.cancelJoin(join_id);
+            this.cancelJoin(join_id, "missing");
             break;
           }
 
@@ -460,8 +486,21 @@ class JoinManager {
           personaname,
         });
 
+        // The last connect went out on this very status: CS2 is connecting
+        // or was turned away, and nothing says another one would do better
+        if (connectedOn !== null) {
+          await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+          continue;
+        }
+
         // Attempt to join via Steam protocol through main process
         if (firstConnectAt === null) firstConnectAt = Date.now();
+        connectedOn = targetStatus;
+        this.journal.record("connect", {
+          join: join_id,
+          joinAs: target.joinAs,
+          connect: target.connect,
+        });
         const url = `steam://rungame/730/${target.joinAs}/${target.connect}`;
         if (window.electronAPI?.shell?.openExternal) {
           await window.electronAPI.shell.openExternal(url);
@@ -508,14 +547,16 @@ class JoinManager {
   /**
    * Cancel an ongoing join attempt
    * @param {string} friend_id - Steam ID of the friend whose join attempt to cancel
+   * @param {string} [reason] - Why, for the join journal
    */
-  cancelJoin(friend_id) {
+  cancelJoin(friend_id, reason = "cancelled") {
     const state = this.joinStates[friend_id];
     if (!state) return;
 
     if (state.interval) {
       clearInterval(state.interval);
     }
+    this.journal.attemptEnded(friend_id, reason);
     // updateJoinState pushes the CANCELLED status to the UI
     this.updateJoinState(friend_id, {
       status: STATUS_TYPES.CANCELLED,
@@ -530,7 +571,7 @@ class JoinManager {
   cancelAllExcept(exceptFriendId) {
     Object.keys(this.joinStates).forEach((friendId) => {
       if (friendId !== exceptFriendId) {
-        this.cancelJoin(friendId);
+        this.cancelJoin(friendId, "other-joined");
       }
     });
   }
@@ -553,6 +594,7 @@ class JoinManager {
         clearInterval(state.interval);
       }
       delete this.joinStates[friendId];
+      this.journal.attemptEnded(friendId, "reset");
 
       // The loops notice the missing state and stop without touching the UI,
       // so reset it here - otherwise a dead attempt keeps showing Cancel
@@ -560,6 +602,36 @@ class JoinManager {
       if (this.onUpdateJoinButton)
         this.onUpdateJoinButton(friendId, STATUS_TYPES.CANCELLED);
     });
+  }
+
+  /**
+   * Note in the join journal whatever changed since the attempt's last
+   * snapshot
+   * @param {string} join_id - Attempt the snapshot belongs to
+   * @param {import('../shared/types.js').PlayerJoinInfo} user - The user
+   * @param {import('../shared/types.js').JoinTarget} target - Who to join
+   * @param {Object|null} previous - What this returned for the last snapshot
+   * @returns {Object} - Facts to compare the next snapshot with
+   * @private
+   */
+  _journalSnapshot(join_id, user, target, previous) {
+    const facts = {
+      userInCS2: user.inCS2 ?? null,
+      userServer: user.serverId ?? null,
+      targetSupported: target.inSupportedMode ?? null,
+      joinAs: target.joinAs ?? null,
+      connect: target.connect ?? null,
+      status: target.statusKey ?? null,
+    };
+    const changed = Object.keys(facts).filter(
+      (key) => !previous || facts[key] !== previous[key]
+    );
+    if (changed.length) {
+      const data = { join: join_id };
+      for (const key of changed) data[key] = facts[key];
+      this.journal.record("snapshot", data);
+    }
+    return facts;
   }
 
   /**

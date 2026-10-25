@@ -91,6 +91,25 @@ describe("resolveMapTarget", () => {
     });
   });
 
+  test("takes its status from the candidate it joins through", async () => {
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(user(), presence(B, { connect: CONNECT_B, statusKey: "round 3" }))
+    );
+    const first = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(user(), presence(B, { connect: CONNECT_B, statusKey: "round 4" }))
+    );
+    const second = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+
+    SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(B)));
+    const full = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+
+    expect(first.target.statusKey).toBe(`${B}\nround 3`);
+    expect(second.target.statusKey).toBe(`${B}\nround 4`);
+    expect(full.target.statusKey).toBeNull();
+  });
+
   test("ignores candidates who moved to another map, a match or a community server", async () => {
     SteamAPI.getPresence.mockResolvedValue(
       presenceMap(

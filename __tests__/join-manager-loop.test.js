@@ -12,6 +12,7 @@ jest.mock("../src/utils/validators.js");
 jest.mock("../src/utils/error-handler.js");
 
 import joinManager from "../src/game/join-manager.js";
+import joinJournal from "../src/game/join-journal.js";
 import { API_CONFIG, STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
 import DOMUtils from "../src/utils/dom-utils.js";
@@ -154,6 +155,109 @@ describe("JoinManager join loop", () => {
     jest.clearAllTimers();
     jest.useRealTimers();
     delete global.window.electronAPI;
+  });
+
+  describe("one connect per status of the friend", () => {
+    test("an unchanged status gets a single connect, however long it lasts", async () => {
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(10000);
+
+      expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
+      expect(status()).toBe(CONNECTING);
+      expect(polls()).toBeGreaterThan(10);
+    });
+
+    test("a new connect string gets a connect at once", async () => {
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+
+      expect(openedUrls()).toEqual([
+        joinUrl(FRIEND_ID, CONNECT),
+        joinUrl(FRIEND_ID, CONNECT_B),
+      ]);
+    });
+
+    test("any change in the friend's status counts, not only the connect string", async () => {
+      steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 3:1" });
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 3:2" });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+
+      expect(openedUrls()).toEqual([
+        joinUrl(FRIEND_ID, CONNECT),
+        joinUrl(FRIEND_ID, CONNECT),
+      ]);
+    });
+
+    test("a status that changes and changes back is new again", async () => {
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      // The server fills up, then a slot opens with the very same status
+      steam.friends[FRIEND_ID] = friendInfo({ connect: null });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+      expect(status()).toBe(WAITING);
+
+      steam.friends[FRIEND_ID] = friendInfo();
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+
+      expect(openedUrls()).toEqual([
+        joinUrl(FRIEND_ID, CONNECT),
+        joinUrl(FRIEND_ID, CONNECT),
+      ]);
+    });
+  });
+
+  describe("join journal", () => {
+    let journal;
+
+    beforeEach(() => {
+      journal = {
+        record: jest.fn(),
+        attemptStarted: jest.fn(),
+        attemptEnded: jest.fn(),
+      };
+      joinManager.journal = journal;
+    });
+
+    afterEach(() => {
+      joinManager.journal = joinJournal;
+    });
+
+    test("notes the attempt, what Steam showed, each connect and how it ended", async () => {
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      steam.user = userInfo({ serverId: FRIEND_SERVER });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+
+      expect(journal.attemptStarted).toHaveBeenCalledWith(FRIEND_ID);
+      expect(journal.record).toHaveBeenCalledWith(
+        "snapshot",
+        expect.objectContaining({ join: FRIEND_ID, connect: CONNECT, userServer: null })
+      );
+      expect(journal.record).toHaveBeenCalledWith("connect", {
+        join: FRIEND_ID,
+        joinAs: FRIEND_ID,
+        connect: CONNECT,
+      });
+      // Only what changed is noted again
+      expect(journal.record).toHaveBeenLastCalledWith("snapshot", {
+        join: FRIEND_ID,
+        userServer: FRIEND_SERVER,
+      });
+      expect(journal.attemptEnded).toHaveBeenCalledWith(FRIEND_ID, "joined");
+    });
+
+    test("a cancel is noted with its reason", async () => {
+      steam.friends[FRIEND_ID] = friendInfo({ connect: null });
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+
+      joinManager.cancelJoin(FRIEND_ID);
+      expect(journal.attemptEnded).toHaveBeenCalledWith(FRIEND_ID, "cancelled");
+    });
   });
 
   describe("acting only for its own attempt", () => {

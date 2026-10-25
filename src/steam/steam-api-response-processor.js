@@ -185,14 +185,19 @@ class SteamAPIResponseProcessor {
       }
     }
 
+    const serverId =
+      richPresence.game_server_steam_id || priv.game_server_steam_id || null;
+
     return {
       personaname: pub.persona_name || "",
       inCS2,
       inCompetitiveOrPremier,
       inSupportedMode,
       connect,
-      serverId:
-        richPresence.game_server_steam_id || priv.game_server_steam_id || null,
+      serverId,
+      statusKey: `${serverId ?? ""}\n${SteamAPIUtils.richPresenceKey(
+        priv.rich_presence_kv
+      )}`,
     };
   }
 

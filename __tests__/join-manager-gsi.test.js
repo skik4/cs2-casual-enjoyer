@@ -20,6 +20,8 @@ const AUTH = "ABCD1234EFGH5678IJKL9012MNOP3456";
 const CONNECT = "+gcconnect0A1B2C3D4E5F60718293A4B5";
 const FRIEND_SERVER = "90071992547409921";
 const JOIN_URL = `steam://rungame/730/${FRIEND_ID}/${CONNECT}`;
+// What the friend's connect turns into once their status changes
+const NEW_CONNECT = "+gcconnect0C0C0C0C0C0C0C0C0C0C0C0C";
 
 /** Join-relevant info for one side of the snapshot */
 const playerInfo = (overrides = {}) => ({
@@ -176,7 +178,31 @@ describe("JoinManager with CS2 Game State Integration", () => {
     expect(joinCalls()).toBe(1);
   });
 
-  test("resumes connecting when Steam never confirms within the grace period", async () => {
+  test("a new status during the hold gets its connect once the grace period ends", async () => {
+    SteamAPI.getJoinSnapshot.mockResolvedValue({
+      user: userInfo(),
+      friend: friendInfo(),
+    });
+
+    joinManager.startJoin(FRIEND_ID);
+    await jest.advanceTimersByTimeAsync(100);
+    cs2.gsiState = gsiMatch("casual", Date.now());
+    SteamAPI.getJoinSnapshot.mockResolvedValue({
+      user: userInfo(),
+      friend: friendInfo({ connect: NEW_CONNECT }),
+    });
+
+    await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_GSI_CONFIRM_MS - 500);
+    expect(openExternal).toHaveBeenCalledTimes(1);
+
+    await jest.advanceTimersByTimeAsync(2000);
+    expect(openExternal).toHaveBeenCalledTimes(2);
+    expect(openExternal).toHaveBeenLastCalledWith(
+      `steam://rungame/730/${FRIEND_ID}/${NEW_CONNECT}`
+    );
+  });
+
+  test("after the grace period an unchanged status gets no second connect", async () => {
     SteamAPI.getJoinSnapshot.mockResolvedValue({
       user: userInfo(),
       friend: friendInfo(),
@@ -186,11 +212,9 @@ describe("JoinManager with CS2 Game State Integration", () => {
     await jest.advanceTimersByTimeAsync(100);
     cs2.gsiState = gsiMatch("casual", Date.now());
 
-    await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_GSI_CONFIRM_MS - 500);
+    await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_GSI_CONFIRM_MS + 5000);
     expect(joinCalls()).toBe(1);
-
-    await jest.advanceTimersByTimeAsync(2000);
-    expect(joinCalls()).toBeGreaterThan(1);
+    expect(status()).toBe(STATUS_TYPES.CONNECTING);
   });
 
   test("a map loaded before the first connect does not hold anything", async () => {
@@ -202,9 +226,16 @@ describe("JoinManager with CS2 Game State Integration", () => {
     cs2.gsiState = gsiMatch("casual", Date.now() - 60000);
 
     joinManager.startJoin(FRIEND_ID);
-    await jest.advanceTimersByTimeAsync(2000);
+    await jest.advanceTimersByTimeAsync(100);
+    expect(openExternal).toHaveBeenCalledTimes(1);
 
-    expect(joinCalls()).toBeGreaterThan(1);
+    SteamAPI.getJoinSnapshot.mockResolvedValue({
+      user: userInfo({ serverId: "90071992547409999" }),
+      friend: friendInfo({ connect: NEW_CONNECT }),
+    });
+    await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+
+    expect(openExternal).toHaveBeenCalledTimes(2);
   });
 
   describe("isAwaitingJoinConfirmation", () => {
