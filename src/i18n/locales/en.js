@@ -130,16 +130,16 @@ export default {
     addButton: "Add",
     invalidSteamId: "Please enter a valid 17-digit Steam ID",
     alreadyInList: "This Steam ID is already in your friends list",
-    fakeFriendAdded: "Fake friend added successfully",
-    removeFakeFriend: "Remove from fake friends",
+    fakeFriendAdded: "Fake Friend added successfully",
+    removeFakeFriend: "Remove from Fake Friends",
     confirmRemove: "Remove?",
   },
 
   views: {
     friends: "Friends",
-    fakeFriends: "Fake friends",
+    fakeFriends: "Fake Friends",
     maps: "Maps",
-    fakeFriendsEmpty: "No fake friends yet. Add a Steam ID above.",
+    fakeFriendsEmpty: "No Fake Friends yet. Add a Steam ID above.",
   },
 
   mapFinder: {
