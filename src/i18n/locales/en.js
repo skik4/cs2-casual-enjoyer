@@ -162,7 +162,11 @@ export default {
     fofKeySave: "Save",
     fofNeedsKey:
       "Friends of friends need a Steam Web API key: a token cannot read other people's friends lists.",
-    fofKeySaved: "API key saved. Friends of friends are read once a day.",
+    fofKeySaved:
+      "API key saved. Friends of friends are read once a day; once they are read, the key can be deleted and the list stays.",
+    fofKeyDelete: "Delete key",
+    fofKeptWithoutKey:
+      "Friends of friends ({count}) are kept and checked without a key. A key is only needed to read the list again.",
     fofUsesMainKey: "Your main API key is used for friends of friends.",
     fofKeyInvalid: "That is not an API key: it should be 32 letters and digits.",
     fofKeyError: "No friends list could be read with this key. Check the key.",

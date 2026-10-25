@@ -372,7 +372,9 @@ class MapFinder {
    */
   _fofDue() {
     if (!this.deps?.getFofKey?.()) {
-      this.status.fof = "no-key";
+      // Without a key the lists cannot be read again, but whatever was read
+      // before is still polled - the key may have been used once and deleted
+      this.status.fof = this.fof.ids.length ? "ready" : "no-key";
       return false;
     }
     if (this._fofRunning) return false;

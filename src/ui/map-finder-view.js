@@ -62,6 +62,9 @@ class MapFinderView {
     DOMUtils.getElementById("fof-key-save")?.addEventListener("click", () =>
       this.saveFofKey()
     );
+    DOMUtils.getElementById("fof-key-delete")?.addEventListener("click", () =>
+      this.deleteFofKey()
+    );
 
     mapFinder.onChange(() => this.render());
     onLanguageChange(() => this.render());
@@ -146,26 +149,45 @@ class MapFinderView {
     const input = DOMUtils.getElementById("fof-key-input");
     if (!input) return;
     const key = input.value.trim();
-    if (key && !Validators.isApiKey(key)) {
+    if (!Validators.isApiKey(key)) {
       DOMUtils.setText("fof-key-hint", t("mapFinder.fofKeyInvalid"));
       input.classList.add("invalid-input");
       return;
     }
 
-    // An empty field removes the stored key
-    const updated = await window.electronAPI.settings.update({
-      fof_api_key: key || null,
-    });
-    if (!updated) {
-      ErrorHandler.logError("MapFinderView.saveFofKey", "Could not save settings");
-      return;
-    }
-    appStateManager.setState("savedSettings", updated);
-
+    if (!(await this._storeFofKey(key))) return;
     input.value = "";
     input.classList.remove("invalid-input");
+    // A new key reads the friends lists again
     mapFinder.restartFof();
     this.render();
+  }
+
+  /**
+   * Remove the stored key. Friends of friends already read stay: the key is
+   * only needed to read the lists again, so it can be used once and deleted.
+   */
+  static async deleteFofKey() {
+    if (!(await this._storeFofKey(null))) return;
+    this.render();
+  }
+
+  /**
+   * Save or remove the friends-of-friends key
+   * @param {string|null} key - Key to store, null to remove it
+   * @returns {Promise<boolean>} - Whether the settings were saved
+   * @private
+   */
+  static async _storeFofKey(key) {
+    const updated = await window.electronAPI.settings.update({
+      fof_api_key: key,
+    });
+    if (!updated) {
+      ErrorHandler.logError("MapFinderView", "Could not save settings");
+      return false;
+    }
+    appStateManager.setState("savedSettings", updated);
+    return true;
   }
 
   /**
@@ -313,15 +335,20 @@ class MapFinderView {
    */
   static renderFofKey() {
     const mainIsKey = Validators.isApiKey(this.getMainAuth());
+    const savedKey = !mainIsKey && Boolean(this.getFofKey());
+    const status = mapFinder.getStatus();
     DOMUtils.toggleClass("fof-key-row", "hidden", mainIsKey);
+    DOMUtils.toggleClass("fof-key-delete", "hidden", !savedKey);
 
     let hint;
     if (mainIsKey) {
       hint = t("mapFinder.fofUsesMainKey");
-    } else if (mapFinder.getStatus().fof === "error") {
+    } else if (status.fof === "error") {
       hint = t("mapFinder.fofKeyError");
-    } else if (this.getFofKey()) {
+    } else if (savedKey) {
       hint = t("mapFinder.fofKeySaved");
+    } else if (status.fofSize) {
+      hint = t("mapFinder.fofKeptWithoutKey", { count: status.fofSize });
     } else {
       hint = t("mapFinder.fofNeedsKey");
     }

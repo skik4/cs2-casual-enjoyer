@@ -296,6 +296,17 @@ describe("friends of friends", () => {
     mapFinder.fof.fetchedAt = Date.now() - MAP_FINDER_CONFIG.FOF_REFRESH_MS;
     expect(mapFinder._fofDue()).toBe(true);
   });
+
+  test("after the key is deleted, friends of friends read before stay in use", async () => {
+    configure({ getFriendIds: () => [], getRealFriendIds: () => [FRIEND_1] });
+    mapFinder.fof = { ids: [A, B], fetchedAt: 1, friendsCount: 1 };
+
+    expect(mapFinder._fofDue()).toBe(false);
+    expect(mapFinder.getStatus()).toMatchObject({ fof: "ready", fofSize: 2 });
+
+    await mapFinder.refresh();
+    expect(SteamAPI.getPresence.mock.calls[0][0].sort()).toEqual([A, B].sort());
+  });
 });
 
 describe("store", () => {
