@@ -53,6 +53,11 @@ class SteamAPIConfig {
           params: { relationship: "friend" },
         },
       },
+      GetServerIPsBySteamID: {
+        unified: {
+          endpoint: "/IGameServersService/GetServerIPsBySteamID/v1/",
+        },
+      },
     };
 
     const config = configs[method];

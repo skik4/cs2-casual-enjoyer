@@ -43,7 +43,8 @@
  *   score: string|null,
  *   official: boolean,
  * }} PlayerPresence - Join facts plus where the match is played; `official`
- *   is true for a casual match on Valve's own servers
+ *   is true for a casual match on Valve's own servers. processPresenceResponse
+ *   judges by rich presence alone, getPresence also by the server's address.
  */
 
 /**

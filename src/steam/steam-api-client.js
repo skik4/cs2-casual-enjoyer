@@ -56,6 +56,14 @@ class SteamAPIClient {
   static _avatarCache = {};
 
   /**
+   * Game server address by server Steam ID; `addr` is null when Steam lists
+   * none. Kept for API_CONFIG.SERVER_ADDRESS_TTL_MS, or the shorter
+   * NO_SERVER_ADDRESS_TTL_MS for a server without an address.
+   * @type {Map<string, { addr: string|null, ts: number }>}
+   */
+  static _serverAddressCache = new Map();
+
+  /**
    * Read the cached entry for steamid, or null when absent or stale.
    * Returns the entry rather than entry.raw so a cached negative result stays
    * distinguishable from a cache miss.
@@ -527,12 +535,121 @@ class SteamAPIClient {
         const presence = SteamAPIResponseProcessor.processPresenceResponse(raw);
         result.set(id, { ...presence, steamid: presence.steamid || id });
       }
+      await this._confirmOfficialServers(result, auth);
     } catch (error) {
       SteamAPILogger.logError("getPresence", error, {
         count: steamids.length,
       });
     }
     return result;
+  }
+
+  /**
+   * Rich presence and the server account can still pass a community server
+   * off as one of Valve's; its address cannot. A player stays on an official
+   * server only when the server's address is in Valve's network - one whose
+   * address could not be looked up counts as not official this time.
+   * @param {Map<string, import('../shared/types.js').PlayerPresence>} presence - Changed in place
+   * @param {string} auth - API key or token
+   * @private
+   */
+  static async _confirmOfficialServers(presence, auth) {
+    const candidates = [...presence.values()]
+      .filter((player) => player.official)
+      .map((player) => player.serverId);
+    if (!candidates.length) return;
+
+    const addresses = await this.getServerAddresses(candidates, auth);
+    for (const player of presence.values()) {
+      if (
+        player.official &&
+        !SteamAPIUtils.isValveServerAddress(addresses.get(String(player.serverId)))
+      ) {
+        player.official = false;
+      }
+    }
+  }
+
+  /**
+   * Where game servers are, 100 per request
+   * @param {string[]} serverIds - Game server Steam IDs
+   * @param {string} auth - API key or token
+   * @returns {Promise<Map<string, string|null>>} - "ip:port", or null when Steam
+   *   lists no address; a server whose request failed is absent
+   */
+  static async getServerAddresses(serverIds, auth) {
+    const result = new Map();
+    const now = Date.now();
+    const missing = [];
+    for (const id of new Set((serverIds || []).filter(Boolean).map(String))) {
+      const entry = this._serverAddressCache.get(id);
+      if (entry && now - entry.ts < this._serverAddressTtl(entry)) {
+        result.set(id, entry.addr);
+      } else {
+        missing.push(id);
+      }
+    }
+
+    for (let i = 0; i < missing.length; i += this._MAX_IDS_PER_REQUEST) {
+      const chunk = missing.slice(i, i + this._MAX_IDS_PER_REQUEST);
+      const params = {};
+      chunk.forEach((id, index) => {
+        params[`server_steamids[${index}]`] = id;
+      });
+      try {
+        const data = await this._makeRequest(
+          "GetServerIPsBySteamID",
+          params,
+          auth,
+          { allowFailure: true, context: { count: chunk.length } }
+        );
+        // A failed request leaves its servers unknown rather than addressless
+        if (!data) continue;
+
+        const listed = new Map(
+          (data.response?.servers || []).map((server) => [
+            String(server.steamid),
+            server.addr || null,
+          ])
+        );
+        for (const id of chunk) {
+          const addr = listed.get(id) ?? null;
+          this._serverAddressCache.set(id, { addr, ts: Date.now() });
+          result.set(id, addr);
+        }
+      } catch (error) {
+        SteamAPILogger.logError("GetServerIPsBySteamID", error, {
+          count: chunk.length,
+        });
+      }
+    }
+
+    if (missing.length) this._pruneServerAddressCache();
+    return result;
+  }
+
+  /**
+   * @param {{ addr: string|null }} entry - Cached server address
+   * @returns {number} - How long the entry stays valid
+   * @private
+   */
+  static _serverAddressTtl(entry) {
+    return entry.addr
+      ? API_CONFIG.SERVER_ADDRESS_TTL_MS
+      : API_CONFIG.NO_SERVER_ADDRESS_TTL_MS;
+  }
+
+  /**
+   * Drop expired server addresses - servers come and go all day
+   * @private
+   */
+  static _pruneServerAddressCache() {
+    const now = Date.now();
+    for (const [id, entry] of this._serverAddressCache) {
+      if (now - entry.ts >= this._serverAddressTtl(entry)) {
+        this._serverAddressCache.delete(id);
+      }
+    }
   }
 
   /**

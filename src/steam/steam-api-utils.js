@@ -4,6 +4,7 @@ import {
   ERROR_CODES,
   GAME_MODES,
   VALIDATION_PATTERNS,
+  VALVE_SERVER_NETWORK,
 } from "../shared/constants.js";
 
 // UI and utilities
@@ -55,11 +56,12 @@ class SteamAPIUtils {
   }
 
   /**
-   * Whether rich presence describes a casual match on one of Valve's own
-   * servers. Rich presence alone can pass a community server off as one:
-   * many report "kv" and a known map. What gives them away is the server's
-   * account: Valve's servers log on anonymously, while a community server
-   * needs a login token to take players from the internet.
+   * Whether rich presence describes a casual match that may be on one of
+   * Valve's own servers. Rich presence alone can pass a community server off
+   * as one: many report "kv" and a known map. A server logged on with a login
+   * token gives itself away by its account. One that logs on anonymously, as
+   * Valve's do, is told apart only by its address, which
+   * SteamAPIClient.getPresence checks with isValveServerAddress.
    * @param {Object} richPresence - Parsed rich presence data
    * @param {string|null} [serverId] - Game server Steam ID, when rich
    *   presence does not carry it
@@ -91,6 +93,27 @@ class SteamAPIUtils {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Whether a game server address lies in the network where Steam lists
+   * Valve's matchmaking servers
+   * @param {string|null|undefined} addr - "ip:port" as Steam lists it
+   * @returns {boolean}
+   */
+  static isValveServerAddress(addr) {
+    const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?::\d+)?$/.exec(
+      String(addr ?? "")
+    );
+    if (!match) return false;
+    const octets = match.slice(1).map(Number);
+    if (octets.some((octet) => octet > 255)) return false;
+
+    const toNumber = (parts) => parts.reduce((n, part) => n * 256 + Number(part), 0);
+    const base = toNumber(VALVE_SERVER_NETWORK.BASE.split("."));
+    const size = 2 ** (32 - VALVE_SERVER_NETWORK.PREFIX_LENGTH);
+    const ip = toNumber(octets);
+    return ip >= base && ip < base + size;
   }
 
   /**
