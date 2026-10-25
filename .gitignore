@@ -102,11 +102,7 @@ package-lock.json
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 
-# Test files (если не хотите включать в репозиторий)
-__tests__/
-
-# Configuration files (оставляем в репозитории для общего использования)
-jest.config.json
+# Configuration files
 .babelrc
 
 # SCSS compiled files (auto-generated from scss/ folder)
