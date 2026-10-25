@@ -163,6 +163,23 @@ describe("refresh", () => {
     expect(SteamAPI.getPresence.mock.calls[1][0]).toEqual([]);
   });
 
+  test("a seed is asked about even when friends and the pool fill every slot", async () => {
+    configure({ getFriendIds: () => [A] });
+    const now = Date.now();
+    for (let i = 0; i < MAP_FINDER_CONFIG.MAX_IDS_PER_REFRESH; i++) {
+      const id = String(76561198200000000n + BigInt(i));
+      mapFinder.pool.set(id, { lastSeen: now, map: "de_dust2" });
+    }
+    mapFinder.seeds.add(C);
+
+    await mapFinder.refresh();
+
+    const asked = SteamAPI.getPresence.mock.calls[0][0];
+    expect(asked).toHaveLength(MAP_FINDER_CONFIG.MAX_IDS_PER_REFRESH);
+    expect(asked).toContain(C);
+    expect(mapFinder.seeds.size).toBe(0);
+  });
+
   test("friends of friends take the room left, a different slice each time", async () => {
     configure({ getFriendIds: () => [A] });
     const fof = Array.from({ length: MAP_FINDER_CONFIG.MAX_IDS_PER_REFRESH + 10 }, (_, i) =>

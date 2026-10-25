@@ -333,9 +333,9 @@ class MapFinder {
   }
 
   /**
-   * Everyone to ask about this round: friends, the pool (most recent
-   * first) and fresh seeds always, friends of friends in the room left,
-   * a different slice each round
+   * Everyone to ask about this round, up to the cap: friends, fresh seeds,
+   * the pool (most recent first), then friends of friends in the room
+   * left, a different slice each round
    * @param {string} userId - User's SteamID64, never polled here
    * @returns {Set<string>}
    * @private
@@ -351,10 +351,11 @@ class MapFinder {
     };
 
     (this.deps?.getFriendIds?.() || []).forEach(add);
+    // Seeds go before the pool: a full pool would leave them no room
+    this.seeds.forEach(add);
     [...this.pool.entries()]
       .sort((a, b) => b[1].lastSeen - a[1].lastSeen)
       .forEach(([id]) => add(id));
-    this.seeds.forEach(add);
 
     const fof = this.fof.ids;
     const room = Math.min(cap - ids.size, fof.length);
