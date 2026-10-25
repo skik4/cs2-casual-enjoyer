@@ -7,6 +7,7 @@ import { ICON_PATHS } from "../shared/icon-paths.js";
 import { replaceEmojisWithSVG, getEmojiSVG } from "../utils/emoji-svg.js";
 import DOMUtils from "../utils/dom-utils.js";
 import { t } from "../i18n/i18n-manager.js";
+import { slotAttributes } from "./join-status.js";
 
 // =============================================================================
 // EMOJI PROCESSING HELPERS
@@ -46,34 +47,6 @@ export const NOTIFICATION_TEMPLATES = {
    */
   CLOSE_BUTTON: () =>
     `<div class="notification-header"><span class="notification-close-btn" title="${t("notifications.closeButtonTitle")}"><img src="${ICON_PATHS.CLOSE_BOLD}" alt="×" style="width: 14px; height: 14px;"></span></div>`,
-
-  /**
-   * Warning for expired token
-   */
-  TOKEN_EXPIRED_WARNING: () => `
-        <div style="color:#f1c40f;font-weight:500;margin-top:8px;">
-            ${t("notifications.tokenExpired.message")}<br>
-            <a href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="${t("notifications.tokenExpired.getNewLinkTitle")}">${t("notifications.tokenExpired.getNewLinkText")}</a><br>
-        </div>
-    `,
-
-  /**
-   * Token information display
-   * @param {string} steamid - Steam ID
-   * @param {string} expiresStr - Expiration date string
-   * @param {string} warnHtml - Warning HTML (if expired)
-   * @returns {string} Token info HTML
-   */
-  TOKEN_INFO: (steamid, expiresStr, warnHtml) => `
-        <div class="notification-content info">
-            <div style="color:#2d8cf0;font-weight:500;">
-                ${t("notifications.tokenInfo.detected")}<br>
-                <span style="font-size:0.98em;">${t("notifications.tokenInfo.steamIdLabel")} <b>${steamid}</b></span><br>
-                <span style="font-size:0.98em;">${t("notifications.tokenInfo.expiresLabel")} <b>${expiresStr}</b></span>
-            </div>
-            ${warnHtml}
-        </div>
-    `,
 
   /**
    * Error message display
@@ -275,38 +248,37 @@ export const HELP_TEMPLATES = {
 
 export const FRIENDS_TEMPLATES = {
   /**
-   * Individual friend item
-   * @param {string} steamid - Steam ID
-   * @param {string} avatarUrl - Avatar URL
-   * @param {string} personaname - Display name
-   * @param {string} statusText - Game status text
-   * @param {boolean} hasStatus - Whether friend has status
-   * @param {boolean} isMissing - Whether friend is missing
-   * @param {boolean} isActive - Whether join is active
-   * @param {boolean} [removable] - Whether to show a remove button (manually added IDs)
+   * Individual friend item: avatar, name, where they play with a status
+   * label, and the join button
+   * @param {Object} row
+   * @param {string} row.steamid - Steam ID
+   * @param {string} row.avatarUrl - Avatar URL
+   * @param {string} row.personaname - Display name
+   * @param {string} row.whereHtml - Map and score, or status text; already escaped
+   * @param {import('./join-status.js').SlotFacts} row.slot - What the row knows about slots
+   * @param {{kind: string, text: string}} row.label - Status label
+   * @param {{text: string, className: string, disabled: boolean}} row.button - Join button
+   * @param {boolean} [row.removable] - Whether to show a remove button (manually added IDs)
    * @returns {string} Friend item HTML
    */
-  FRIEND_ITEM: (
+  FRIEND_ITEM: ({
     steamid,
     avatarUrl,
     personaname,
-    statusText,
-    hasStatus,
-    isMissing,
-    isActive,
-    removable = false
-  ) => `
+    whereHtml,
+    slot,
+    label,
+    button,
+    removable = false,
+  }) => `
         <div class="friend" id="friend-${steamid}">
-            <div class="friend-info-row">
-                <img src="${DOMUtils.escapeHtml(avatarUrl)}" alt="avatar" class="friend-avatar">
-                <div class="friend-info">
-                    <span class="personaname">${DOMUtils.escapeHtml(personaname)}</span>
-                    ${hasStatus ? `<span class="game-status" style="font-weight:400;color:#bfc9d8;">${DOMUtils.escapeHtml(statusText)}</span>` : ""}
-                </div>
+            <img src="${DOMUtils.escapeHtml(avatarUrl)}" alt="" class="friend-avatar">
+            <div class="friend-info">
+                <span class="personaname">${DOMUtils.escapeHtml(personaname)}</span>
+                <span class="game-line"><span class="game-where">${whereHtml}</span><span id="status-${steamid}" class="status-label status-${label.kind}" ${slotAttributes(slot)}>${DOMUtils.escapeHtml(label.text)}</span></span>
             </div>
-            <div class="join-section" id="join-section-${steamid}">
-                <span class="status-dot ${isMissing ? "dot-missing" : "dot-cancelled"}" id="dot-${steamid}"></span>
-                <button id="join-btn-${steamid}" class="action-btn${isActive ? " cancel-btn" : ""}" data-i18n="${isActive ? "common.cancel" : "common.join"}" data-i18n-attr="text">${isActive ? t("common.cancel") : t("common.join")}</button>
+            <div class="join-section">
+                <button id="join-btn-${steamid}" class="${button.className}" ${slotAttributes(slot)}${button.disabled ? " disabled" : ""}>${DOMUtils.escapeHtml(button.text)}</button>
                 ${removable ? `<button id="remove-fake-btn-${steamid}" class="remove-fake-btn" data-i18n="friends.removeFakeFriend" data-i18n-attr="title" title="${t("friends.removeFakeFriend")}">${FRIENDS_TEMPLATES.REMOVE_FAKE_ICON()}</button>` : ""}
             </div>
         </div>
@@ -400,7 +372,7 @@ export const TUTORIAL_TEMPLATES = {
                         ${t("tutorial.step9ContentNote3")}
                     </div>
                 `,
-        target: ".status-dot",
+        target: ".friend .status-label",
         icon: "🟡",
       },
       {

@@ -1,6 +1,9 @@
 // Shared constants
 import { TUTORIAL_TEMPLATES } from "../html-templates.js";
 
+// UI
+import AccountView from "../account-view.js";
+
 // Core singletons
 import appStateManager from "../../core/app-state-manager.js";
 import appFriendsManager from "../../core/app-friends-manager.js";
@@ -51,6 +54,8 @@ class TutorialManager {
     this.stateManager.setActive(true);
     this.stateManager.setCurrentStep(0);
 
+    // The first steps point at the credential fields
+    AccountView.open();
     this.uiManager.createOverlay();
 
     // Use setTimeout to prevent flicker during initialization without blocking render cycle
@@ -73,6 +78,7 @@ class TutorialManager {
 
     this.stateManager.reset();
     this.cleanup();
+    AccountView.close();
 
     // Restart auto-refresh after tutorial ends
     this.restoreAutoRefresh();
@@ -153,7 +159,7 @@ class TutorialManager {
     } else if (stepIndex === 6 && step.target === "#friends") {
       // Special handling for Friends List Display step - force position above
       this.highlightTarget(step.target, "top");
-    } else if (stepIndex === 8 && step.target === ".status-dot") {
+    } else if (stepIndex === 8 && step.target === ".friend .status-label") {
       // Special handling for Connection Process step - force position above
       this.highlightTarget(step.target, null, true);
     } else {

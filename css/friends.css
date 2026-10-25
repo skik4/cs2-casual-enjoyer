@@ -1,41 +1,43 @@
-/* Friend List Component */
+/* Friend List Component - also the rows of maps and servers */
 
 .friend-list {
   margin: 0;
-  max-height: none;
-  overflow-y: visible;
   position: relative;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
 }
 
 .friend {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
+  gap: 12px;
+  min-height: 58px;
+  padding: 9px 12px;
   background: var(--bg-item);
-  border-radius: var(--border-radius-lg);
-  padding: var(--space-md) 1.5em;
-  box-shadow: 0 var(--border-width) 0 0 var(--border-color-strong);
   border: var(--border-width) solid var(--panel-outline);
+  border-radius: 10px;
+  box-sizing: border-box;
   transition:
-    box-shadow var(--anim-duration),
+    border-color var(--anim-duration),
     background var(--anim-duration);
 }
 
 /* Add spacing between friends, but not after the last one */
 .friend:not(:last-child) {
-  margin-bottom: var(--space-xs);
+  margin-bottom: 6px;
 }
 
 .friend:hover {
-  box-shadow: 0 2px 12px
-    color-mix(in srgb, var(--black) var(--opacity-60), transparent);
   background: var(--bg-panel);
-  border-color: var(--blue-primary);
+  border-color: color-mix(in srgb, var(--blue-primary) 55%, transparent);
+}
+
+.friend-avatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  object-fit: cover;
+  background: var(--gray-900);
+  border: var(--border-width) solid var(--panel-outline);
 }
 
 .friend-info {
@@ -44,59 +46,46 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-}
-
-.friend-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--border-radius-lg);
-  object-fit: cover;
-  margin-right: 0.7em;
-  box-shadow: 0 2px 8px
-    color-mix(in srgb, var(--black) var(--opacity-30), transparent);
-  background: var(--gray-900);
-  flex-shrink: 0;
-  border: var(--border-width) solid var(--panel-outline);
-}
-
-.friend-info-row {
-  display: flex;
-  align-items: center;
-  gap: 1em;
-  min-width: 0;
+  gap: 3px;
 }
 
 .personaname {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
+  font-size: 15.5px;
+  font-weight: var(--font-weight-semibold);
   color: var(--white);
-  letter-spacing: 0.2px;
-  margin-right: 0.5em;
-  word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Allow game status to wrap without affecting the controls */
-.friend-info .game-status {
-  word-break: break-word;
+/* Where the friend plays and the status label */
+.game-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
-.status {
-  margin: 0;
-  margin-bottom: var(--space-xs);
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--blue-primary);
+.game-where {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-map {
+  color: #dfe6ee;
+  font-weight: var(--font-weight-medium);
 }
 
 .join-section {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  min-width: 140px;
   flex: 0 0 auto;
-}
-
-/* Prevent the status dot from shrinking within the controls */
-.join-section .status-dot {
-  flex-shrink: 0;
 }

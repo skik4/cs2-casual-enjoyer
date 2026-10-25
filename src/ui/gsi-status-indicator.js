@@ -19,7 +19,8 @@ const TITLE_KEYS = {
 
 /**
  * GSI status indicator in the footer
- * Shows whether the app hears from CS2 directly or relies on the Steam Web API.
+ * Says in words whether the app hears from CS2 directly; the tooltip tells
+ * what that means and what to do.
  */
 class GsiStatusIndicator {
   static _initialized = false;
@@ -43,8 +44,10 @@ class GsiStatusIndicator {
     if (!indicator) return;
 
     const state = gsiManager.getIndicatorState();
+    const known = TITLE_KEYS[state] ? state : "unavailable";
     indicator.dataset.state = state;
-    indicator.title = t(TITLE_KEYS[state] || TITLE_KEYS.unavailable);
+    indicator.title = t(TITLE_KEYS[known]);
+    DOMUtils.setText("gsi-status-label", t(`gsi.label.${known}`));
   }
 }
 

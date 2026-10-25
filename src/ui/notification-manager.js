@@ -12,32 +12,11 @@ import i18n from "../i18n/i18n-manager.js";
 
 /**
  * Notification Manager module
- * Handles all notifications, errors, token information display, and help information
+ * Handles all notifications, errors and help information
  */
 class NotificationManager {
   // Keep lightweight state to re-render texts on language change
   static _lastMain = null; // { kind: 'help-steamid'|'help-apikey'|'privacy'|'error', payload?: any }
-  static _lastTokenInfo = null; // {steamid, expires, expiresDate}
-
-  /**
-   * Format date as numeric: "DD.MM.YYYY HH:mm" in 24-hour format
-   * @param {Date|number|string} date
-   * @returns {string}
-   */
-  static formatDateTime(date) {
-    const d = date instanceof Date ? date : new Date(date);
-    const dateStr = d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-    const timeStr = d.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-    return `${dateStr} ${timeStr}`;
-  }
 
   /**
    * Show a notification with close button (with SVG emoji support)
@@ -62,47 +41,6 @@ class NotificationManager {
         notificationElement.style.display = "none";
         NotificationManager._lastMain = null;
       };
-    }
-  }
-
-  /**
-   * Show persistent notification about token (steamid and expiration)
-   * @param {{steamid: string, expires: number, expiresDate: Date}} tokenInfo
-   */
-  static showTokenInfoNotification(tokenInfo) {
-    NotificationManager._lastTokenInfo = tokenInfo;
-    this.hideTokenInfoNotification();
-    const notificationElement = DOMUtils.getElementById("notifications");
-    if (!notificationElement) return;
-
-    const now = Date.now();
-    const expiresMs = tokenInfo.expires * 1000;
-    const expiresStr = NotificationManager.formatDateTime(tokenInfo.expiresDate);
-    let expired = expiresMs < now;
-    let warnHtml = "";
-    if (expired) {
-      warnHtml = NOTIFICATION_TEMPLATES.TOKEN_EXPIRED_WARNING();
-    }
-
-    const html = NOTIFICATION_TEMPLATES.TOKEN_INFO(
-      tokenInfo.steamid,
-      expiresStr,
-      warnHtml
-    );
-    const infoDiv = document.createElement("div");
-    infoDiv.id = "token-info-notification";
-    infoDiv.className = "mb-xs";
-    infoDiv.innerHTML = html;
-    notificationElement.parentNode.insertBefore(infoDiv, notificationElement);
-  }
-
-  /**
-   * Hide token info notification
-   */
-  static hideTokenInfoNotification() {
-    const infoDiv = DOMUtils.getElementById("token-info-notification");
-    if (infoDiv && infoDiv.parentNode) {
-      infoDiv.parentNode.removeChild(infoDiv);
     }
   }
 
@@ -440,22 +378,6 @@ class NotificationManager {
    */
   static async refreshTextsAfterLanguageChange() {
     try {
-      // Refresh token info notification if present
-      const tokenInfoDiv = DOMUtils.getElementById("token-info-notification");
-      if (tokenInfoDiv && NotificationManager._lastTokenInfo) {
-        const info = NotificationManager._lastTokenInfo;
-        const now = Date.now();
-        const expiresMs = info.expires * 1000;
-        const expired = expiresMs < now;
-        const expiresStr = NotificationManager.formatDateTime(info.expiresDate);
-        const warnHtml = expired ? NOTIFICATION_TEMPLATES.TOKEN_EXPIRED_WARNING() : "";
-        tokenInfoDiv.innerHTML = NOTIFICATION_TEMPLATES.TOKEN_INFO(
-          info.steamid,
-          expiresStr,
-          warnHtml
-        );
-      }
-
       // Refresh CS2 launch overlay texts if visible
       const overlay = DOMUtils.getElementById("cs2-launch-notification");
       if (overlay && overlay.style.display !== "none") {

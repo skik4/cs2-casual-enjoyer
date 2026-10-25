@@ -341,3 +341,111 @@
   color: var(--white);
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* ===== ROW AND JOIN BAR BUTTONS ===== */
+/* Compact, so a list shows twice the rows; outlined when they only wait or
+   cancel, so the filled blue stays for a free slot */
+.join-section .action-btn,
+.join-bar .action-btn {
+  height: 34px;
+  padding: 0 16px;
+  min-width: 132px;
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.join-section .wait-btn {
+  background: transparent;
+  border-color: #3a4552;
+  color: #cdd6e1;
+}
+
+.join-section .wait-btn:hover:not(:disabled) {
+  background: var(--bg-dark-gradient-light);
+  border-color: #56657a;
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+.join-section .cancel-btn,
+.join-bar .cancel-btn {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--red-primary) 55%, transparent);
+  color: #ff8a7d;
+  box-shadow: none;
+}
+
+.join-section .cancel-btn:hover:not(:disabled),
+.join-bar .cancel-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red-primary) 14%, transparent);
+  border-color: var(--red-primary);
+  color: #ffb3aa;
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+/* ===== ACCOUNT BAR BUTTONS ===== */
+.ghost-btn {
+  padding: 7px 12px;
+  background: transparent;
+  border: var(--border-width) solid #2f353c;
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition:
+    border-color var(--anim-duration),
+    background var(--anim-duration);
+}
+
+.ghost-btn:hover {
+  border-color: var(--blue-primary);
+  background: color-mix(in srgb, var(--blue-primary) 10%, transparent);
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: var(--border-width) solid #2f353c;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color var(--anim-duration);
+}
+
+.icon-btn img {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%)
+    hue-rotate(202deg) brightness(91%) contrast(93%);
+}
+
+.icon-btn:hover {
+  border-color: var(--blue-primary);
+}
+
+.icon-btn:hover img {
+  filter: brightness(0) saturate(100%) invert(100%);
+}
+
+.icon-btn.busy img {
+  animation: spin var(--anim-spin-duration) linear infinite;
+}
+
+.link-btn {
+  padding: 0;
+  background: none;
+  border: none;
+  color: #6fb1ff;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}

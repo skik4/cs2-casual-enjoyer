@@ -2,18 +2,24 @@
 
 .view-tabs {
   display: flex;
-  gap: var(--space-xs);
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: var(--space-sm);
   border-bottom: var(--border-width) solid var(--border-color);
 }
 
 .view-tab {
-  padding: var(--space-xs) var(--space-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-secondary);
-  font-size: var(--font-size-md);
-  font-weight: 600;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition:
     color var(--anim-duration),
@@ -29,82 +35,125 @@
   border-bottom-color: var(--blue-primary);
 }
 
+/* How many entries a tab holds */
+.tab-count {
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: #2a3037;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.tab-count:empty {
+  display: none;
+}
+
+.view-tab.active .tab-count {
+  background: color-mix(in srgb, var(--blue-primary) 25%, transparent);
+  color: #cfe3ff;
+}
+
+/* The filter or search status next to the tabs */
+.view-tools {
+  margin-left: auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding-bottom: 6px;
+}
+
+.map-finder-status {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 .view-empty {
   padding: var(--space-lg) var(--space-md);
   text-align: center;
   color: var(--text-secondary);
 }
 
-/* Map finder toolbar: status line */
-
-.maps-toolbar {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.map-finder-status {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-}
-
 /* Map cards: a map row that expands into its servers */
 
 .map-card:not(:last-child) {
-  margin-bottom: var(--space-xs);
+  margin-bottom: 6px;
 }
 
-.map-row {
+.map-card .map-row {
+  margin-bottom: 0;
   cursor: pointer;
 }
 
 .map-card.expanded .map-row {
-  border-color: var(--blue-primary);
+  border-color: color-mix(in srgb, var(--blue-primary) 60%, transparent);
 }
 
 .map-expander {
-  width: 1em;
-  color: var(--text-secondary);
+  width: 14px;
   flex-shrink: 0;
+  color: var(--text-secondary);
 }
 
 .map-servers {
-  margin: var(--space-xxs) 0 0 var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 5px 0 0 26px;
 }
 
 .map-servers .server-row {
-  padding: var(--space-xs) 1.5em;
-}
-
-.map-servers .server-row:not(:last-child) {
-  margin-bottom: var(--space-xxs);
+  min-height: 48px;
+  padding: 7px 12px;
+  margin-bottom: 0;
 }
 
 .server-row .personaname {
-  font-size: var(--font-size-md);
+  font-size: 15px;
 }
 
-/* Friends-of-friends API key */
+/* Where the map finder's players come from, and the friends-of-friends key */
 
 .fof-key {
-  margin-top: var(--space-md);
-  border-top: var(--border-width) solid var(--border-color);
-  padding: var(--space-md);
+  margin-top: var(--space-sm);
 }
 
-.fof-key-header {
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--space-sm);
+.fof-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.fof-summary {
+  flex: 1;
+  min-width: 0;
+}
+
+.fof-key-details {
+  padding: var(--space-sm) 2px 0;
 }
 
 .fof-key-row {
   display: flex;
-  gap: var(--space-md);
+  gap: var(--space-sm);
 }
 
 .fof-key-row input {
   flex: 1;
+  text-align: left;
+}
+
+.fof-key-row .action-btn {
+  height: 38px;
+  padding: 0 16px;
+  min-width: 0;
+  font-size: 14px;
 }
 
 .map-finder-hint {

@@ -6,8 +6,8 @@ export default {
     showTutorialTitle: "Показать обучение",
     minimize: "Свернуть",
     close: "Закрыть",
-    cancel: "Отмена",
-    join: "Присоединиться",
+    cancel: "Отменить",
+    join: "Подключиться",
     previous: "Назад",
     next: "Далее",
     finish: "Готово",
@@ -21,13 +21,10 @@ export default {
     apiTokenKeyTitle: "Получить свой токен / ключ Steam Web API в Steam",
     steamId64Label: "SteamID64",
     steamId64Title: "Открыть твой профиль в Steam",
-    updateFriendsButton: "Обновить список друзей",
-    updateFriendsButtonTitle:
-      "Обновить полный список друзей через Steam API",
-    updateFriendsButtonUpdating: "Обновление...",
-    updateHint:
-      'Нажми "Обновить список друзей", чтобы загрузить друзей и запустить автообновление',
-    friendFilterPlaceholder: "Фильтр по нику...",
+    updateFriendsButton: "Загрузить друзей",
+    updateFriendsButtonTitle: "Загрузить список друзей из Steam",
+    updateFriendsButtonUpdating: "Загружаю...",
+    friendFilterPlaceholder: "Фильтр по нику",
     footerSteamProfileTitle: "Открыть профиль skik4 в Steam",
     footerGithubProfileTitle: "Открыть GitHub профиль skik4",
     hiddenH1Title: "CS2 Casual Enjoyer",
@@ -35,16 +32,6 @@ export default {
 
   notifications: {
     closeButtonTitle: "Закрыть",
-    tokenExpired: {
-      message: "Твой токен истёк.",
-      getNewLinkText: "Получить новый",
-      getNewLinkTitle: "Получить новый токен",
-    },
-    tokenInfo: {
-      detected: "Обнаружен токен Steam Web API.",
-      steamIdLabel: "SteamID:",
-      expiresLabel: "Токен истекает:",
-    },
     privacy: {
       warningMain:
         "Список друзей не получен. Возможно, твой список друзей приватный.",
@@ -147,16 +134,75 @@ export default {
     fakeFriends: "Фейк-друзья",
     maps: "Карты",
     fakeFriendsEmpty: "Фейковых друзей пока нет. Добавь Steam ID выше.",
+    friendsEmpty:
+      "Никого из друзей сейчас нет в casual. Загляни во вкладку «Карты».",
+  },
+
+  account: {
+    tokenValidUntil: "Токен действует до {date}",
+    tokenExpiresIn: "Токен истекает через {minutes} мин",
+    tokenExpired: "Токен истёк, получи новый",
+    apiKey: "Ключ Steam Web API",
+    edit: "Аккаунт",
+    refreshTitle: "Обновить список друзей",
+    panelTitle: "Подключение к Steam",
+    panelIntro:
+      "Нужно примерно раз в сутки: токен Steam живёт около 24 часов. Друзья загрузятся сами.",
+    step1: "Открой страницу токена в Steam",
+    openInSteam: "Открыть в Steam ↗",
+    step1Hint: "Страница может быть чёрной, это нормально.",
+    step2: "Скопируй всё и вставь сюда",
+    step2Hint: "Ctrl+A, Ctrl+C на странице Steam, потом Ctrl+V в поле.",
+    steamIdFromToken: "SteamID взят из токена: {steamid}",
+    steamIdPending: "SteamID возьмётся из токена",
+    steamIdForKey: "С API-ключом укажи ещё SteamID64",
+    help: "Токен или API-ключ: как получить",
+    close: "Закрыть",
+  },
+
+  join: {
+    freeSlot: "есть место",
+    noSlot: "мест нет",
+    connecting: "подключаемся…",
+    waitingForSlot: "ждём место",
+    missing: "не в casual",
+    joined: "на сервере ✓",
+    waitButton: "Ждать место",
+    notInCS2: "Не в CS2",
+  },
+
+  joinBar: {
+    title: "Подключаемся: {name}",
+    connecting: "Попытка отправлена, ждём CS2",
+    waiting: "Сервер полон: подключимся, как только освободится место",
+    missing: "Вышел из casual: ждём минуту, вдруг вернётся",
+    joined: "Ты на сервере",
   },
 
   mapFinder: {
-    mapSummary: "Серверов: {servers} · со свободным местом: {free}",
-    knownPlayers: "Известных игроков: {count}",
-    freeSlot: "есть место",
-    full: "мест нет",
+    servers: {
+      one: "{count} сервер",
+      few: "{count} сервера",
+      many: "{count} серверов",
+      other: "{count} сервера",
+    },
+    freeServers: "{count} со свободным местом",
+    round: "Раунд {round} · {score}",
+    knownPlayers: "знаем игроков: {count}",
     noScore: "Счёта пока нет",
-    poolCount: "Пул игроков: {count}",
-    fofCount: "друзей друзей: {count}",
+    searchingAmong: {
+      one: "ищем среди {count} игрока",
+      few: "ищем среди {count} игроков",
+      many: "ищем среди {count} игроков",
+      other: "ищем среди {count} игрока",
+    },
+    sources: "Пул: {pool} · друзья друзей: {fof}",
+    keyNotSet: "ключ API не задан",
+    keySaved: "ключ API сохранён",
+    keyMain: "используется основной ключ API",
+    setKey: "Задать ключ",
+    changeKey: "Изменить ключ",
+    hideKey: "Скрыть",
     fofCrawling: "читаю друзей друзей…",
     searching: "поиск…",
     updatedAt: "обновлено в {time}",
@@ -180,6 +226,14 @@ export default {
   },
 
   gsi: {
+    label: {
+      active: "CS2 на связи",
+      waiting: "Ждём CS2",
+      restart: "Перезапусти CS2",
+      "other-account": "CS2 на другом аккаунте",
+      unavailable: "GSI выключен",
+      error: "Ошибка GSI",
+    },
     active:
       "CS2 Game State Integration подключена: приложение получает состояние игры прямо из CS2.",
     waiting:
@@ -220,16 +274,16 @@ export default {
       "Короткое обучение по основным функциям.<br>Используй кнопки ниже для навигации.",
     keyHint:
       "Enter — далее, Backspace — назад, Esc — пропустить.",
-    step2Title: "Токен / Ключ Steam Web API",
+    step2Title: "Токен Steam",
     step2Content:
-      "Нажми на подсвеченный текст, чтобы открыть помощь со ссылкой на страницу токена в Steam.",
+      "Нажми на подсвеченную ссылку, чтобы открыть помощь со ссылкой на страницу токена в Steam.",
     step3Title: "Получение токена Steam Web API",
     step3Content:
       "Нажми на подсвеченный текст для открытия Steam.<br>Страница может быть чёрной — просто тыкни по странице, нажми Ctrl+A, затем Ctrl+C, чтобы скопировать токен.",
     step4Title: "Вставь токен",
     step4Content:
       "Вставь токен (Ctrl+V) в подсвеченное поле.<br>Токен истекает через 24 часа, при необходимости получи новый.",
-    step5Title: "Обнови список друзей",
+    step5Title: "Загрузи друзей",
     step5Content:
       "Нажми на подсвеченную кнопку, чтобы загрузить друзей из Steam со статусом игры.",
     step6Title: "Фильтруй друзей",
@@ -239,12 +293,14 @@ export default {
       "Друзья, играющие в Casual, появятся в этом списке.",
     step8Title: "Присоединись к игре друга",
     step8Content:
-      "Например, твой лучший друг <strong>Gabe Newell</strong> играет в Casual на Dust 2.<br>Нажми 'Присоединиться', чтобы автоматически подключиться к его матчу!",
+      "Например, твой лучший друг <strong>Gabe Newell</strong> играет в Casual на Dust 2.<br>Нажми «Подключиться», чтобы автоматически подключиться к его матчу!",
     step9Title: "Процесс подключения",
     step9ContentTop:
-      "Красная точка = нет слотов, Жёлтая = попытка подключения, Зелёная = успешно подключено.",
-    step9ContentNote1: "Жёлтая может гореть длительное время.",
-    step9ContentNote2: "Сменится на красную или зелёную после ответа сервера.",
+      "Метка рядом со счётом показывает, что происходит: «есть место» или «мест нет» до подключения, «подключаемся…» после попытки, «ждём место», пока сервер полон, и «на сервере ✓», когда ты зашёл.",
+    step9ContentNote1:
+      "Пока ждём место, приложение подключится само, как только оно освободится.",
+    step9ContentNote2:
+      "Полоса над вкладками показывает попытку с любой вкладки, там же её можно отменить.",
     step9ContentNote3:
       "В это время CS2 покажет ошибки соединения (это нормально) — удерживай ESC в игре, чтобы закрыть все.",
     step10Title: "Обучение завершено!",

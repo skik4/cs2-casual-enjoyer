@@ -21,8 +21,6 @@ jest.mock("../src/game/join-manager.js", () => ({
 jest.mock("../src/ui/ui-manager.js", () => ({
   __esModule: true,
   default: {
-    hideTokenInfoNotification: jest.fn(),
-    showTokenInfoNotification: jest.fn(),
     showError: jest.fn(),
     hideNotification: jest.fn(),
   },

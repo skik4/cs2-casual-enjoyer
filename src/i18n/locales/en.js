@@ -21,12 +21,10 @@ export default {
     apiTokenKeyTitle: "Get your Steam Web API Token / Key in Steam",
     steamId64Label: "SteamID64",
     steamId64Title: "Open your profile in Steam",
-    updateFriendsButton: "Update Friends List",
-    updateFriendsButtonTitle: "Update the complete list of friends from Steam API",
-    updateFriendsButtonUpdating: "Updating...",
-    updateHint:
-      'Click "Update Friends List" to load your friends and start auto-refresh',
-    friendFilterPlaceholder: "Filter friends by nickname...",
+    updateFriendsButton: "Load friends",
+    updateFriendsButtonTitle: "Load your friends list from Steam",
+    updateFriendsButtonUpdating: "Loading...",
+    friendFilterPlaceholder: "Filter by nickname",
     footerSteamProfileTitle: "Open skik4's Steam profile",
     footerGithubProfileTitle: "Open skik4's GitHub profile",
     hiddenH1Title: "CS2 Casual Enjoyer",
@@ -34,16 +32,6 @@ export default {
 
   notifications: {
     closeButtonTitle: "Close",
-    tokenExpired: {
-      message: "Your token has expired.",
-      getNewLinkText: "Get a new one",
-      getNewLinkTitle: "Get a new token",
-    },
-    tokenInfo: {
-      detected: "Steam Web API Token detected.",
-      steamIdLabel: "SteamID:",
-      expiresLabel: "Token expires:",
-    },
     privacy: {
       warningMain:
         "No friends list returned. This could be because your friends list is set to private.",
@@ -140,16 +128,68 @@ export default {
     fakeFriends: "Fake Friends",
     maps: "Maps",
     fakeFriendsEmpty: "No Fake Friends yet. Add a Steam ID above.",
+    friendsEmpty:
+      "None of your friends is in casual right now. Try the Maps tab.",
+  },
+
+  account: {
+    tokenValidUntil: "Token valid until {date}",
+    tokenExpiresIn: "Token expires in {minutes} min",
+    tokenExpired: "Token expired, get a new one",
+    apiKey: "Steam Web API key",
+    edit: "Account",
+    refreshTitle: "Update the friends list",
+    panelTitle: "Connect to Steam",
+    panelIntro:
+      "Needed about once a day: a Steam token lives for about 24 hours. Your friends load by themselves.",
+    step1: "Open the token page in Steam",
+    openInSteam: "Open in Steam ↗",
+    step1Hint: "The page may look black, that is fine.",
+    step2: "Copy everything and paste it here",
+    step2Hint: "Ctrl+A, Ctrl+C on the Steam page, then Ctrl+V in the field.",
+    steamIdFromToken: "SteamID taken from the token: {steamid}",
+    steamIdPending: "Your SteamID is read from the token",
+    steamIdForKey: "With an API key, enter your SteamID64 too",
+    help: "Token or API key: how to get one",
+    close: "Close",
+  },
+
+  join: {
+    freeSlot: "free slot",
+    noSlot: "no free slot",
+    connecting: "connecting…",
+    waitingForSlot: "waiting for a slot",
+    missing: "not in casual",
+    joined: "on the server ✓",
+    waitButton: "Wait for a slot",
+    notInCS2: "Not in CS2",
+  },
+
+  joinBar: {
+    title: "Joining {name}",
+    connecting: "Connect sent, waiting for CS2",
+    waiting: "The server is full: joining as soon as a slot opens",
+    missing: "Left casual: waiting a minute for a return",
+    joined: "You are on the server",
   },
 
   mapFinder: {
-    mapSummary: "Servers: {servers} · with a free slot: {free}",
-    knownPlayers: "Known players: {count}",
-    freeSlot: "free slot",
-    full: "no free slot",
+    servers: { one: "{count} server", other: "{count} servers" },
+    freeServers: "{count} with a free slot",
+    round: "Round {round} · {score}",
+    knownPlayers: "known players: {count}",
     noScore: "No score yet",
-    poolCount: "Player pool: {count}",
-    fofCount: "friends of friends: {count}",
+    searchingAmong: {
+      one: "searching {count} player",
+      other: "searching {count} players",
+    },
+    sources: "Pool: {pool} · friends of friends: {fof}",
+    keyNotSet: "API key not set",
+    keySaved: "API key saved",
+    keyMain: "your main API key is used",
+    setKey: "Set key",
+    changeKey: "Change key",
+    hideKey: "Hide",
     fofCrawling: "reading friends of friends…",
     searching: "searching…",
     updatedAt: "updated {time}",
@@ -173,6 +213,14 @@ export default {
   },
 
   gsi: {
+    label: {
+      active: "CS2 connected",
+      waiting: "Waiting for CS2",
+      restart: "Restart CS2",
+      "other-account": "CS2 on another account",
+      unavailable: "GSI off",
+      error: "GSI error",
+    },
     active:
       "CS2 Game State Integration is connected: the app gets your game state straight from CS2.",
     waiting:
@@ -212,18 +260,18 @@ export default {
       "Quick tutorial on main features.<br>Use buttons below to navigate.",
     keyHint:
       "Press Enter for next step, Backspace for previous, Esc to skip.",
-    step2Title: "Steam Web API Token / Key",
+    step2Title: "Steam token",
     step2Content:
-      "Click the highlighted text to open help with Steam link for token.",
+      "Click the highlighted link to open help with the Steam link for a token.",
     step3Title: "Get Steam Web API Token",
     step3Content:
       "Click highlighted text to open Steam.<br>It may appear black - press Ctrl+A then Ctrl+C to copy token.",
     step4Title: "Paste Token",
     step4Content:
       "Paste token (Ctrl+V) into highlighted field.<br>Token expires in 24 hours, get new one when needed.",
-    step5Title: "Update Friends List",
+    step5Title: "Load friends",
     step5Content:
-      "Click highlighted button to load friends from Steam with game status.",
+      "Click the highlighted button to load your friends from Steam with their game status.",
     step6Title: "Filter Friends",
     step6Content: "Type in highlighted box to filter friends by nickname.",
     step7Title: "Friends List Display",
@@ -234,9 +282,11 @@ export default {
       "For example, your best friend <strong>Gabe Newell</strong> is playing Casual on Dust 2.<br>Click 'Join' to automatically connect to his match!",
     step9Title: "Connection Process",
     step9ContentTop:
-      "Red dot = no slots available, Yellow = attempting to connect, Green = successfully connected.",
-    step9ContentNote1: "Yellow may stay for a while.",
-    step9ContentNote2: "Will change to red or green once server responds.",
+      "The label next to the score shows what is going on: «free slot» or «no free slot» before you join, «connecting…» once the connect is sent, «waiting for a slot» while the server is full, and «on the server ✓» once you are in.",
+    step9ContentNote1:
+      "While waiting for a slot, the app joins by itself as soon as one opens.",
+    step9ContentNote2:
+      "The bar above the tabs shows the attempt from any tab, with Cancel.",
     step9ContentNote3:
       "Meanwhile, CS2 will show connection error dialogs (this is normal) - hold ESC to dismiss them all.",
     step10Title: "Tutorial Complete!",

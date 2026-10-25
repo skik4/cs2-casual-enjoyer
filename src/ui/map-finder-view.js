@@ -1,5 +1,5 @@
 // Shared constants
-import { JOIN_TARGET_PREFIXES, STATUS_TYPES } from "../shared/constants.js";
+import { JOIN_TARGET_PREFIXES } from "../shared/constants.js";
 
 // Core singletons
 import appStateManager from "../core/app-state-manager.js";
@@ -12,11 +12,16 @@ import joinManager, {
 } from "../game/join-manager.js";
 
 // UI and utilities
-import StatusManager from "./status-manager.js";
+import ViewTabs from "./view-tabs.js";
+import {
+  joinButtonLook,
+  slotAttributes,
+  statusLabel,
+} from "./join-status.js";
 import DOMUtils from "../utils/dom-utils.js";
 import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
-import { t, onLanguageChange } from "../i18n/i18n-manager.js";
+import { t, tPlural, onLanguageChange } from "../i18n/i18n-manager.js";
 
 // Names and scores come from other players
 const escapeHtml = DOMUtils.escapeHtml;
@@ -36,6 +41,7 @@ const formatScore = (score) => String(score ?? "").replace(/[[\]]/g, "").trim();
 class MapFinderView {
   static expanded = new Set();
   static getMainAuth = () => "";
+  static keyDetailsOpen = false;
   static _initialized = false;
   static _lastListHtml = null;
 
@@ -65,6 +71,10 @@ class MapFinderView {
     DOMUtils.getElementById("fof-key-delete")?.addEventListener("click", () =>
       this.deleteFofKey()
     );
+    DOMUtils.getElementById("fof-key-toggle")?.addEventListener("click", () => {
+      this.keyDetailsOpen = !this.keyDetailsOpen;
+      this.renderFofKey();
+    });
 
     mapFinder.onChange(() => this.render());
     onLanguageChange(() => this.render());
@@ -158,6 +168,7 @@ class MapFinderView {
     if (!(await this._storeFofKey(key))) return;
     input.value = "";
     input.classList.remove("invalid-input");
+    this.keyDetailsOpen = false;
     // A new key reads the friends lists again
     mapFinder.restartFof();
     this.render();
@@ -169,6 +180,7 @@ class MapFinderView {
    */
   static async deleteFofKey() {
     if (!(await this._storeFofKey(null))) return;
+    this.keyDetailsOpen = false;
     this.render();
   }
 
@@ -202,13 +214,13 @@ class MapFinderView {
     const html = maps
       .map((entry) => this.renderMapCard(entry, joinStates))
       .join("");
-    // The finder notifies on every refresh, most of which change nothing;
-    // rebuilding anyway would restart the status dot animations
+    // The finder notifies on every refresh, most of which change nothing
     if (html !== this._lastListHtml) {
       list.innerHTML = html;
       this._lastListHtml = html;
     }
 
+    ViewTabs.setCount("maps", maps.length);
     this.renderEmpty(maps.length);
     this.renderStatus();
     this.renderFofKey();
@@ -221,10 +233,17 @@ class MapFinderView {
    */
   static renderMapCard(entry, joinStates) {
     const expanded = this.expanded.has(entry.map);
-    const summary = t("mapFinder.mapSummary", {
-      servers: entry.servers,
-      free: entry.freeServers,
-    });
+    const joinId = getMapJoinId(entry.map);
+    const free = entry.freeServers > 0;
+    const slot = {
+      free,
+      casual: true,
+      // With several servers, say how many of them have room
+      idleText:
+        free && entry.servers > 1
+          ? t("mapFinder.freeServers", { count: entry.freeServers })
+          : undefined,
+    };
     const servers = expanded
       ? `<div class="map-servers">${mapFinder
           .getServers(entry.map)
@@ -235,14 +254,12 @@ class MapFinderView {
     return `
       <div class="map-card${expanded ? " expanded" : ""}" data-map="${escapeHtml(entry.map)}">
         <div class="friend map-row" data-toggle-map="${escapeHtml(entry.map)}">
-          <div class="friend-info-row">
-            <span class="map-expander">${expanded ? "▾" : "▸"}</span>
-            <div class="friend-info">
-              <span class="personaname">${escapeHtml(entry.label)}</span>
-              <span class="game-status">${escapeHtml(summary)}</span>
-            </div>
+          <span class="map-expander" aria-hidden="true">${expanded ? "▾" : "▸"}</span>
+          <div class="friend-info">
+            <span class="personaname">${escapeHtml(entry.label)}</span>
+            <span class="game-line"><span class="game-where">${escapeHtml(tPlural("mapFinder.servers", entry.servers))}</span>${this.renderLabel(joinId, joinStates, slot)}</span>
           </div>
-          ${this.renderJoinControls(getMapJoinId(entry.map), joinStates)}
+          ${this.renderJoinButton(joinId, joinStates, slot)}
         </div>
         ${servers}
       </div>`;
@@ -254,36 +271,50 @@ class MapFinderView {
    * @returns {string}
    */
   static renderServerRow(server, joinStates) {
-    const details = [
-      t("mapFinder.knownPlayers", { count: server.players.length }),
-      server.freeSlot ? t("mapFinder.freeSlot") : t("mapFinder.full"),
-    ].join(" · ");
+    const joinId = getServerJoinId(server.serverId);
+    const slot = { free: server.freeSlot, casual: true };
+    const score = formatScore(server.score);
+    // The round in progress is the one after those already played
+    const title =
+      score && server.rounds !== null
+        ? t("mapFinder.round", { round: server.rounds + 1, score })
+        : t("mapFinder.noScore");
+    const known = t("mapFinder.knownPlayers", { count: server.players.length });
 
     return `
       <div class="friend server-row">
         <div class="friend-info">
-          <span class="personaname">${escapeHtml(formatScore(server.score) || t("mapFinder.noScore"))}</span>
-          <span class="game-status">${escapeHtml(details)}</span>
+          <span class="personaname">${escapeHtml(title)}</span>
+          <span class="game-line"><span class="game-where">${escapeHtml(known)}</span>${this.renderLabel(joinId, joinStates, slot)}</span>
         </div>
-        ${this.renderJoinControls(getServerJoinId(server.serverId), joinStates)}
+        ${this.renderJoinButton(joinId, joinStates, slot)}
       </div>`;
   }
 
   /**
-   * Status dot and Join/Cancel button, with the ids StatusManager updates
+   * Status label, with the id and slot facts StatusManager updates
    * @param {string} joinId - Map or server join id
    * @param {Object} joinStates - Join states by id
+   * @param {import('./join-status.js').SlotFacts} slot
    * @returns {string}
    */
-  static renderJoinControls(joinId, joinStates) {
-    const state = joinStates[joinId];
-    const active = joinManager.isActive(state);
-    const joined = state?.status === STATUS_TYPES.JOINED;
+  static renderLabel(joinId, joinStates, slot) {
+    const look = statusLabel(joinStates[joinId]?.status, slot);
+    return `<span id="status-${joinId}" class="status-label status-${look.kind}" ${slotAttributes(slot)}>${escapeHtml(look.text)}</span>`;
+  }
 
+  /**
+   * Join, Wait for a slot or Cancel button, with the id StatusManager updates
+   * @param {string} joinId - Map or server join id
+   * @param {Object} joinStates - Join states by id
+   * @param {import('./join-status.js').SlotFacts} slot
+   * @returns {string}
+   */
+  static renderJoinButton(joinId, joinStates, slot) {
+    const look = joinButtonLook(joinStates[joinId]?.status, slot);
     return `
       <div class="join-section">
-        <span class="status-dot ${StatusManager.getStatusDotClass(state?.status)}" id="dot-${joinId}"></span>
-        <button id="join-btn-${joinId}" class="action-btn${active ? " cancel-btn" : ""}"${joined ? " disabled" : ""}>${active ? t("common.cancel") : t("common.join")}</button>
+        <button id="join-btn-${joinId}" class="${look.className}" ${slotAttributes(slot)}${look.disabled ? " disabled" : ""}>${escapeHtml(look.text)}</button>
       </div>`;
   }
 
@@ -307,36 +338,57 @@ class MapFinderView {
   }
 
   /**
-   * One line on where the players come from and when they were last checked
+   * One line next to the tabs: when the servers were last checked and among
+   * how many players
    */
   static renderStatus() {
     const status = mapFinder.getStatus();
-    const parts = [t("mapFinder.poolCount", { count: status.poolSize })];
-    if (status.fof === "ready") {
-      parts.push(t("mapFinder.fofCount", { count: status.fofSize }));
-    } else if (status.fof === "crawling") {
-      parts.push(t("mapFinder.fofCrawling"));
-    }
-    if (status.refreshing) {
-      parts.push(t("mapFinder.searching"));
-    } else if (status.lastRefreshAt) {
+    const parts = [];
+    if (status.lastRefreshAt) {
       const time = new Date(status.lastRefreshAt).toLocaleTimeString("en-GB", {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
       });
       parts.push(t("mapFinder.updatedAt", { time }));
+    } else if (status.refreshing) {
+      parts.push(t("mapFinder.searching"));
     }
+    if (status.polled) {
+      parts.push(tPlural("mapFinder.searchingAmong", status.polled));
+    }
+    if (status.fof === "crawling") parts.push(t("mapFinder.fofCrawling"));
     DOMUtils.setText("map-finder-status", parts.join(" · "));
   }
 
   /**
-   * Show where the friends-of-friends key comes from, or ask for one
+   * One line on where the players come from and the friends-of-friends key;
+   * the key field opens on request or when the key failed
    */
   static renderFofKey() {
     const mainIsKey = Validators.isApiKey(this.getMainAuth());
     const savedKey = !mainIsKey && Boolean(this.getFofKey());
     const status = mapFinder.getStatus();
+
+    let keyText = t("mapFinder.keyNotSet");
+    if (mainIsKey) keyText = t("mapFinder.keyMain");
+    else if (savedKey) keyText = t("mapFinder.keySaved");
+    DOMUtils.setText(
+      "fof-summary",
+      `${t("mapFinder.sources", {
+        pool: status.poolSize,
+        fof: status.fofSize,
+      })} · ${keyText}`
+    );
+
+    const open = !mainIsKey && (this.keyDetailsOpen || status.fof === "error");
+    DOMUtils.toggleClass("fof-key-details", "hidden", !open);
+    DOMUtils.toggleClass("fof-key-toggle", "hidden", mainIsKey);
+    let toggleText = t("mapFinder.setKey");
+    if (open) toggleText = t("mapFinder.hideKey");
+    else if (savedKey) toggleText = t("mapFinder.changeKey");
+    DOMUtils.setText("fof-key-toggle", toggleText);
+
     DOMUtils.toggleClass("fof-key-row", "hidden", mainIsKey);
     DOMUtils.toggleClass("fof-key-delete", "hidden", !savedKey);
 

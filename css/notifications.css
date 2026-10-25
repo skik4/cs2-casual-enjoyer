@@ -183,21 +183,3 @@
   display: inline-block;
   animation: tutorialIconBounce 2s ease-in-out infinite;
 }
-
-/* Update Hints */
-.update-hint {
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  opacity: 0.85;
-  transition: opacity var(--anim-duration);
-  display: none;
-}
-
-.update-hint.show {
-  display: block;
-}
-
-.update-hint-container.hide {
-  display: none;
-}

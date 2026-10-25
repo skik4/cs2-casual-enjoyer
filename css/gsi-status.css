@@ -6,9 +6,9 @@
   gap: var(--space-xxs);
   margin-right: auto;
   padding-left: var(--space-md);
-  font-size: var(--font-size-sm);
+  gap: 6px;
+  font-size: 13px;
   color: var(--text-secondary);
-  opacity: 0.7;
   cursor: default;
 }
 

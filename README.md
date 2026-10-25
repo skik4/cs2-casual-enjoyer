@@ -22,7 +22,7 @@
 - **Join journal**: Every join attempt is written to `join-journal.log` in the app's data folder (`%APPDATA%\cs2-casual-enjoyer`): the connects sent, changes in your and the target's status, and the states CS2 reports meanwhile. It stays on your computer and is kept under 10 MB.
 - **Maps tab**: Picks a casual map on Valve's official servers. Valve publishes no server list, so the app finds people playing there: your friends, a pool of players it has seen on official servers before, players you spectate in your own matches (or everyone on the server, when CS2 lists them), and friends of your friends (needs a Steam Web API key, which can be entered on the tab). Join on a map takes any of its servers with a free slot; expand the map to see each server with its score and join that one.
 - **Fake Friends tab**: Steam IDs added by hand, with Join and a remove button (click it twice to remove).
-- **CS2 Game State Integration**: On start the app writes `gamestate_integration_casualenjoyer.cfg` into CS2's `game/csgo/cfg` folder. CS2 then reports your own game state (main menu or match, mode, map) straight to the app on `127.0.0.1`, so the app reacts instantly and makes fewer Steam API requests. CS2 reads the file only at startup, so restart CS2 once after the first run. The GSI dot in the footer shows the status. Friends' status still comes from the Steam Web API.
+- **CS2 Game State Integration**: On start the app writes `gamestate_integration_casualenjoyer.cfg` into CS2's `game/csgo/cfg` folder. CS2 then reports your own game state (main menu or match, mode, map) straight to the app on `127.0.0.1`, so the app reacts instantly and makes fewer Steam API requests. CS2 reads the file only at startup, so restart CS2 once after the first run. The footer says whether CS2 is connected; its tooltip explains the state. Friends' status still comes from the Steam Web API.
 - **CS2 Integration**: If CS2 isn't running, the app can automatically launch it and wait for you to be ready before starting the join process.
 
 ## How to Run
@@ -33,15 +33,10 @@ The easiest way to use the application is to download the prebuilt `.exe` from t
 ## How to Use
 
 1. **First Launch**: The app will automatically start with an interactive tutorial to guide you through all features
-2. **Authentication Setup**:
-   - Click on **"Steam Web API Token / Key"** label for detailed setup instructions
-   - Choose between Session Token (recommended) or API Key
-3. **Load Friends**: Click "Update Friends List" to fetch your Steam friends
-4. **Join Games**: Friends playing Casual will appear in the list - simply click "Join" to connect automatically
-5. **Status Monitoring**:
-   - 🔴 Red dot = No slots available
-   - 🟡 Yellow dot = Attempting to connect
-   - 🟢 Green dot = Successfully connected
+2. **Connect to Steam**: The "Connect to Steam" panel walks you through it: open the token page in Steam, copy everything and paste it; your SteamID is read from the token. "Token or API key: how to get one" explains both options. Once your friends are loaded, the panel folds into a one-line account bar that shows how long the token lasts; "Account" opens it again.
+3. **Load Friends**: Click "Load friends"; the ↻ button in the account bar reloads them later
+4. **Join Games**: Friends playing Casual are listed with their map and score - click "Join" to connect automatically, or "Wait for a slot" when their server is full
+5. **Status Monitoring**: The label next to the score says what is going on: "free slot" or "no free slot" before you join, then "connecting…", "waiting for a slot" and "on the server ✓". The bar above the tabs shows the running attempt from any tab, with Cancel
 
 ### 🎯 Tutorial System
 
@@ -50,7 +45,7 @@ New users will see an interactive tutorial on first launch that covers:
 - How to obtain Steam API credentials
 - Friend list management
 - Join process demonstration
-- Status indicator meanings
+- Status label meanings
 - Keyboard shortcuts (Enter/Backspace/Esc for navigation)
 
 You can restart the tutorial anytime by clicking the help button in the interface.

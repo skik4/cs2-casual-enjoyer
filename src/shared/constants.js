@@ -174,6 +174,8 @@ export const TUTORIAL_MOCK_FRIEND = {
   profilestate: 1,
   personastate: 0,
   status: "Casual Dust2 [ 7 : 0 ]",
+  game_map: "de_dust2",
+  game_score: "[ 7 : 0 ]",
   in_casual_mode: true,
   join_available: true,
 };

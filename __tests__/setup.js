@@ -13,26 +13,28 @@ global.console = {
   error: console.error, // Keep error logs for debugging
 };
 
-// Mock window object
-global.window = {
-  open: () => {},
-  location: {
-    href: "http://localhost",
-  },
-};
+// The node environment has no DOM: stand-ins for window and document. Suites
+// that render markup run in jsdom (@jest-environment jsdom) and keep its DOM.
+if (typeof global.document === "undefined") {
+  global.window = {
+    open: () => {},
+    location: {
+      href: "http://localhost",
+    },
+  };
 
-// Mock document object for DOM operations
-global.document = {
-  createElement: () => ({
-    click: () => {},
-    setAttribute: () => {},
-    style: {},
-  }),
-  body: {
-    appendChild: () => {},
-    removeChild: () => {},
-  },
-};
+  global.document = {
+    createElement: () => ({
+      click: () => {},
+      setAttribute: () => {},
+      style: {},
+    }),
+    body: {
+      appendChild: () => {},
+      removeChild: () => {},
+    },
+  };
+}
 
 // Mock logger if needed
 global.logger = {

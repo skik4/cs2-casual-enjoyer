@@ -177,55 +177,16 @@
   --input-border-invalid: var(--red-primary);
 
   /* ===== STATUS MODULE (status.css) ===== */
-  --status-dot-size: 1.125rem;
-  /* 18px */
-  --status-pulse-spread: 0.625rem;
-  /* 10px */
   --spinner-size: 0.875rem;
   /* 14px */
   --spinner-border-width: 0.125rem;
   /* 2px */
 
-  /* Status indicator pulse colors */
-  --red-primary-30: color-mix(
-    in srgb,
-    var(--red-primary),
-    transparent var(--opacity-70)
-  );
-  --red-primary-0: color-mix(
-    in srgb,
-    var(--red-primary),
-    transparent var(--opacity-100)
-  );
+  /* Expired token field background */
   --yellow-primary-30: color-mix(
     in srgb,
     var(--yellow-primary),
     transparent var(--opacity-70)
-  );
-  --yellow-primary-0: color-mix(
-    in srgb,
-    var(--yellow-primary),
-    transparent var(--opacity-100)
-  );
-  --green-primary-30: color-mix(
-    in srgb,
-    var(--green-primary),
-    transparent var(--opacity-70)
-  );
-  --green-primary-0: color-mix(
-    in srgb,
-    var(--green-primary),
-    transparent var(--opacity-100)
-  );
-  --purple-pulse-30: color-mix(
-    in srgb,
-    var(--purple-primary),
-    transparent var(--opacity-70)
-  );
-  --purple-pulse-0: color-mix(
-    in srgb,
-    var(--purple-primary),
-    transparent var(--opacity-100)
   );
 
   /* ============================================= */
@@ -239,8 +200,6 @@
     color-mix(in srgb, var(--black) var(--opacity-40), transparent);
   --shadow-dark: 0 6px 32px
     color-mix(in srgb, var(--black) var(--opacity-80), transparent);
-  --status-dot-shadow: 0 0 0.5rem
-    color-mix(in srgb, var(--black) var(--opacity-50), transparent);
 
   /* ===== COMPLEX GRADIENTS & COMPOSITIONS ===== */
   --panel-bg-gradient: linear-gradient(

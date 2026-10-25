@@ -38,6 +38,18 @@
  */
 
 /**
+ * @typedef {Object} AccountFacts - What input validation found about the credentials
+ * @property {string} steamId - SteamID64 in use
+ * @property {boolean} validSteamId - Whether it is a SteamID64
+ * @property {string} auth - Token or key in use
+ * @property {boolean} validAuth - Whether it is a token or key at all
+ * @property {boolean} isKey - Whether it is an API key rather than a token
+ * @property {{steamid: string, expires: number, expiresDate: Date}|null} tokenInfo - The token's SteamID and expiry
+ * @property {boolean} tokenExpired - Whether the token has expired
+ * @property {boolean} hasFriends - Whether a friends list has been loaded and saved
+ */
+
+/**
  * @typedef {PlayerJoinInfo & {
  *   steamid: string|null,
  *   mode: string|null,

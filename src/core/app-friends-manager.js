@@ -6,6 +6,7 @@ import joinManager from "../game/join-manager.js";
 
 // UI and utilities
 import UIManager from "../ui/ui-manager.js";
+import AccountView from "../ui/account-view.js";
 import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import SteamAPI from "../steam/steam-api.js";
 import Validators from "../utils/validators.js";
@@ -187,6 +188,7 @@ class AppFriendsManager {
       updateBtn.disabled = true;
       updateBtn.textContent = t("index.updateFriendsButtonUpdating");
     }
+    DOMUtils.toggleClass("refresh-friends-btn", "busy", true);
 
     try {
       let allFriendIds = [];
@@ -244,10 +246,9 @@ class AppFriendsManager {
         this.eventManager.setupFriendListeners();
       }
 
-      // Hide the hint since we now have friends data
-      if (this.validationManager) {
-        this.validationManager.updateHintVisibility(false, true);
-      }
+      // Friends are in: the account panel gives way to the bar
+      AccountView.close();
+      if (this.inputManager) this.inputManager.validateInputs();
 
       // Only start auto-refresh if tutorial is not active
       if (!tutorialManager.isActive) {
@@ -266,6 +267,7 @@ class AppFriendsManager {
         updateBtn.disabled = false;
         updateBtn.textContent = t("index.updateFriendsButton");
       }
+      DOMUtils.toggleClass("refresh-friends-btn", "busy", false);
     }
   }
 

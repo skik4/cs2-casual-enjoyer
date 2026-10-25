@@ -23,6 +23,9 @@
 /* Form components */
 @import url("./forms.css");
 
+/* Account bar, account panel and join bar */
+@import url("./account.css");
+
 /* Friend list component */
 @import url("./friends.css");
 

@@ -16,21 +16,12 @@ class UIManager {
 
   // Status Management Methods - delegate to StatusManager
   /**
-   * Get the appropriate CSS class for a status dot
-   * @param {string} status - Join status
-   * @returns {string} - CSS class for the status dot
-   */
-  static getStatusDotClass(status) {
-    return StatusManager.getStatusDotClass(status);
-  }
-
-  /**
-   * Update the status dot appearance based on join status
-   * @param {string} friend_id - Steam ID of the friend
+   * Show a join status in its row's label and in the join bar
+   * @param {string} id - Friend's Steam ID, or a map or server join id
    * @param {string} status - Join status
    */
-  static updateDot(friend_id, status) {
-    return StatusManager.updateDot(friend_id, status);
+  static updateLabel(id, status) {
+    return StatusManager.updateLabel(id, status);
   }
 
   /**
@@ -76,21 +67,6 @@ class UIManager {
    */
   static async showNotification(html, type = "info") {
     return await NotificationManager.showNotification(html, type);
-  }
-
-  /**
-   * Show persistent notification about token (steamid and expiration)
-   * @param {{steamid: string, expires: number, expiresDate: Date}} tokenInfo
-   */
-  static showTokenInfoNotification(tokenInfo) {
-    return NotificationManager.showTokenInfoNotification(tokenInfo);
-  }
-
-  /**
-   * Hide token info notification
-   */
-  static hideTokenInfoNotification() {
-    return NotificationManager.hideTokenInfoNotification();
   }
 
   /**

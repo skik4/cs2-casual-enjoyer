@@ -60,6 +60,21 @@ export function t(key, params = {}) {
   return formatString(typeof raw === "string" ? raw : "", params);
 }
 
+/**
+ * Translate a text about a number. The key holds one form per plural
+ * category of the language (one, few, many, other), each with {count}.
+ * @param {string} key - Translation key of the forms
+ * @param {number} count - The number the text is about
+ * @param {Object} [params] - Further placeholders
+ * @returns {string}
+ */
+export function tPlural(key, count, params = {}) {
+  const forms = resolvePath(LOCALES[currentLanguage], key);
+  if (!forms || typeof forms !== "object") return "";
+  const category = new Intl.PluralRules(currentLanguage).select(count);
+  return formatString(forms[category] ?? forms.other ?? "", { count, ...params });
+}
+
 export function setLanguage(lang) {
   const next = lang === "ru" ? "ru" : "en";
   if (next === currentLanguage) return currentLanguage;
@@ -112,4 +127,5 @@ export default {
   persistLanguageToSettings,
   onLanguageChange,
   t,
+  tPlural,
 };

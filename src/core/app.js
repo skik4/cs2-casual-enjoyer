@@ -14,6 +14,8 @@ import mapFinder from "../game/map-finder.js";
 
 // UI and utilities
 import UIManager from "../ui/ui-manager.js";
+import AccountView from "../ui/account-view.js";
+import JoinBar from "../ui/join-bar.js";
 import GsiStatusIndicator from "../ui/gsi-status-indicator.js";
 import ViewTabs from "../ui/view-tabs.js";
 import MapFinderView from "../ui/map-finder-view.js";
@@ -22,6 +24,7 @@ import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import DOMUtils from "../utils/dom-utils.js";
 import logger from "../utils/logger.js";
 import { applyI18nToDom, setupInitialLanguage } from "../i18n/dom-i18n.js";
+import { onLanguageChange } from "../i18n/i18n-manager.js";
 
 /**
  * Main application module
@@ -89,7 +92,7 @@ class App {
       logger.info("App", "Step 4: Configuring JoinManager UI callbacks");
       // Setup JoinManager UI callbacks
       joinManager.setUICallbacks(
-        (friendId, status) => UIManager.updateDot(friendId, status),
+        (friendId, status) => UIManager.updateLabel(friendId, status),
         (friendId, status) => UIManager.updateJoinButton(friendId, status)
       );
       logger.info("App", "JoinManager UI callbacks set");
@@ -125,6 +128,20 @@ class App {
         getMainAuth: () => this.inputManager.getAuth(),
       });
       ViewTabs.initialize();
+      AccountView.initialize({
+        onRefresh: () => this.friendsManager.updateFriendsList(),
+      });
+      JoinBar.initialize();
+      // Row texts come from code, not from the markup's data-i18n
+      onLanguageChange(() => {
+        const friendsData = appStateManager.getState("friendsData");
+        if (friendsData) {
+          this.friendsManager.renderLists(
+            friendsData,
+            joinManager.getJoinStates()
+          );
+        }
+      });
       // The finder polls only while its view is open
       ViewTabs.onChange((view, previous) => {
         if (view === "maps") MapFinderView.show();

@@ -27,6 +27,10 @@ input[type="password"] {
   letter-spacing: 0.15em;
 }
 
+input[type="password"]::placeholder {
+  letter-spacing: normal;
+}
+
 /* Input States */
 .valid-input {
   border: var(--border-width) solid var(--green-primary) !important;
@@ -100,80 +104,13 @@ input[type="password"] {
   appearance: textfield;
 }
 
-/* Parameter Fields Container */
-.param-fields-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2em;
-  margin-bottom: var(--space-lg);
-  width: 100%;
-}
-
-.param-label-row {
-  display: flex;
-  flex-direction: row;
-  gap: 1.5em;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 0.1em !important;
-}
-
-.param-label-cell {
-  flex: 1 1 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5em;
-  min-width: 0;
-  padding-bottom: 0 !important;
-}
-
-.param-label-text {
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-right: 0.3em;
-  text-align: center;
-  white-space: nowrap;
-  margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-.param-icon-link:hover {
-  color: var(--blue-dark);
-  opacity: 1;
-}
-
-.param-input-row {
-  display: flex;
-  flex-direction: row;
-  gap: 1.5em;
-  justify-content: center;
-  align-items: center;
-}
-
-.param-input-cell {
-  flex: 1 1 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-}
-
-/* Special Input Styles */
+/* Friend filter, next to the tabs */
 #friend-filter-input {
-  border: var(--border-width) solid var(--input-border) !important;
-  border-radius: var(--border-radius-md) !important;
-  background: var(--input-bg) !important;
-  color: var(--text-primary) !important;
-  transition: border var(--anim-duration);
-  width: 320px;
+  width: 210px;
   max-width: 100%;
-  font-size: var(--font-size-md);
-  padding: var(--space-xs) var(--space-md);
-}
-
-#friend-filter-input:focus {
-  border: var(--border-width) solid var(--input-border-focus) !important;
-  background: var(--bg-panel) !important;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  text-align: left;
 }

@@ -3,10 +3,11 @@
 .main-content {
   flex: 1 1 auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   width: 100vw;
-  padding-top: 16px;
+  /* The window bar is fixed over the top of the page */
+  padding-top: var(--height-window-bar);
   padding-bottom: var(--height-footer);
   box-sizing: border-box;
   background: linear-gradient(
@@ -32,7 +33,7 @@
   box-shadow: none;
   border: none;
   border-radius: var(--border-radius-xl);
-  padding: 2.5em 2.5em 1.5em 2.5em;
+  padding: 1em 2.5em 1.5em 2.5em;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

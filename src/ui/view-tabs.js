@@ -47,8 +47,21 @@ class ViewTabs {
       tab.classList.toggle("active", active);
       tab.setAttribute("aria-selected", String(active));
     });
+    // The filter and the search status next to the tabs belong to one view each
+    document.querySelectorAll("#view-tabs [data-tool-for]").forEach((tool) => {
+      tool.classList.toggle("hidden", tool.dataset.toolFor !== view);
+    });
 
     for (const listener of [...this.listeners]) listener(view, previous);
+  }
+
+  /**
+   * Show how many entries a tab holds; nothing for none
+   * @param {"friends"|"fake"|"maps"} view - Tab
+   * @param {number} count - Entries
+   */
+  static setCount(view, count) {
+    DOMUtils.setText(`tab-count-${view}`, count > 0 ? String(count) : "");
   }
 
   /**

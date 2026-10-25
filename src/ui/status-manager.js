@@ -1,79 +1,42 @@
-// Shared constants
-import { STATUS_TYPES } from "../shared/constants.js";
-import { t } from "../i18n/i18n-manager.js";
-
 // UI and utilities
 import DOMUtils from "../utils/dom-utils.js";
+import JoinBar from "./join-bar.js";
+import { joinButtonLook, readSlotFacts, statusLabel } from "./join-status.js";
 
 /**
  * Status Manager module
- * Handles status dots and button state management
+ * Shows join statuses: the label and the join button of a row, and the join
+ * bar above the tabs
  */
 class StatusManager {
   /**
-   * Status dot CSS class mapping
-   */
-  static get STATUS_DOT_CLASSES() {
-    return {
-      [STATUS_TYPES.WAITING]: "dot-waiting",
-      [STATUS_TYPES.CONNECTING]: "dot-connecting",
-      [STATUS_TYPES.JOINED]: "dot-joined",
-      [STATUS_TYPES.CANCELLED]: "dot-cancelled",
-      [STATUS_TYPES.MISSING]: "dot-missing",
-    };
-  }
-
-  /**
-   * Get the appropriate CSS class for a status dot
-   * @param {string} status - Join status
-   * @returns {string} - CSS class for the status dot
-   */
-  static getStatusDotClass(status) {
-    return (
-      this.STATUS_DOT_CLASSES[status] ||
-      this.STATUS_DOT_CLASSES[STATUS_TYPES.CANCELLED]
-    );
-  }
-
-  /**
-   * Update the status dot appearance based on join status
-   * @param {string} friend_id - Steam ID of the friend
+   * Show a join status in its row's label and in the join bar
+   * @param {string} id - Friend's Steam ID, or a map or server join id
    * @param {string} status - Join status
    */
-  static updateDot(friend_id, status) {
-    const dot = DOMUtils.getElementById("dot-" + friend_id);
-    if (dot) {
-      dot.className = "status-dot " + this.getStatusDotClass(status);
+  static updateLabel(id, status) {
+    const label = DOMUtils.getElementById(`status-${id}`);
+    if (label) {
+      const look = statusLabel(status, readSlotFacts(label));
+      label.className = `status-label status-${look.kind}`;
+      label.textContent = look.text;
     }
+    JoinBar.render();
   }
 
   /**
    * Update the join button appearance and behavior
-   * @param {string} friend_id - Steam ID of the friend
+   * @param {string} id - Friend's Steam ID, or a map or server join id
    * @param {string} status - Join status
    */
-  static updateJoinButton(friend_id, status) {
-    const btn = DOMUtils.getElementById("join-btn-" + friend_id);
-    if (!btn) return;
+  static updateJoinButton(id, status) {
+    const button = DOMUtils.getElementById(`join-btn-${id}`);
+    if (!button) return;
 
-    const isActive =
-      status === STATUS_TYPES.WAITING ||
-      status === STATUS_TYPES.CONNECTING ||
-      status === STATUS_TYPES.MISSING;
-
-    if (isActive) {
-      btn.textContent = t("common.cancel");
-      btn.setAttribute("data-i18n", "common.cancel");
-      btn.setAttribute("data-i18n-attr", "text");
-      btn.classList.add("cancel-btn");
-    } else {
-      btn.textContent = t("common.join");
-      btn.setAttribute("data-i18n", "common.join");
-      btn.setAttribute("data-i18n-attr", "text");
-      btn.classList.remove("cancel-btn");
-    }
-
-    btn.disabled = status === STATUS_TYPES.JOINED;
+    const look = joinButtonLook(status, readSlotFacts(button));
+    button.textContent = look.text;
+    button.className = look.className;
+    button.disabled = look.disabled;
   }
 }
 

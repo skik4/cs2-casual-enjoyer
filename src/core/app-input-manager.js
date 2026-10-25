@@ -6,6 +6,7 @@ import joinManager from "../game/join-manager.js";
 
 // UI and utilities
 import UIManager from "../ui/ui-manager.js";
+import AccountView from "../ui/account-view.js";
 import SteamAPI from "../steam/steam-api.js";
 import Validators from "../utils/validators.js";
 import DOMUtils from "../utils/dom-utils.js";
@@ -140,25 +141,13 @@ class AppInputManager {
     this.lastAuth = auth;
     if (auth !== previous) joinManager.resetAll();
 
-    if (token) {
-      const info = Validators.parseWebApiToken(token);
-      if (info && info.steamid) {
-        const steamIdInput = this.getSteamIdInput();
-        if (
-          steamIdInput &&
-          (!steamIdInput.value || steamIdInput.value !== info.steamid)
-        ) {
-          steamIdInput.value = info.steamid;
-        }
-        this.validateInputs(); // This will handle token notification and validation
-      } else {
-        UIManager.hideTokenInfoNotification();
-        this.validateInputs();
-      }
-    } else {
-      UIManager.hideTokenInfoNotification();
-      this.validateInputs();
+    // A token carries its SteamID: fill it in rather than ask for it
+    const info = token ? Validators.parseWebApiToken(token) : null;
+    const steamIdInput = this.getSteamIdInput();
+    if (info?.steamid && steamIdInput && steamIdInput.value !== info.steamid) {
+      steamIdInput.value = info.steamid;
     }
+    this.validateInputs();
   }
 
   /**
@@ -188,21 +177,10 @@ class AppInputManager {
     }
 
     const tokenToCheck = token || savedToken;
-    if (tokenToCheck) {
-      const info = Validators.parseWebApiToken(tokenToCheck);
-      if (info) {
-        const now = Date.now();
-        const expiresMs = info.expires * 1000;
-        isTokenExpired = expiresMs < now;
-
-        // Show token info notification only for current input token
-        if (token) {
-          UIManager.showTokenInfoNotification(info);
-        }
-      }
-    } else {
-      UIManager.hideTokenInfoNotification();
-    }
+    const tokenInfo = tokenToCheck
+      ? Validators.parseWebApiToken(tokenToCheck)
+      : null;
+    if (tokenInfo) isTokenExpired = tokenInfo.expires * 1000 < Date.now();
 
     // Button should be disabled if token is expired
     const enableBtn =
@@ -245,6 +223,17 @@ class AppInputManager {
         }
       }
     }
+
+    AccountView.update({
+      steamId,
+      validSteamId,
+      auth,
+      validAuth: validApiKey,
+      isKey: Validators.isApiKey(auth),
+      tokenInfo,
+      tokenExpired: isTokenExpired,
+      hasFriends: (appStateManager.getState("savedFriendsIds") || []).length > 0,
+    });
 
     // Check if we should start auto-refresh
     if (this.validationManager) {

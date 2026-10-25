@@ -2,7 +2,6 @@
 import appStateManager from "./app-state-manager.js";
 
 // UI and utilities
-import DOMUtils from "../utils/dom-utils.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import logger from "../utils/logger.js";
 
@@ -52,10 +51,8 @@ class AppValidationManager {
     const hasSavedFriends = savedFriendsIds && savedFriendsIds.length > 0;
     const hasValidSavedSettings = hasSaved && !isTokenExpired;
 
-    // Show hint for new users with valid inputs but no saved friends
     const hasValidCurrentInputs =
       validSteamId && validApiKey && !isTokenExpired;
-    this.updateHintVisibility(hasValidCurrentInputs, hasSavedFriends);
 
     // Start auto-refresh ONLY if we have valid saved settings AND saved friends list
     if (hasValidSavedSettings && hasSavedFriends) {
@@ -86,24 +83,6 @@ class AppValidationManager {
     }
   }
 
-  /**
-   * Update hint visibility based on user state
-   */
-
-  updateHintVisibility(hasValidInputs, hasSavedFriends) {
-    const hintElement = DOMUtils.getElementById("update-hint");
-    const hintContainer = document.querySelector(".update-hint-container");
-    if (!hintElement || !hintContainer) return;
-
-    // Show hint if user has valid inputs but no saved friends list
-    if (hasValidInputs && !hasSavedFriends) {
-      hintElement.classList.add("show");
-      hintContainer.classList.remove("hide");
-    } else {
-      hintElement.classList.remove("show");
-      hintContainer.classList.add("hide");
-    }
-  }
 }
 
 // Singleton instance

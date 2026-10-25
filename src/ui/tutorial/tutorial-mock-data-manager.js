@@ -174,8 +174,8 @@ export class TutorialMockDataManager {
 
         const step = steps[currentStep % steps.length];
 
-        // Update the status dot
-        StatusManager.updateDot(mockFriendId, step.status);
+        // Update the status label
+        StatusManager.updateLabel(mockFriendId, step.status);
 
         // Schedule next step
         const timeoutId = setTimeout(() => {
@@ -214,7 +214,7 @@ export class TutorialMockDataManager {
     // Reset to default state if mock friend exists
     const mockFriendId = TUTORIAL_MOCK_FRIEND.steamid;
     import("../status-manager.js").then(({ default: StatusManager }) => {
-      StatusManager.updateDot(mockFriendId, "cancelled");
+      StatusManager.updateLabel(mockFriendId, "cancelled");
     });
   }
 
