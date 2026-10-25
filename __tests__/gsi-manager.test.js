@@ -132,6 +132,31 @@ describe("GSIManager", () => {
     expect(gsiManager.getUserState()).toMatchObject({ inMenu: true });
   });
 
+  test("lists every player CS2 reports, the user left out", () => {
+    const third = "76561198000000004";
+    gsiManager.handlePayload(
+      {
+        ...matchPayload("casual"),
+        allplayers: {
+          [USER_ID]: { name: "me", team: "CT" },
+          [OTHER_ID]: { name: "other", team: "T" },
+          [third]: { name: "third", team: "CT" },
+          "not-an-id": { name: "bot" },
+        },
+      },
+      1000
+    );
+
+    expect(gsiManager.getListedPlayerIds(1000).sort()).toEqual([OTHER_ID, third].sort());
+    expect(gsiManager.getListedPlayerIds(1000 + GSI_CONFIG.FRESH_MS + 1)).toEqual([]);
+  });
+
+  test("lists nobody when CS2 sends no player list", () => {
+    gsiManager.handlePayload(matchPayload("casual"), 1000);
+
+    expect(gsiManager.getListedPlayerIds(1000)).toEqual([]);
+  });
+
   test("records when a map loads and keeps it while the map stays", () => {
     gsiManager.handlePayload(menuPayload(), 1000);
     expect(gsiManager.getUserState(1000).mapLoadedAt).toBe(0);

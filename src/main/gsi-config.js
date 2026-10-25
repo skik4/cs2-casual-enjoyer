@@ -28,6 +28,8 @@ export function buildGsiConfig({ port, token }) {
     '\t\t"map"\t\t"1"',
     '\t\t"player_id"\t"1"',
     '\t\t"player_state"\t"1"',
+    // SteamID64s of everyone in the match, when CS2 lists them
+    '\t\t"allplayers_id"\t"1"',
     "\t}",
     "}",
     "",

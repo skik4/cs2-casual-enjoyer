@@ -141,6 +141,23 @@ class GSIManager {
   }
 
   /**
+   * Every player CS2 lists in its state, keyed by SteamID64. Valve documents
+   * the list for observers and GOTV only, so it is often absent; whoever it
+   * lists is in the match the user is in or watches.
+   * @param {number} [now] - Current time
+   * @returns {string[]} - SteamID64s, the user's own left out
+   */
+  getListedPlayerIds(now = Date.now()) {
+    if (!this.isFresh(now)) return [];
+    const players = this.lastPayload?.allplayers;
+    if (!players || typeof players !== "object") return [];
+    const own = String(this.lastPayload?.provider?.steamid ?? "");
+    return Object.keys(players).filter(
+      (id) => id !== own && Validators.validateSteamId(id)
+    );
+  }
+
+  /**
    * State for the status indicator
    * @param {number} [now] - Current time
    * @returns {"active"|"other-account"|"restart"|"waiting"|"unavailable"|"error"}

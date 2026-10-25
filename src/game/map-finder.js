@@ -99,8 +99,8 @@ export function buildServers(presences) {
  * publishes no list of its servers, but a player's rich presence tells the
  * map, the score and - when there is a free slot - the connect string.
  * Players come from the user's friends, a pool of people seen on official
- * servers before, friends of friends (API key only) and whoever the user
- * spectates in their own matches.
+ * servers before, friends of friends (API key only) and whoever CS2 shows or
+ * lists in the user's own matches.
  */
 class MapFinder {
   constructor() {
@@ -140,10 +140,25 @@ class MapFinder {
   configure(deps) {
     this.deps = deps;
     if (!this._gsiUnsubscribe) {
-      // Whoever the user spectates is on the user's own server
-      this._gsiUnsubscribe = gsiManager.onChange(() => {
-        const observed = gsiManager.getObservedSteamId();
-        if (observed && this.seeds.size < MAX_SEEDS) this.seeds.add(observed);
+      this._gsiUnsubscribe = gsiManager.onChange(() => this._seedFromGsi());
+    }
+  }
+
+  /**
+   * Seed whoever CS2 reports in the user's own match: the player the user
+   * spectates and, when CS2 lists them, everyone on the server
+   * @private
+   */
+  _seedFromGsi() {
+    const listed = gsiManager.getListedPlayerIds();
+    const before = this.seeds.size;
+    for (const id of [gsiManager.getObservedSteamId(), ...listed]) {
+      if (id && this.seeds.size < MAX_SEEDS) this.seeds.add(id);
+    }
+    if (listed.length && this.seeds.size > before) {
+      logger.info("MapFinder", "Seeded players listed by CS2", {
+        listed: listed.length,
+        added: this.seeds.size - before,
       });
     }
   }

@@ -143,7 +143,12 @@ describe("GSI cfg", () => {
     expect(service.uri).toBe("http://127.0.0.1:47731");
     expect(service.auth).toEqual({ token: "abc123" });
     expect(service.heartbeat).toBe("5.0");
-    expect(service.data).toMatchObject({ provider: "1", map: "1", player_id: "1" });
+    expect(service.data).toMatchObject({
+      provider: "1",
+      map: "1",
+      player_id: "1",
+      allplayers_id: "1",
+    });
   });
 
   test("writes the cfg once and rewrites it only when it changes", async () => {

@@ -242,6 +242,18 @@ describe("refresh", () => {
 
     expect(mapFinder.seeds.has(E)).toBe(true);
   });
+
+  test("every player CS2 lists becomes a seed", () => {
+    configure();
+    gsiManager.handlePayload({
+      provider: { steamid: USER },
+      map: { mode: "casual", name: "de_dust2" },
+      player: { steamid: USER, activity: "playing" },
+      allplayers: { [USER]: {}, [D]: {}, [E]: {} },
+    });
+
+    expect([...mapFinder.seeds].sort()).toEqual([D, E].sort());
+  });
 });
 
 describe("friends of friends", () => {
