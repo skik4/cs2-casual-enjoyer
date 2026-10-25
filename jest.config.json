@@ -1,12 +1,24 @@
 {
   "testEnvironment": "node",
-  "setupFilesAfterEnv": ["<rootDir>/__tests__/setup.js"],
-  "testMatch": ["**/__tests__/**/*.test.js"],
+  "setupFilesAfterEnv": [
+    "<rootDir>/__tests__/setup.js"
+  ],
+  "testMatch": [
+    "**/__tests__/**/*.test.js"
+  ],
   "transform": {
     "^.+\\.js$": "babel-jest"
   },
-  "collectCoverageFrom": ["src/**/*.js", "!src/main/**", "!src/**/*.config.js"],
+  "collectCoverageFrom": [
+    "src/**/*.js",
+    "!src/main/main.js",
+    "!src/**/*.config.js"
+  ],
   "coverageDirectory": "coverage",
-  "coverageReporters": ["text", "lcov", "html"],
+  "coverageReporters": [
+    "text",
+    "lcov",
+    "html"
+  ],
   "testTimeout": 10000
 }

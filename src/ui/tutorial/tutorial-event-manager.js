@@ -185,17 +185,6 @@ export class TutorialEventManager {
     this.previousStepCallback = null;
     this.stopCallback = null;
   }
-
-  /**
-   * Get callbacks for use in global scope (for onclick handlers)
-   */
-  getCallbacks() {
-    return {
-      nextStep: this.nextStepCallback,
-      previousStep: this.previousStepCallback,
-      stop: this.stopCallback,
-    };
-  }
 }
 
 // Singleton instance

@@ -194,6 +194,11 @@ export default {
     unrecognizedSteamUrl: "Unrecognized Steam URL format",
     validSteamIdRequired: "Valid SteamID64 is required",
     validAuthRequired: "Valid API Key or Token is required",
+    vanityNeedsAuth: "Enter your API token or key first to resolve profile links",
+    vanityResolving: "Resolving profile link...",
+    vanityNotResolved:
+      "Could not resolve the profile link. Please enter SteamID64 manually.",
+    vanityError: "Error resolving the profile link: ",
   },
 
   tutorial: {

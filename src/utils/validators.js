@@ -98,7 +98,10 @@ class Validators {
     if (parts.length !== 3) return null;
 
     try {
-      const payload = JSON.parse(atob(parts[1]));
+      // JWT parts are base64url: atob needs the standard alphabet and padding
+      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+      const payload = JSON.parse(atob(padded));
       return {
         steamid: payload.sub,
         expires: payload.exp,

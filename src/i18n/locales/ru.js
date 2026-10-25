@@ -202,6 +202,11 @@ export default {
     unrecognizedSteamUrl: "Неизвестный формат ссылки Steam",
     validSteamIdRequired: "Требуется корректный SteamID64",
     validAuthRequired: "Требуется корректный API Key или токен",
+    vanityNeedsAuth: "Сначала введи токен или API-ключ, чтобы распознать ссылку на профиль",
+    vanityResolving: "Распознаю ссылку на профиль...",
+    vanityNotResolved:
+      "Не удалось распознать ссылку на профиль. Введи SteamID64 вручную.",
+    vanityError: "Ошибка при распознавании ссылки на профиль: ",
   },
 
   tutorial: {

@@ -12,6 +12,7 @@ import tutorialHighlightManager from "./tutorial-highlight-manager.js";
 import tutorialMockDataManager from "./tutorial-mock-data-manager.js";
 import tutorialEventManager from "./tutorial-event-manager.js";
 import i18n from "../../i18n/i18n-manager.js";
+import logger from "../../utils/logger.js";
 
 /**
  * Tutorial Manager
@@ -292,9 +293,14 @@ class TutorialManager {
     const savedSettings = appStateManager.getState("savedSettings");
 
     if (savedFriendsIds && savedFriendsIds.length > 0 && savedSettings) {
+      // Small delay to ensure tutorial cleanup is complete
       setTimeout(() => {
-        appFriendsManager.startAutoRefresh();
-      }, 500); // Small delay to ensure tutorial cleanup is complete
+        appFriendsManager.startAutoRefresh().catch((error) => {
+          logger.error("TutorialManager", "Could not restart auto-refresh", {
+            error: error.message,
+          });
+        });
+      }, 500);
     }
   }
 

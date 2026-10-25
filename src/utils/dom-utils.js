@@ -13,55 +13,6 @@ class DOMUtils {
   }
 
   /**
-   * Get element by ID with type safety
-   * @param {string} id - Element ID
-   * @param {string} [expectedTag] - Expected tag name for validation
-   * @returns {HTMLElement|null} - Found element or null
-   */
-  static getElementByIdSafe(id, expectedTag = null) {
-    const element = document.getElementById(id);
-    if (
-      element &&
-      expectedTag &&
-      element.tagName.toLowerCase() !== expectedTag.toLowerCase()
-    ) {
-      console.warn(
-        `Element '${id}' expected to be '${expectedTag}' but is '${element.tagName}'`
-      );
-      return null;
-    }
-    return element;
-  }
-
-  /**
-   * Get input element by ID with value
-   * @param {string} id - Input element ID
-   * @returns {{element: HTMLInputElement|null, value: string}} - Element and its trimmed value
-   */
-  static getInputValue(id) {
-    const element = document.getElementById(id);
-    if (!element) {
-      return { element: null, value: "" };
-    }
-    return {
-      element: element,
-      value: element.value ? element.value.trim() : "",
-    };
-  }
-
-  /**
-   * Set element visibility
-   * @param {string} id - Element ID
-   * @param {boolean} visible - Whether element should be visible
-   */
-  static setVisible(id, visible) {
-    const element = document.getElementById(id);
-    if (element) {
-      element.style.display = visible ? "" : "none";
-    }
-  }
-
-  /**
    * Set element text content safely
    * @param {string} id - Element ID
    * @param {string} text - Text content to set
@@ -82,12 +33,25 @@ class DOMUtils {
   static toggleClass(id, className, add) {
     const element = document.getElementById(id);
     if (element) {
-      if (add) {
-        element.classList.add(className);
-      } else {
-        element.classList.remove(className);
-      }
+      element.classList.toggle(className, Boolean(add));
     }
+  }
+
+  /**
+   * Escape text for use inside HTML markup or a quoted attribute. Names,
+   * statuses and scores come from other Steam users and must never be
+   * parsed as markup.
+   * @param {*} value - Text to escape
+   * @returns {string} - Escaped text
+   */
+  static escapeHtml(value) {
+    return String(value ?? "").replace(
+      /[&<>"']/g,
+      (ch) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+          ch
+        ]
+    );
   }
 }
 

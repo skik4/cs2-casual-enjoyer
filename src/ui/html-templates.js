@@ -5,6 +5,7 @@
 
 import { ICON_PATHS } from "../shared/icon-paths.js";
 import { replaceEmojisWithSVG, getEmojiSVG } from "../utils/emoji-svg.js";
+import DOMUtils from "../utils/dom-utils.js";
 import { t } from "../i18n/i18n-manager.js";
 
 // =============================================================================
@@ -297,10 +298,10 @@ export const FRIENDS_TEMPLATES = {
   ) => `
         <div class="friend" id="friend-${steamid}">
             <div class="friend-info-row">
-                <img src="${avatarUrl}" alt="avatar" class="friend-avatar">
+                <img src="${DOMUtils.escapeHtml(avatarUrl)}" alt="avatar" class="friend-avatar">
                 <div class="friend-info">
-                    <span class="personaname">${personaname}</span>
-                    ${hasStatus ? `<span class="game-status" style="font-weight:400;color:#bfc9d8;">${statusText}</span>` : ""}
+                    <span class="personaname">${DOMUtils.escapeHtml(personaname)}</span>
+                    ${hasStatus ? `<span class="game-status" style="font-weight:400;color:#bfc9d8;">${DOMUtils.escapeHtml(statusText)}</span>` : ""}
                 </div>
             </div>
             <div class="join-section" id="join-section-${steamid}">

@@ -114,24 +114,6 @@ export class TutorialStateManager {
     this.currentStep = 0;
     this.isActive = false;
   }
-
-  /**
-   * Go to specific step
-   * @param {number} stepIndex
-   * @returns {Object|null} Previous and current step data
-   */
-  goToStep(stepIndex) {
-    if (stepIndex >= 0 && stepIndex < this.steps.length) {
-      const previousStep = this.currentStep;
-      this.currentStep = stepIndex;
-      return {
-        previousStep,
-        currentStep: this.currentStep,
-        stepData: this.getCurrentStepData(),
-      };
-    }
-    return null;
-  }
 }
 
 // Singleton instance

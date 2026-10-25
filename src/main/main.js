@@ -1,20 +1,14 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
-import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { WINDOW_CONFIG } from "../shared/constants.js";
 import GsiService from "./gsi-service.js";
+import SettingsStore from "./settings-store.js";
+import { isAllowedExternalUrl } from "./external-links.js";
 import {
   readMapFinderStore,
   writeMapFinderStore,
 } from "./map-finder-store.js";
-
-// Constants
-const WINDOW_CONFIG = {
-  WIDTH: 850,
-  HEIGHT: 900,
-  MIN_WIDTH: 850,
-  MIN_HEIGHT: 800,
-};
 
 const SETTINGS_PATH = path.join(app.getPath("userData"), "settings.json");
 const GSI_STORE_PATH = path.join(app.getPath("userData"), "gsi.json");
@@ -54,47 +48,20 @@ class MainLogger {
   }
 }
 
-/**
- * Settings management utilities
- */
-class SettingsManager {
-  /**
-   * Read settings from file
-   * @returns {Object|null} - Settings object or null if not found
-   */
-  static async readSettings() {
-    try {
-      if (
-        await fs
-          .access(SETTINGS_PATH)
-          .then(() => true)
-          .catch(() => false)
-      ) {
-        const data = await fs.readFile(SETTINGS_PATH, "utf-8");
-        MainLogger.info("Settings loaded successfully");
-        return JSON.parse(data);
-      }
-    } catch (error) {
-      MainLogger.error("Error reading settings", error);
-    }
-    return null;
-  }
+const settingsStore = new SettingsStore(SETTINGS_PATH, MainLogger);
 
-  /**
-   * Write settings to file
-   * @param {Object} data - Settings data to write
-   * @returns {boolean} - Success status
-   */
-  static async writeSettings(data) {
-    try {
-      await fs.writeFile(SETTINGS_PATH, JSON.stringify(data, null, 2), "utf-8");
-      MainLogger.info("Settings saved successfully");
-      return true;
-    } catch (error) {
-      MainLogger.error("Error writing settings", error);
-      return false;
-    }
+/**
+ * Open a URL in the OS if its scheme is one the app uses
+ * @param {string} url - URL to open
+ * @returns {boolean} - Whether it was handed to the OS
+ */
+function openExternalSafely(url) {
+  if (!isAllowedExternalUrl(url)) {
+    MainLogger.warn("Refused to open URL", { url });
+    return false;
   }
+  shell.openExternal(url);
+  return true;
 }
 
 /**
@@ -129,10 +96,15 @@ class WindowManager {
     win.loadFile(htmlPath);
     win.setMenuBarVisibility(false);
 
-    // Handle external links
+    // Links never open inside the app: web and Steam links go to the OS,
+    // anything else is dropped, and the window never navigates away
     win.webContents.setWindowOpenHandler(({ url }) => {
-      shell.openExternal(url);
+      openExternalSafely(url);
       return { action: "deny" };
+    });
+    win.webContents.on("will-navigate", (event, url) => {
+      event.preventDefault();
+      openExternalSafely(url);
     });
 
     // Show window after content is loaded to prevent flash
@@ -182,25 +154,21 @@ class IPCManager {
       writeMapFinderStore(MAP_FINDER_STORE_PATH, data)
     );
 
-    // Settings handlers
-    ipcMain.handle("settings-load", () => {
-      return SettingsManager.readSettings();
-    });
-
-    ipcMain.handle("settings-save", (event, data) => {
-      return SettingsManager.writeSettings(data);
-    });
+    // Settings handlers: the renderer reads the file and sends patches
+    ipcMain.handle("settings-load", () => settingsStore.read());
+    ipcMain.handle("settings-update", (event, patch) =>
+      settingsStore.update(patch)
+    );
 
     // App info handlers
     ipcMain.handle("get-app-version", () => {
       return app.getVersion();
     });
 
-    // External links handler (open directly, no protocol filtering by request)
+    // External links: steam:// joins and launches, https pages
     ipcMain.handle("open-external", (event, url) => {
       try {
-        shell.openExternal(url);
-        return true;
+        return openExternalSafely(url);
       } catch (error) {
         MainLogger.error("Failed to open external URL", { url, error });
         return false;

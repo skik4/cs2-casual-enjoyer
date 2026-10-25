@@ -190,8 +190,9 @@ describe("FakeFriendsManager.removeId", () => {
     delete global.window.electronAPI;
   });
 
-  test("removes the ID and keeps the rest of the settings", async () => {
-    const save = jest.fn().mockResolvedValue(true);
+  test("sends only the changed list and keeps the merged settings", async () => {
+    const merged = { steam_id: ALICE, auth: "token", fake_friend_ids: [BOB] };
+    const update = jest.fn().mockResolvedValue(merged);
     global.window.electronAPI = {
       settings: {
         load: jest.fn().mockResolvedValue({
@@ -199,31 +200,75 @@ describe("FakeFriendsManager.removeId", () => {
           auth: "token",
           fake_friend_ids: [FAKE, BOB],
         }),
-        save,
+        update,
       },
     };
 
     await expect(FakeFriendsManager.removeId(FAKE)).resolves.toBe(true);
 
-    expect(save).toHaveBeenCalledWith({
-      steam_id: ALICE,
-      auth: "token",
-      fake_friend_ids: [BOB],
-    });
+    expect(update).toHaveBeenCalledWith({ fake_friend_ids: [BOB] });
+    expect(appStateManager.getState("savedSettings")).toBe(merged);
     expect(FakeFriendsManager.getIds()).toEqual([BOB]);
   });
 
   test("reports an ID that was not tracked", async () => {
-    const save = jest.fn();
+    const update = jest.fn();
     global.window.electronAPI = {
       settings: {
         load: jest.fn().mockResolvedValue({ fake_friend_ids: [BOB] }),
-        save,
+        update,
       },
     };
 
     await expect(FakeFriendsManager.removeId(FAKE)).resolves.toBe(false);
-    expect(save).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  test("a failed save is an error, not a silent success", async () => {
+    global.window.electronAPI = {
+      settings: {
+        load: jest.fn().mockResolvedValue({ fake_friend_ids: [FAKE] }),
+        update: jest.fn().mockResolvedValue(null),
+      },
+    };
+
+    await expect(FakeFriendsManager.removeId(FAKE)).rejects.toThrow(
+      "Could not save settings"
+    );
+  });
+});
+
+describe("FakeFriendsManager.addId", () => {
+  afterEach(() => {
+    delete global.window.electronAPI;
+  });
+
+  test("appends the ID to what is stored", async () => {
+    const update = jest
+      .fn()
+      .mockResolvedValue({ fake_friend_ids: [BOB, FAKE] });
+    global.window.electronAPI = {
+      settings: {
+        load: jest.fn().mockResolvedValue({ fake_friend_ids: [BOB] }),
+        update,
+      },
+    };
+
+    await expect(FakeFriendsManager.addId(FAKE)).resolves.toBe(true);
+    expect(update).toHaveBeenCalledWith({ fake_friend_ids: [BOB, FAKE] });
+  });
+
+  test("does not add an ID twice", async () => {
+    const update = jest.fn();
+    global.window.electronAPI = {
+      settings: {
+        load: jest.fn().mockResolvedValue({ fake_friend_ids: [FAKE] }),
+        update,
+      },
+    };
+
+    await expect(FakeFriendsManager.addId(FAKE)).resolves.toBe(false);
+    expect(update).not.toHaveBeenCalled();
   });
 });
 

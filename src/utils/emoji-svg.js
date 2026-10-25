@@ -112,7 +112,7 @@ export async function replaceEmojisWithSVG(
 ) {
   let result = text;
 
-  for (const [emoji, filename] of Object.entries(EMOJI_SVG_MAP)) {
+  for (const emoji of Object.keys(EMOJI_SVG_MAP)) {
     if (result.includes(emoji)) {
       const svgHTML = await getEmojiSVG(emoji, className, style);
       result = result.replaceAll(emoji, svgHTML);
@@ -122,49 +122,7 @@ export async function replaceEmojisWithSVG(
   return result;
 }
 
-/**
- * Create an SVG emoji element
- * @param {string} emoji - Unicode emoji character
- * @param {Object} options - Options for the SVG element
- * @param {string} options.className - CSS class
- * @param {string} options.style - Inline styles
- * @param {string} options.title - Title attribute (tooltip)
- * @returns {Promise<HTMLElement|null>} SVG element or null if not found
- */
-export async function createEmojiSVGElement(emoji, options = {}) {
-  const { className = "emoji-svg", style = "", title = "" } = options;
-
-  const svgHTML = await getEmojiSVG(emoji, className, style);
-  if (svgHTML === emoji) {
-    return null; // No SVG found
-  }
-
-  const tempDiv = document.createElement("div");
-  tempDiv.innerHTML = svgHTML;
-  const svgElement = tempDiv.firstElementChild;
-
-  if (title && svgElement) {
-    svgElement.setAttribute("title", title);
-  }
-
-  return svgElement;
-}
-
-/**
- * Preload all SVG emojis for better performance
- * @returns {Promise<void>}
- */
-export async function preloadAllEmojiSVGs() {
-  const loadPromises = Object.values(EMOJI_SVG_MAP).map((filename) =>
-    loadSVG(filename)
-  );
-  await Promise.all(loadPromises);
-  console.log("All emoji SVGs preloaded");
-}
-
 export default {
   getEmojiSVG,
   replaceEmojisWithSVG,
-  createEmojiSVGElement,
-  preloadAllEmojiSVGs,
 };

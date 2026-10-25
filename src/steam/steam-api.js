@@ -1,25 +1,11 @@
 // Steam modules
 import SteamAPIClient from "./steam-api-client.js";
-import SteamAPIUtils from "./steam-api-utils.js";
 
 /**
  * Steam API facade module
- * Main interface for Steam API functionality - provides backward compatibility
- * Delegates to SteamAPIClient and SteamAPIUtils
+ * Main interface for Steam API functionality, delegating to SteamAPIClient
  */
 class SteamAPI {
-  // ===== UTILITY METHODS (delegated to SteamAPIUtils) =====
-
-  /**
-   * Parse Rich Presence data from Steam
-   * @param {string} kv - Key-value string from Steam rich presence
-   * @returns {Object} - Parsed rich presence fields
-   */
-  static parseRichPresence(kv) {
-    return SteamAPIUtils.parseRichPresence(kv);
-  }
-
-  // ===== API CLIENT METHODS (delegated to SteamAPIClient) =====
   /**
    * Get the user's friends list
    * @param {string} steam_id - Steam ID of the user
@@ -28,16 +14,6 @@ class SteamAPI {
    */
   static async getFriendsList(steam_id, auth) {
     return SteamAPIClient.getFriendsList(steam_id, auth);
-  }
-
-  /**
-   * Fetch player summaries for up to 100 SteamIDs at a time
-   * @param {string[]|string} steamids - Steam IDs to fetch
-   * @param {string} auth - API key or token
-   * @returns {Promise<Object>} - Map of Steam ID to player data
-   */
-  static async getPlayerSummaries(steamids, auth) {
-    return SteamAPIClient.getPlayerSummaries(steamids, auth);
   }
 
   /**

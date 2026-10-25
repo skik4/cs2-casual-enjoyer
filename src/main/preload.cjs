@@ -25,12 +25,17 @@ const electronAPI = {
         return null;
       }
     },
-    save: async (data) => {
+    /**
+     * Merge fields into the stored settings; null removes a field
+     * @param {Object} patch - Fields to change
+     * @returns {Promise<Object|null>} - Settings after the change, null on failure
+     */
+    update: async (patch) => {
       try {
-        return await ipcRenderer.invoke("settings-save", data);
+        return await ipcRenderer.invoke("settings-update", patch);
       } catch (error) {
         console.error("Failed to save settings:", error);
-        return false;
+        return null;
       }
     },
   },

@@ -86,13 +86,9 @@ export function initLanguage(preferred) {
 
 export async function persistLanguageToSettings(lang) {
   // Best-effort persistence via electron settings
-  if (window?.electronAPI?.settings?.load && window?.electronAPI?.settings?.save) {
-    try {
-      const current = await window.electronAPI.settings.load();
-      const updated = { ...(current || {}), language: lang };
-      await window.electronAPI.settings.save(updated);
-    } catch { }
-  }
+  try {
+    await window?.electronAPI?.settings?.update?.({ language: lang });
+  } catch {}
 }
 
 export function toggleLanguage() {
@@ -108,10 +104,6 @@ export function onLanguageChange(callback) {
   return () => { };
 }
 
-export function offLanguageChange(callback) {
-  listeners.delete(callback);
-}
-
 export default {
   getLanguage,
   setLanguage,
@@ -119,6 +111,5 @@ export default {
   toggleLanguage,
   persistLanguageToSettings,
   onLanguageChange,
-  offLanguageChange,
   t,
 };

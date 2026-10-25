@@ -221,20 +221,15 @@ class AppFriendsManager {
       const supportedFriends =
         FakeFriendsManager.withFakeFriends(statuses);
 
-      // Save settings without avatars (they will be loaded on demand)
-      // Merge into the stored settings - a bare save replaces the whole file
-      // (SettingsManager.writeSettings), which would drop language and
-      // fake_friend_ids.
-      const currentSettings =
-        (await window.electronAPI.settings.load()) || {};
-      const updatedSettings = {
-        ...currentSettings,
+      // Only these fields change; the main process merges them into the file
+      const updatedSettings = await window.electronAPI.settings.update({
         steam_id,
         auth,
         friends_ids: allFriendIds,
-      };
-      await window.electronAPI.settings.save(updatedSettings);
-      appStateManager.setState("savedSettings", updatedSettings);
+      });
+      if (updatedSettings) {
+        appStateManager.setState("savedSettings", updatedSettings);
+      }
 
       // Reset join states
       joinManager.resetAll();
@@ -284,7 +279,10 @@ class AppFriendsManager {
       return;
     }
 
-    const auth = this.inputManager ? this.inputManager.getAuth() : "";
+    // Read on every refresh: a token pasted later must replace the old one,
+    // which expires after a day
+    const currentAuth = () =>
+      this.inputManager ? this.inputManager.getAuth() : "";
 
     const savedFriendsIds = FakeFriendsManager.mergeIds(
       appStateManager.getState("savedFriendsIds") || []
@@ -303,7 +301,11 @@ class AppFriendsManager {
     );
 
     try {
-      await this.fetchAndRenderFriendsByIds(savedFriendsIds, auth, true);
+      await this.fetchAndRenderFriendsByIds(
+        savedFriendsIds,
+        currentAuth(),
+        true
+      );
 
       // Clear existing interval
       appStateManager.clearRefreshInterval();
@@ -312,12 +314,15 @@ class AppFriendsManager {
       const autoRefreshIntervalMs = appStateManager.getState(
         "autoRefreshIntervalMs"
       );
+      let refreshing = false;
       const interval = setInterval(async () => {
         // Check if tutorial is active before each refresh
         if (tutorialManager.isActive) {
           logger.debug("App", "Auto-refresh skipped - tutorial is active");
           return;
         }
+        // A slow Steam must not pile up overlapping refreshes
+        if (refreshing) return;
 
         const usingSavedFriends = appStateManager.getState("usingSavedFriends");
         const currentSavedFriendsIds = FakeFriendsManager.mergeIds(
@@ -325,16 +330,19 @@ class AppFriendsManager {
         );
 
         if (usingSavedFriends && currentSavedFriendsIds.length) {
+          refreshing = true;
           try {
             await this.fetchAndRenderFriendsByIds(
               currentSavedFriendsIds,
-              auth,
+              currentAuth(),
               true
             );
           } catch (error) {
             logger.warn("App", "Auto-refresh fetch failed", {
               error: error.message,
             });
+          } finally {
+            refreshing = false;
           }
         }
       }, autoRefreshIntervalMs);

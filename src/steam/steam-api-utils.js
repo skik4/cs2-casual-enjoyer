@@ -6,7 +6,17 @@ import {
 } from "../shared/constants.js";
 
 // UI and utilities
+import ErrorHandler from "../utils/error-handler.js";
 import logger from "../utils/logger.js";
+
+/**
+ * Errors with a meaning of their own, by API method and HTTP status
+ */
+const METHOD_ERROR_HANDLERS = {
+  GetFriendsList: {
+    401: () => ErrorHandler.createError(ERROR_CODES.PRIVATE_FRIENDS_LIST),
+  },
+};
 
 /**
  * Steam API utilities and parsers
@@ -238,27 +248,22 @@ class SteamAPIUtils {
    * Handle HTTP response status and errors
    * @param {Response} response - Fetch response object
    * @param {Object} config - Request configuration
-   * @param {Object} context - Additional context for logging
-   * @returns {Promise<boolean>} - True if response is OK, false if handled error with allowFailure
+   * @returns {boolean} - True if response is OK, false if handled error with allowFailure
    * @throws {Error} - For unhandled errors or custom error handlers
    */
-  static async handleHttpResponse(response, config, context = {}) {
+  static handleHttpResponse(response, config) {
     if (response.ok) {
       return true;
     }
 
     // Check for custom error handlers first
-    if (config.errorHandlers && config.errorHandlers[response.status]) {
-      throw config.errorHandlers[response.status]();
-    } // Handle allowFailure cases
+    const handler = config.errorHandlers?.[response.status];
+    if (handler) throw handler();
+
     if (config.allowFailure) {
       return false;
     }
 
-    // Import here to avoid circular dependency
-    const { default: ErrorHandler } = await import("../utils/error-handler.js");
-
-    // Default error handling
     throw ErrorHandler.createError(
       `API_ERROR_${response.status}`,
       `${config.method} failed: ${response.status} ${response.statusText}`
@@ -268,19 +273,10 @@ class SteamAPIUtils {
   /**
    * Get error handlers for specific API methods
    * @param {string} method - API method name
-   * @returns {Promise<Object>} - Error handlers map
+   * @returns {Object} - Error handlers by HTTP status
    */
-  static async getMethodErrorHandlers(method) {
-    // Import here to avoid circular dependency
-    const { default: ErrorHandler } = await import("../utils/error-handler.js");
-
-    const errorHandlers = {
-      GetFriendsList: {
-        401: () => ErrorHandler.createError(ERROR_CODES.PRIVATE_FRIENDS_LIST),
-      },
-    };
-
-    return errorHandlers[method] || {};
+  static getMethodErrorHandlers(method) {
+    return METHOD_ERROR_HANDLERS[method] || {};
   }
 
   /**

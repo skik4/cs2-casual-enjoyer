@@ -9,6 +9,7 @@ import UIManager from "../ui/ui-manager.js";
 import SteamAPI from "../steam/steam-api.js";
 import Validators from "../utils/validators.js";
 import DOMUtils from "../utils/dom-utils.js";
+import { t } from "../i18n/i18n-manager.js";
 
 /**
  * Input management module
@@ -87,14 +88,12 @@ class AppInputManager {
     } else if (urlValidation.type === "vanity") {
       const auth = this.getAuth();
       if (!auth) {
-        UIManager.showError(
-          "Please enter your API Key first to resolve vanity URLs"
-        );
+        UIManager.showError(t("validation.vanityNeedsAuth"));
         return;
       }
 
       const originalValue = steamIdInput.value;
-      steamIdInput.value = "Resolving vanity URL...";
+      steamIdInput.value = t("validation.vanityResolving");
       steamIdInput.disabled = true;
 
       try {
@@ -107,13 +106,11 @@ class AppInputManager {
           UIManager.hideNotification();
         } else {
           steamIdInput.value = originalValue;
-          UIManager.showError(
-            "Could not resolve vanity URL. Please enter SteamID64 manually."
-          );
+          UIManager.showError(t("validation.vanityNotResolved"));
         }
       } catch (error) {
         steamIdInput.value = originalValue;
-        UIManager.showError("Error resolving vanity URL: " + error.message);
+        UIManager.showError(t("validation.vanityError") + error.message);
       } finally {
         steamIdInput.disabled = false;
         this.validateInputs();

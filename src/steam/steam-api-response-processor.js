@@ -1,5 +1,5 @@
 // Shared constants
-import { ERROR_CODES } from "../shared/constants.js";
+import { ERROR_CODES, LOG_LEVELS } from "../shared/constants.js";
 
 // Steam modules
 import SteamAPIUtils from "./steam-api-utils.js";
@@ -439,6 +439,8 @@ class SteamAPIResponseProcessor {
    * @private
    */
   static _logAllFriendsBreakdown(accounts) {
+    // Runs on every refresh: build the breakdown only when it gets logged
+    if (!logger.shouldLog(LOG_LEVELS.DEBUG)) return;
     logger.debug("SteamAPIResponseProcessor", "All friends breakdown", {
       allFriends: accounts.map((acc) =>
         SteamAPIUtils.createPlayerDebugInfo(acc)
@@ -502,6 +504,7 @@ class SteamAPIResponseProcessor {
       "SteamAPIResponseProcessor",
       `Found ${supportedFriends.length} friends in casual, ${joinableFriends.length} joinable`
     );
+    if (!logger.shouldLog(LOG_LEVELS.DEBUG)) return;
 
     // Debug: Show non-supported CS2 friends and why they're not supported
     const nonSupportedFriends = mapped.filter((f) => !f.in_casual_mode);

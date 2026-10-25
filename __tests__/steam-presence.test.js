@@ -109,6 +109,18 @@ describe("getPresence", () => {
     });
   });
 
+  test("expired cache entries are dropped, not only ones asked about again", async () => {
+    SteamAPIClient._cache.set("76561198000000099", { raw: null, ts: 0 });
+    global.fetch.mockResolvedValue(
+      okResponse({ response: { accounts: [account(A, OFFICIAL_CASUAL)] } })
+    );
+
+    await SteamAPIClient.getPresence([A], KEY);
+
+    expect(SteamAPIClient._cache.has("76561198000000099")).toBe(false);
+    expect(SteamAPIClient._cache.has(A)).toBe(true);
+  });
+
   test("a failed request leaves the ids out", async () => {
     global.fetch.mockRejectedValue(new Error("ECONNRESET"));
 

@@ -341,17 +341,6 @@ class CS2Manager {
     this._settlePendingLobbyWait(false);
     logger.info("CS2Manager", "Launch operations cancelled");
   }
-
-  /**
-   * Cleanup resources
-   */
-  destroy() {
-    this.stopStatusMonitoring();
-    this._settlePendingLobbyWait(false);
-    this.appInputManager = null;
-    this.isInitialized = false;
-    logger.info("CS2Manager", "CS2Manager destroyed");
-  }
 }
 
 // Singleton instance

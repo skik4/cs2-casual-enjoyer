@@ -373,22 +373,6 @@ export class TutorialUIManager {
   }
 
   /**
-   * Get current target
-   * @returns {string|null}
-   */
-  getCurrentTarget() {
-    return this.currentTarget;
-  }
-
-  /**
-   * Get current forced position
-   * @returns {string|null}
-   */
-  getCurrentForcedPosition() {
-    return this.currentForcedPosition;
-  }
-
-  /**
    * Start efficient position updates using observers
    * @param {Function} isActiveCallback - Function to check if tutorial is still active
    */

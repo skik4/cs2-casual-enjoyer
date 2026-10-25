@@ -114,42 +114,50 @@ class FakeFriendsManager {
   }
 
   /**
-   * Persist a manually tracked Steam ID, preserving the rest of the settings
+   * Persist a manually tracked Steam ID
    * @param {string} steamId - SteamID64 to add
    * @returns {Promise<boolean>} - False if the ID was already tracked
    */
   static async addId(steamId) {
-    const current = (await window.electronAPI.settings.load()) || {};
-    const ids = Array.isArray(current.fake_friend_ids)
-      ? current.fake_friend_ids
-      : [];
+    const ids = await this._readStoredIds();
     if (ids.includes(steamId)) return false;
-
-    const updated = { ...current, fake_friend_ids: [...ids, steamId] };
-    await window.electronAPI.settings.save(updated);
-    appStateManager.setState("savedSettings", updated);
+    await this._saveIds([...ids, steamId]);
     return true;
   }
 
   /**
-   * Stop tracking a Steam ID, preserving the rest of the settings
+   * Stop tracking a Steam ID
    * @param {string} steamId - SteamID64 to remove
    * @returns {Promise<boolean>} - False if the ID was not tracked
    */
   static async removeId(steamId) {
-    const current = (await window.electronAPI.settings.load()) || {};
-    const ids = Array.isArray(current.fake_friend_ids)
-      ? current.fake_friend_ids
-      : [];
+    const ids = await this._readStoredIds();
     if (!ids.includes(steamId)) return false;
-
-    const updated = {
-      ...current,
-      fake_friend_ids: ids.filter((id) => id !== steamId),
-    };
-    await window.electronAPI.settings.save(updated);
-    appStateManager.setState("savedSettings", updated);
+    await this._saveIds(ids.filter((id) => id !== steamId));
     return true;
+  }
+
+  /**
+   * The tracked IDs as stored on disk, which is what a change starts from
+   * @returns {Promise<string[]>}
+   * @private
+   */
+  static async _readStoredIds() {
+    const stored = (await window.electronAPI.settings.load())?.fake_friend_ids;
+    return Array.isArray(stored) ? stored : [];
+  }
+
+  /**
+   * Store the tracked IDs; the rest of the settings stays as it is
+   * @param {string[]} ids - Every tracked ID
+   * @private
+   */
+  static async _saveIds(ids) {
+    const updated = await window.electronAPI.settings.update({
+      fake_friend_ids: ids,
+    });
+    if (!updated) throw new Error("Could not save settings");
+    appStateManager.setState("savedSettings", updated);
   }
 }
 

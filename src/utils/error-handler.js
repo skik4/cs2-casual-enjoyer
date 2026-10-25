@@ -45,13 +45,6 @@ class ErrorHandler {
    */
   static logError(context, error, additionalData = {}) {
     const errorMessage = error instanceof Error ? error.message : error;
-    const logData = {
-      context,
-      error: errorMessage,
-      timestamp: new Date().toISOString(),
-      ...additionalData,
-    };
-
     console.error(`[${context}]`, errorMessage, additionalData);
   }
 

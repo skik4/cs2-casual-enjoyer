@@ -81,6 +81,18 @@ class SteamAPIClient {
   }
 
   /**
+   * Drop expired entries. An entry is otherwise only dropped when the same id
+   * is asked for again, and the map finder asks about thousands of ids that
+   * may never come back.
+   */
+  static _pruneCache() {
+    const now = Date.now();
+    for (const [key, entry] of this._cache) {
+      if (now - entry.ts >= this._SHORT_TTL_MS) this._cache.delete(key);
+    }
+  }
+
+  /**
    * Normalize raw GetPlayerLinkDetails response to map steamid -> raw-like object
    * Each value keeps the same shape { response: { accounts: [account] } } expected by processors
    */
@@ -206,6 +218,7 @@ class SteamAPIClient {
 
         // Cache answers, negatives included, with a short TTL. A failed id is
         // left uncached so the next call asks Steam again.
+        this._pruneCache();
         for (const id of requestIds) {
           if (mapById.has(id)) this._setCachedRaw(id, mapById.get(id));
         }
@@ -295,11 +308,10 @@ class SteamAPIClient {
       const response = await SteamAPIHttpClient.makeRequest(url, { signal });
 
       // Handle HTTP errors
-      const errorHandlers = await SteamAPIUtils.getMethodErrorHandlers(method);
-      const isOk = await SteamAPIUtils.handleHttpResponse(response, {
+      const isOk = SteamAPIUtils.handleHttpResponse(response, {
         method,
         allowFailure,
-        errorHandlers,
+        errorHandlers: SteamAPIUtils.getMethodErrorHandlers(method),
       });
 
       if (!isOk) {

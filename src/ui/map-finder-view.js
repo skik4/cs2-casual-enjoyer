@@ -18,21 +18,8 @@ import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
 import { t, onLanguageChange } from "../i18n/i18n-manager.js";
 
-const HTML_ESCAPES = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-};
-
-/**
- * Escape text for HTML - names and scores come from other players
- * @param {*} value - Text
- * @returns {string}
- */
-const escapeHtml = (value) =>
-  String(value ?? "").replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
+// Names and scores come from other players
+const escapeHtml = DOMUtils.escapeHtml;
 
 /**
  * "[ 3 : 1 ]" as "3 : 1"
@@ -50,6 +37,7 @@ class MapFinderView {
   static expanded = new Set();
   static getMainAuth = () => "";
   static _initialized = false;
+  static _lastListHtml = null;
 
   /**
    * Wire the view once
@@ -164,16 +152,15 @@ class MapFinderView {
       return;
     }
 
-    try {
-      const current = (await window.electronAPI.settings.load()) || {};
-      const { fof_api_key: _previous, ...rest } = current;
-      const updated = key ? { ...rest, fof_api_key: key } : rest;
-      await window.electronAPI.settings.save(updated);
-      appStateManager.setState("savedSettings", updated);
-    } catch (error) {
-      ErrorHandler.logError("MapFinderView.saveFofKey", error);
+    // An empty field removes the stored key
+    const updated = await window.electronAPI.settings.update({
+      fof_api_key: key || null,
+    });
+    if (!updated) {
+      ErrorHandler.logError("MapFinderView.saveFofKey", "Could not save settings");
       return;
     }
+    appStateManager.setState("savedSettings", updated);
 
     input.value = "";
     input.classList.remove("invalid-input");
@@ -190,9 +177,15 @@ class MapFinderView {
 
     const joinStates = joinManager.getJoinStates();
     const maps = mapFinder.getMaps();
-    list.innerHTML = maps
+    const html = maps
       .map((entry) => this.renderMapCard(entry, joinStates))
       .join("");
+    // The finder notifies on every refresh, most of which change nothing;
+    // rebuilding anyway would restart the status dot animations
+    if (html !== this._lastListHtml) {
+      list.innerHTML = html;
+      this._lastListHtml = html;
+    }
 
     this.renderEmpty(maps.length);
     this.renderStatus();
