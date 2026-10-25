@@ -53,11 +53,57 @@ describe("isOfficialServer", () => {
       `${OFFICIAL_CASUAL} "Addon" "3329709053"`,
       false,
     ],
+    [
+      // Seen for real: "kv", a known map and no add-on, but a token-listed
+      // community server at a public address
+      "a community server listed with a login token",
+      OFFICIAL_CASUAL.replace("90071992547409921", "85568392931758174"),
+      false,
+    ],
     ["the main menu", '"game:state" "lobby" "game:mode" "casual"', false],
   ])("%s", (_name, kv, expected) => {
     expect(SteamAPIUtils.isOfficialServer(SteamAPIUtils.parseRichPresence(kv))).toBe(
       expected
     );
+  });
+});
+
+describe("official server signals", () => {
+  test("isAnonymousGameServer reads the account type from the server id", () => {
+    expect(SteamAPIUtils.isAnonymousGameServer("90295736594079769")).toBe(true);
+    expect(SteamAPIUtils.isAnonymousGameServer("85568392931758174")).toBe(false);
+    expect(SteamAPIUtils.isAnonymousGameServer(null)).toBe(false);
+    expect(SteamAPIUtils.isAnonymousGameServer("not a number")).toBe(false);
+  });
+
+  test("the server id can come from outside rich presence", async () => {
+    const withoutId = OFFICIAL_CASUAL.replace(
+      ' "game_server_steam_id" "90071992547409921"',
+      ""
+    );
+    global.fetch.mockResolvedValue(
+      okResponse({
+        response: {
+          accounts: [
+            {
+              public_data: { steamid: A },
+              private_data: {
+                game_id: "730",
+                rich_presence_kv: withoutId,
+                game_server_steam_id: "90071992547409921",
+              },
+            },
+          ],
+        },
+      })
+    );
+
+    const presence = await SteamAPIClient.getPresence([A], KEY);
+
+    expect(presence.get(A)).toMatchObject({
+      serverId: "90071992547409921",
+      official: true,
+    });
   });
 });
 

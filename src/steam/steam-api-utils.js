@@ -1,5 +1,6 @@
 // Shared constants
 import {
+  ANON_GAME_SERVER_ACCOUNT_TYPE,
   ERROR_CODES,
   GAME_MODES,
   VALIDATION_PATTERNS,
@@ -54,20 +55,42 @@ class SteamAPIUtils {
   }
 
   /**
-   * Whether rich presence describes a match on one of Valve's own servers.
-   * Community servers say "community" or carry a workshop Addon, and the
-   * ones on Valve's relay network still show their own map names, which
-   * the client displays through the workshop-map string.
+   * Whether rich presence describes a casual match on one of Valve's own
+   * servers. Rich presence alone can pass a community server off as one:
+   * many report "kv" and a known map. What gives them away is the server's
+   * account: Valve's servers log on anonymously, while a community server
+   * needs a login token to take players from the internet.
    * @param {Object} richPresence - Parsed rich presence data
+   * @param {string|null} [serverId] - Game server Steam ID, when rich
+   *   presence does not carry it
    * @returns {boolean} - True for an official server
    */
-  static isOfficialServer(richPresence) {
+  static isOfficialServer(
+    richPresence,
+    serverId = richPresence?.game_server_steam_id
+  ) {
     return (
       richPresence?.game_server === "kv" &&
       typeof richPresence.steam_display === "string" &&
       richPresence.steam_display.startsWith("#display_GameKnownMap") &&
-      !richPresence.addon
+      !richPresence.addon &&
+      this.isAnonymousGameServer(serverId)
     );
+  }
+
+  /**
+   * Whether a game server Steam ID belongs to an anonymous game server
+   * @param {string|null} serverId - Game server Steam ID
+   * @returns {boolean}
+   */
+  static isAnonymousGameServer(serverId) {
+    try {
+      return (
+        Number((BigInt(serverId) >> 52n) & 0xfn) === ANON_GAME_SERVER_ACCOUNT_TYPE
+      );
+    } catch {
+      return false;
+    }
   }
 
   /**

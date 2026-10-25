@@ -215,7 +215,9 @@ class SteamAPIResponseProcessor {
       mode: info.inCS2 ? richPresence.game_mode : null,
       map: info.inCS2 ? richPresence.game_map : null,
       score: info.inCS2 ? richPresence.game_score : null,
-      official: info.inSupportedMode && SteamAPIUtils.isOfficialServer(richPresence),
+      official:
+        info.inSupportedMode &&
+        SteamAPIUtils.isOfficialServer(richPresence, info.serverId),
     };
   }
 

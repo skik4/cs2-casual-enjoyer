@@ -38,6 +38,13 @@ export const GSI_SETUP = {
   ERROR: "error",
 };
 
+/**
+ * Steam account type of game servers that log on anonymously - Valve's own
+ * matchmaking servers do. Community servers listed with a server login token
+ * are type 3.
+ */
+export const ANON_GAME_SERVER_ACCOUNT_TYPE = 4;
+
 export const MAP_FINDER_CONFIG = {
   REFRESH_INTERVAL_MS: 30000,
   // At 100 ids per request this caps one refresh at 30 requests
