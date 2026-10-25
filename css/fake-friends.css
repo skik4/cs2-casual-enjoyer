@@ -1,0 +1,85 @@
+/* Fake Friends - manually tracked Steam IDs */
+
+.fake-friend-add {
+  margin-top: var(--space-md);
+  border-top: var(--border-width) solid var(--border-color);
+  padding: var(--space-md);
+}
+
+.fake-friend-add-header {
+  margin-bottom: var(--space-sm);
+}
+
+.fake-friend-add-header h3 {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.fake-friend-add-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.fake-friend-input-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Input styling comes from forms.css; the invalid state uses the shared
+   .invalid-input class so it matches every other field in the app. */
+
+.fake-friend-add-content .error-message {
+  color: var(--red-primary);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-xxs);
+}
+
+/* The list sits below the add form in its own tab */
+.fake-friend-add + #fake-friends {
+  margin-top: var(--space-sm);
+}
+
+.remove-fake-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: var(--border-width) solid var(--border-color-strong);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition:
+    background var(--anim-duration),
+    border-color var(--anim-duration);
+}
+
+.remove-fake-btn img {
+  filter: brightness(0) saturate(100%) invert(75%);
+  pointer-events: none;
+}
+
+.remove-fake-btn:hover {
+  background: var(--red-primary);
+  border-color: var(--red-primary);
+}
+
+.remove-fake-btn:hover img {
+  filter: brightness(0) saturate(100%) invert(100%);
+}
+
+/* First click: ask for a second one before removing */
+.remove-fake-btn.confirm-remove {
+  width: auto;
+  padding: 0 var(--space-sm);
+  background: var(--red-primary);
+  border-color: var(--red-primary);
+  color: var(--white);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}

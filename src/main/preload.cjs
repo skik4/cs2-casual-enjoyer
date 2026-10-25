@@ -64,6 +64,52 @@ const electronAPI = {
   },
 
   /**
+   * CS2 Game State Integration
+   */
+  gsi: {
+    getStatus: async () => {
+      try {
+        return await ipcRenderer.invoke("gsi-get-status");
+      } catch (error) {
+        console.error("Failed to get GSI status:", error);
+        return null;
+      }
+    },
+    /**
+     * Subscribe to game states posted by CS2
+     * @param {Function} callback - Called with each state
+     * @returns {Function} - Unsubscribe
+     */
+    onState: (callback) => {
+      const listener = (_event, state) => callback(state);
+      ipcRenderer.on("gsi-state", listener);
+      return () => ipcRenderer.removeListener("gsi-state", listener);
+    },
+  },
+
+  /**
+   * Map finder: the player pool on disk
+   */
+  mapFinder: {
+    load: async () => {
+      try {
+        return await ipcRenderer.invoke("map-finder-load");
+      } catch (error) {
+        console.error("Failed to load map finder data:", error);
+        return null;
+      }
+    },
+    save: async (data) => {
+      try {
+        return await ipcRenderer.invoke("map-finder-save", data);
+      } catch (error) {
+        console.error("Failed to save map finder data:", error);
+        return false;
+      }
+    },
+  },
+
+  /**
    * Shell helpers
    */
   shell: {

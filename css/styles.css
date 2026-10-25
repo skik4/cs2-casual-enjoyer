@@ -26,8 +26,11 @@
 /* Friend list component */
 @import url("./friends.css");
 
-/* Virtual Friends */
-@import url("./virtual-friends.css");
+/* Fake Friends */
+@import url("./fake-friends.css");
+
+/* View tabs and the map finder */
+@import url("./views.css");
 
 /* Status indicators and animations */
 @import url("./status.css");
@@ -40,6 +43,9 @@
 
 /* Links and additional components */
 @import url("./links.css");
+
+/* GSI status indicator */
+@import url("./gsi-status.css");
 
 /* Button components (existing unified buttons) */
 @import url("./unified-buttons.css");

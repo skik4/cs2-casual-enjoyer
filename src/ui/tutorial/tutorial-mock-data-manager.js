@@ -83,9 +83,14 @@ export class TutorialMockDataManager {
       // Dynamically import to avoid circular dependencies
       import("../../game/join-manager.js").then(({ default: joinManager }) => {
         const joinStates = joinManager.getJoinStates();
-        import("../friends-renderer.js").then(
-          ({ default: FriendsRenderer }) => {
-            FriendsRenderer.renderFriendsList(friendsData, joinStates);
+        Promise.all([
+          import("../friends-renderer.js"),
+          import("../fake-friends-manager.js"),
+        ]).then(
+          ([{ default: FriendsRenderer }, { default: FakeFriendsManager }]) => {
+            // Manually tracked IDs have their own tab
+            const { friends } = FakeFriendsManager.splitFakeFriends(friendsData);
+            FriendsRenderer.renderFriendsList(friends, joinStates);
           }
         );
       });

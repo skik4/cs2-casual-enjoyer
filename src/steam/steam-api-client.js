@@ -101,7 +101,9 @@ class SteamAPIClient {
    * @param {string[]|string} steamids
    * @param {string} auth
    * @param {Object} context
-   * @returns {Promise<Map<string, Object|null>>} map steamid -> raw-like object (or null if not found)
+   * @returns {Promise<Map<string, Object|null>>} map steamid -> raw-like object, or null when
+   *   Steam returned no account for it. Ids whose request failed are absent, so "could not ask"
+   *   stays distinguishable from "no account".
    */
   static async _getPlayerLinkDetailsBatched(steamids, auth, context = {}) {
     // Normalize input
@@ -141,15 +143,16 @@ class SteamAPIClient {
     const maps = await Promise.all(pending);
     for (const id of ids) {
       if (result.has(id)) continue;
+      // Only an actual answer earns an entry; a failed id stays absent
+      let answered = false;
       let value = null;
       for (const map of maps) {
-        const found = map.get(id);
-        if (found) {
-          value = found;
-          break;
-        }
+        if (!map.has(id)) continue;
+        answered = true;
+        value = map.get(id);
+        if (value) break;
       }
-      result.set(id, value);
+      if (answered) result.set(id, value);
     }
     return result;
   }
@@ -159,7 +162,7 @@ class SteamAPIClient {
    * @param {string[]} ids
    * @param {string} auth
    * @param {Object} context
-   * @returns {Promise<Map<string, Object|null>>}
+   * @returns {Promise<Map<string, Object|null>>} answered ids only - failed ids are absent
    */
   static _scheduleBatchForIds(ids, auth, context = {}) {
     const key = String(auth ?? "");
@@ -201,19 +204,20 @@ class SteamAPIClient {
           this._inFlight.delete(batch);
         }
 
-        // Cache results, negatives included, with a short TTL
+        // Cache answers, negatives included, with a short TTL. A failed id is
+        // left uncached so the next call asks Steam again.
         for (const id of requestIds) {
-          this._setCachedRaw(id, mapById.get(id) || null);
+          if (mapById.has(id)) this._setCachedRaw(id, mapById.get(id));
         }
 
         // Resolve in-flight promise for any waiters
         settle(mapById);
 
-        // Fan-out results to individual resolvers
+        // Fan-out results to individual resolvers, keeping failed ids absent
         for (const { ids: reqIds, resolve } of resolvers) {
           const partial = new Map();
           for (const id of reqIds) {
-            partial.set(id, mapById.get(id) || null);
+            if (mapById.has(id)) partial.set(id, mapById.get(id));
           }
           resolve(partial);
         }
@@ -224,8 +228,10 @@ class SteamAPIClient {
   /**
    * Fetch link details in chunks small enough to keep the query string inside
    * normal request-line limits, merging the results.
-   * Never rejects: ids belonging to a failed chunk are simply absent from the
-   * returned map, so one bad chunk cannot void what the other chunks resolved.
+   * Never rejects. Every id of an answered chunk gets an entry: its raw-like
+   * object, or null when Steam returned no account for it. Ids belonging to a
+   * failed chunk are absent from the returned map, so one bad chunk cannot void
+   * what the other chunks resolved and a failure never reads as "no account".
    * @param {string[]} requestIds
    * @param {string} auth
    * @param {Object} context
@@ -248,8 +254,12 @@ class SteamAPIClient {
           chunkIndex,
           totalChunks,
         });
-        for (const [id, raw] of this._splitRawBySteamId(rawData)) {
-          merged.set(id, raw);
+        // allowFailure turns an HTTP error (429, 5xx) into null: unanswered
+        if (!rawData) continue;
+
+        const byId = this._splitRawBySteamId(rawData);
+        for (const id of chunk) {
+          merged.set(id, byId.get(id) ?? null);
         }
       } catch (error) {
         SteamAPILogger.logError("GetPlayerLinkDetails", error, {
@@ -424,7 +434,8 @@ class SteamAPIClient {
    * @param {string} steam_id - Steam ID to check
    * @param {string} auth - API key or token
    * @param {boolean} requireLobby - Whether to require lobby state (default: false)
-   * @returns {Promise<boolean>} - True if player is playing CS2 (and in lobby if required)
+   * @returns {Promise<boolean|null>} - True if player is playing CS2 (and in lobby if required),
+   *   null when Steam could not be asked
    */
   static async isPlayerInCS2(steam_id, auth, requireLobby = false) {
     try {
@@ -433,32 +444,105 @@ class SteamAPIClient {
         auth,
         { steam_id, checkingCS2: true, requireLobby }
       );
-      const data = mapById.get(String(steam_id)) || null;
-      return SteamAPIResponseProcessor.processPlayerCS2StatusResponse(data, steam_id, requireLobby);
+      const id = String(steam_id);
+      // A failed request is unknown, not "not playing" - nothing may be
+      // cancelled on the strength of it
+      if (!mapById.has(id)) return null;
+      return SteamAPIResponseProcessor.processPlayerCS2StatusResponse(
+        mapById.get(id),
+        steam_id,
+        requireLobby
+      );
     } catch (error) {
       SteamAPILogger.logError("isPlayerInCS2", error, { steam_id });
-      return false;
+      return null;
     }
   }
 
   /**
-   * Check if a player is currently playing in Competitive or Premier mode
-   * @param {string} steam_id - Steam ID to check
+   * Get the join-relevant state of the user and the friend.
+   * Both ids share one GetPlayerLinkDetails request, so a join loop iteration
+   * costs a single call however many decisions it makes from the result.
+   * @param {string} user_steam_id - User's Steam ID
+   * @param {string} friend_id - Friend's Steam ID
    * @param {string} auth - API key or token
-   * @returns {Promise<boolean>} - Whether the player is playing in Competitive or Premier mode
+   * @returns {Promise<import('../shared/types.js').JoinSnapshot>} - Each side is null when Steam could not be asked
    */
-  static async checkUserGameMode(steam_id, auth) {
+  static async getJoinSnapshot(user_steam_id, friend_id, auth) {
     try {
       const mapById = await this._getPlayerLinkDetailsBatched(
-        steam_id,
+        [user_steam_id, friend_id],
         auth,
-        { steam_id, checkingGameMode: true }
+        { user_steam_id, friend_id, joinSnapshot: true }
       );
-      const data = mapById.get(String(steam_id)) || null;
-      return SteamAPIResponseProcessor.processUserGameModeResponse(data, steam_id);
+      const toJoinInfo = (steam_id) => {
+        const id = String(steam_id);
+        if (!mapById.has(id)) return null;
+        return SteamAPIResponseProcessor.processJoinInfoResponse(
+          mapById.get(id)
+        );
+      };
+      return {
+        user: toJoinInfo(user_steam_id),
+        friend: toJoinInfo(friend_id),
+      };
     } catch (error) {
-      SteamAPILogger.logError("checkUserGameMode", error, { steam_id });
-      return false;
+      SteamAPILogger.logError("getJoinSnapshot", error, {
+        user_steam_id,
+        friend_id,
+      });
+      return { user: null, friend: null };
+    }
+  }
+
+  /**
+   * Get where many players are playing, 100 per request
+   * @param {string[]} steamids - Steam IDs to ask about
+   * @param {string} auth - API key or token
+   * @returns {Promise<Map<string, import('../shared/types.js').PlayerPresence>>} - Answered ids only;
+   *   an id whose request failed is absent
+   */
+  static async getPresence(steamids, auth) {
+    const result = new Map();
+    if (!Array.isArray(steamids) || !steamids.length) return result;
+
+    try {
+      const mapById = await this._getPlayerLinkDetailsBatched(steamids, auth, {
+        presence: true,
+        count: steamids.length,
+      });
+      for (const [id, raw] of mapById) {
+        const presence = SteamAPIResponseProcessor.processPresenceResponse(raw);
+        result.set(id, { ...presence, steamid: presence.steamid || id });
+      }
+    } catch (error) {
+      SteamAPILogger.logError("getPresence", error, {
+        count: steamids.length,
+      });
+    }
+    return result;
+  }
+
+  /**
+   * Get someone else's friends list. Steam answers this for an API key only.
+   * @param {string} steamid - Whose friends to list
+   * @param {string} key - Steam Web API key
+   * @returns {Promise<string[]>} - Friend ids; empty for a private list or a failed request
+   */
+  static async getFriendIdsOf(steamid, key) {
+    try {
+      const data = await this._makeRequest(
+        "GetFriendListOf",
+        { steamid },
+        key,
+        { allowFailure: true, context: { steamid } }
+      );
+      return (data?.friendslist?.friends || [])
+        .filter((friend) => friend.relationship === "friend")
+        .map((friend) => String(friend.steamid));
+    } catch (error) {
+      SteamAPILogger.logError("getFriendIdsOf", error, { steamid });
+      return [];
     }
   }
 
@@ -480,7 +564,8 @@ class SteamAPIClient {
         auth,
         { friendsCount: friend_ids.length }
       );
-      // Rebuild rawData with only requested ids in stable order
+      // Rebuild rawData with only requested ids in stable order; an id Steam
+      // could not be asked about is absent and simply not listed
       const accounts = [];
       for (const id of friend_ids.map(String)) {
         const raw = mapById.get(id);
@@ -510,50 +595,6 @@ class SteamAPIClient {
         friendsCount: friend_ids.length,
       });
       throw error;
-    }
-  }
-
-  /**
-   * Get connect information for a specific friend
-   * @param {string} friend_id - Friend's Steam ID
-   * @param {string} auth - API key or token
-   * @returns {Promise<string|null>} - Connect string or null
-   */
-  static async getFriendConnectInfo(friend_id, auth) {
-    try {
-      const mapById = await this._getPlayerLinkDetailsBatched(
-        friend_id,
-        auth,
-        { friend_id }
-      );
-      const data = mapById.get(String(friend_id)) || null;
-      if (!data) return null;
-      return SteamAPIResponseProcessor.processConnectInfoResponse(data);
-    } catch (error) {
-      SteamAPILogger.logError("getFriendConnectInfo", error, { friend_id });
-      return null;
-    }
-  }
-
-  /**
-   * Get the game server Steam ID for a user
-   * @param {string} steam_id - Steam ID to check
-   * @param {string} auth - API key or token
-   * @returns {Promise<string|null>} - Game server Steam ID or null
-   */
-  static async getUserGameServerSteamId(steam_id, auth) {
-    try {
-      const mapById = await this._getPlayerLinkDetailsBatched(
-        steam_id,
-        auth,
-        { steam_id }
-      );
-      const data = mapById.get(String(steam_id)) || null;
-      if (!data) return null;
-      return SteamAPIResponseProcessor.processGameServerSteamIdResponse(data);
-    } catch (error) {
-      SteamAPILogger.logError("getUserGameServerSteamId", error, { steam_id });
-      return null;
     }
   }
 

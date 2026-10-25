@@ -2,6 +2,11 @@ import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import GsiService from "./gsi-service.js";
+import {
+  readMapFinderStore,
+  writeMapFinderStore,
+} from "./map-finder-store.js";
 
 // Constants
 const WINDOW_CONFIG = {
@@ -12,6 +17,11 @@ const WINDOW_CONFIG = {
 };
 
 const SETTINGS_PATH = path.join(app.getPath("userData"), "settings.json");
+const GSI_STORE_PATH = path.join(app.getPath("userData"), "gsi.json");
+const MAP_FINDER_STORE_PATH = path.join(
+  app.getPath("userData"),
+  "map-finder.json"
+);
 
 /**
  * Simple main process logger
@@ -158,8 +168,20 @@ class WindowManager {
 class IPCManager {
   /**
    * Setup all IPC handlers
+   * @param {GsiService} gsiService - CS2 Game State Integration service
    */
-  static setupHandlers() {
+  static setupHandlers(gsiService) {
+    // GSI setup status; resolves once the service has finished starting
+    ipcMain.handle("gsi-get-status", () => gsiService.getStatus());
+
+    // Map finder: the player pool and friends of friends kept between runs
+    ipcMain.handle("map-finder-load", () =>
+      readMapFinderStore(MAP_FINDER_STORE_PATH)
+    );
+    ipcMain.handle("map-finder-save", (event, data) =>
+      writeMapFinderStore(MAP_FINDER_STORE_PATH, data)
+    );
+
     // Settings handlers
     ipcMain.handle("settings-load", () => {
       return SettingsManager.readSettings();
@@ -210,6 +232,10 @@ class IPCManager {
 class AppManager {
   constructor() {
     this.mainWindow = null;
+    this.gsiService = new GsiService({
+      storePath: GSI_STORE_PATH,
+      logger: MainLogger,
+    });
   }
 
   /**
@@ -217,13 +243,22 @@ class AppManager {
    */
   async initialize() {
     // Setup IPC handlers
-    IPCManager.setupHandlers();
+    IPCManager.setupHandlers(this.gsiService);
 
     // Create main window
     this.mainWindow = WindowManager.createMainWindow();
 
     // Setup window controls
     WindowManager.setupWindowControls(this.mainWindow);
+
+    // Optional: without GSI the renderer reads the user's state from the
+    // Steam Web API, so this is not awaited and never blocks the window
+    this.gsiService.start((state) => {
+      const win = this.mainWindow;
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("gsi-state", state);
+      }
+    });
   }
 }
 
@@ -240,4 +275,8 @@ app.whenReady().then(async () => {
 app.on("window-all-closed", () => {
   MainLogger.info("All windows closed, quitting application");
   app.quit();
+});
+
+app.on("will-quit", () => {
+  appManager.gsiService.stop();
 });

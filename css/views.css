@@ -1,0 +1,114 @@
+/* View tabs and the map finder view */
+
+.view-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  border-bottom: var(--border-width) solid var(--border-color);
+}
+
+.view-tab {
+  padding: var(--space-xs) var(--space-md);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color var(--anim-duration),
+    border-color var(--anim-duration);
+}
+
+.view-tab:hover {
+  color: var(--text-primary);
+}
+
+.view-tab.active {
+  color: var(--white);
+  border-bottom-color: var(--blue-primary);
+}
+
+.view-empty {
+  padding: var(--space-lg) var(--space-md);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Map finder toolbar: status line */
+
+.maps-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.map-finder-status {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* Map cards: a map row that expands into its servers */
+
+.map-card:not(:last-child) {
+  margin-bottom: var(--space-xs);
+}
+
+.map-row {
+  cursor: pointer;
+}
+
+.map-card.expanded .map-row {
+  border-color: var(--blue-primary);
+}
+
+.map-expander {
+  width: 1em;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.map-servers {
+  margin: var(--space-xxs) 0 0 var(--space-xl);
+}
+
+.map-servers .server-row {
+  padding: var(--space-xs) 1.5em;
+}
+
+.map-servers .server-row:not(:last-child) {
+  margin-bottom: var(--space-xxs);
+}
+
+.server-row .personaname {
+  font-size: var(--font-size-md);
+}
+
+/* Friends-of-friends API key */
+
+.fof-key {
+  margin-top: var(--space-md);
+  border-top: var(--border-width) solid var(--border-color);
+  padding: var(--space-md);
+}
+
+.fof-key-header {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.fof-key-row {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.fof-key-row input {
+  flex: 1;
+}
+
+.map-finder-hint {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}

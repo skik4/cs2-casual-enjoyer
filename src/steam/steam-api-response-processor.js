@@ -124,7 +124,7 @@ class SteamAPIResponseProcessor {
       this._extractSupportedPlayerSteamIds(cs2Players);
     logger.info(
       "SteamAPIResponseProcessor",
-      `Found ${supportedPlayerSteamIds.length} friends in supported modes (casual/deathmatch)`
+      `Found ${supportedPlayerSteamIds.length} friends in casual`
     );
 
     // Get avatars only for supported players
@@ -147,98 +147,76 @@ class SteamAPIResponseProcessor {
   }
 
   /**
-   * Process player link details response for connect info
-   * @param {Object} rawData - Raw response from Steam API
-   * @returns {string|null} - Connect string or null
+   * Connect strings already reported as malformed. The join loop reads a
+   * snapshot every iteration, so each distinct value is warned about once
+   * instead of on every poll.
+   * @type {Set<string>}
    */
-  static processConnectInfoResponse(rawData) {
-    logger.debug(
-      "SteamAPIResponseProcessor",
-      "Processing connect info response"
-    );
+  static _reportedInvalidConnects = new Set();
 
-    const accounts = rawData.response?.accounts || [];
-    if (!accounts.length) {
-      logger.debug(
-        "SteamAPIResponseProcessor",
-        "No accounts in connect info response"
-      );
-      return null;
-    }
-    const priv = accounts[0].private_data || {};
-    if (!SteamAPIUtils.isPlayerInCS2(priv)) {
-      logger.debug("SteamAPIResponseProcessor", "Player not in CS2", {
-        game_id: priv.game_id,
-      });
-      return null;
-    }
+  /**
+   * Process one player's link details into the facts the join loop acts on
+   * @param {Object|null} rawData - Raw-like response for one player, null when Steam returned no account
+   * @returns {import('../shared/types.js').PlayerJoinInfo} - Join-relevant player info
+   */
+  static processJoinInfoResponse(rawData) {
+    const account = rawData?.response?.accounts?.[0];
+    const pub = account?.public_data || {};
+    const priv = account?.private_data || {};
+    const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv);
 
-    const richPresence = SteamAPIUtils.parseRichPresence(
-      priv.rich_presence_kv || ""
-    );
-    if (SteamAPIUtils.isInSupportedMode(richPresence)) {
-      logger.debug(
-        "SteamAPIResponseProcessor",
-        "Found connect info for supported game mode player",
-        {
-          game_mode: richPresence.game_mode,
-          game_state: richPresence.game_state,
-          hasConnect: !!richPresence.connect,
-        }
-      );
-      return richPresence.connect;
-    }
+    const inCS2 = SteamAPIUtils.isPlayerInCS2(priv);
+    const inCompetitiveOrPremier =
+      inCS2 && SteamAPIUtils.isPlayerInCompetitiveOrPremier(priv);
+    const inSupportedMode =
+      inCS2 && SteamAPIUtils.isInSupportedMode(richPresence);
 
-    logger.debug(
-      "SteamAPIResponseProcessor",
-      "Player not in joinable supported game mode",
-      {
-        game_mode: richPresence.game_mode,
-        game_state: richPresence.game_state,
+    let connect = null;
+    if (inSupportedMode && richPresence.connect) {
+      if (SteamAPIUtils.isValidConnect(richPresence.connect)) {
+        connect = richPresence.connect;
+      } else if (!this._reportedInvalidConnects.has(richPresence.connect)) {
+        this._reportedInvalidConnects.add(richPresence.connect);
+        logger.warn(
+          "SteamAPIResponseProcessor",
+          "Ignoring malformed connect string from rich presence",
+          { steamid: pub.steamid, connect: richPresence.connect }
+        );
       }
-    );
-    return null;
+    }
+
+    return {
+      personaname: pub.persona_name || "",
+      inCS2,
+      inCompetitiveOrPremier,
+      inSupportedMode,
+      connect,
+      serverId:
+        richPresence.game_server_steam_id || priv.game_server_steam_id || null,
+    };
   }
 
   /**
-   * Process player link details response for game server Steam ID
-   * @param {Object} rawData - Raw response from Steam API
-   * @returns {string|null} - Game server Steam ID or null
+   * Process one player's link details into what the map finder needs: the
+   * join facts plus where the match is played
+   * @param {Object|null} rawData - Raw-like response for one player, null when Steam returned no account
+   * @returns {import('../shared/types.js').PlayerPresence} - Player presence
    */
-  static processGameServerSteamIdResponse(rawData) {
-    logger.debug(
-      "SteamAPIResponseProcessor",
-      "Processing game server Steam ID response"
-    );
-
-    const accounts = rawData.response?.accounts || [];
-    if (!accounts.length) {
-      logger.debug(
-        "SteamAPIResponseProcessor",
-        "No accounts in game server response"
-      );
-      return null;
-    }
-
-    const priv = accounts[0].private_data || {};
+  static processPresenceResponse(rawData) {
+    const account = rawData?.response?.accounts?.[0];
     const richPresence = SteamAPIUtils.parseRichPresence(
-      priv.rich_presence_kv || ""
+      account?.private_data?.rich_presence_kv
     );
+    const info = this.processJoinInfoResponse(rawData);
 
-    const serverId =
-      richPresence.game_server_steam_id || priv.game_server_steam_id || null;
-
-    logger.debug(
-      "SteamAPIResponseProcessor",
-      "Extracted game server Steam ID",
-      {
-        hasServerId: !!serverId,
-        fromRichPresence: !!richPresence.game_server_steam_id,
-        fromPrivateData: !!priv.game_server_steam_id,
-      }
-    );
-
-    return serverId;
+    return {
+      ...info,
+      steamid: account?.public_data?.steamid || null,
+      mode: info.inCS2 ? richPresence.game_mode : null,
+      map: info.inCS2 ? richPresence.game_map : null,
+      score: info.inCS2 ? richPresence.game_score : null,
+      official: info.inSupportedMode && SteamAPIUtils.isOfficialServer(richPresence),
+    };
   }
 
   /**
@@ -380,96 +358,9 @@ class SteamAPIResponseProcessor {
     return isInCS2 && isInLobby;
   }
 
-  /**
-   * Process user game mode response to check if user is in Competitive or Premier mode
-   * @param {Object} rawData - Raw response from Steam API
-   * @param {string} steam_id - Steam ID being checked
-   * @returns {boolean} - Whether the user is in Competitive or Premier mode
-   */
-  static processUserGameModeResponse(rawData, steam_id) {
-    logger.debug(
-      "SteamAPIResponseProcessor",
-      "Processing user game mode response",
-      {
-        steam_id,
-        hasResponse: !!rawData,
-        hasAccounts: !!(
-          rawData &&
-          rawData.response &&
-          rawData.response.accounts
-        ),
-        accountsLength:
-          rawData && rawData.response && rawData.response.accounts
-            ? rawData.response.accounts.length
-            : 0,
-      }
-    );
-
-    if (
-      !rawData ||
-      !rawData.response ||
-      !rawData.response.accounts ||
-      rawData.response.accounts.length === 0
-    ) {
-      logger.info(
-        "SteamAPIResponseProcessor",
-        `No account data found for game mode check ${steam_id}`,
-        {
-          steam_id,
-          hasResponse: !!rawData,
-          hasAccounts: !!(
-            rawData &&
-            rawData.response &&
-            rawData.response.accounts
-          ),
-          accountsLength:
-            rawData && rawData.response && rawData.response.accounts
-              ? rawData.response.accounts.length
-              : 0,
-        }
-      );
-      return false;
-    }
-
-    const account = rawData.response.accounts[0];
-    const priv = account.private_data || {};
-    const isInCS2 = SteamAPIUtils.isPlayerInCS2(priv);
-
-    if (!isInCS2) {
-      logger.info(
-        "SteamAPIResponseProcessor",
-        `Player ${steam_id} not in CS2, game mode check not applicable`,
-        {
-          steam_id,
-          game_id: priv.game_id,
-          isInCS2: false,
-        }
-      );
-      return false;
-    }
-
-    // Check if user is in Competitive or Premier mode
-    const isInCompetitiveOrPremier =
-      SteamAPIUtils.isPlayerInCompetitiveOrPremier(priv);
-
-    logger.info(
-      "SteamAPIResponseProcessor",
-      `Player ${steam_id} game mode check result`,
-      {
-        steam_id,
-        isInCS2: true,
-        isInCompetitiveOrPremier,
-        game_extra: priv.game_extra,
-        rich_presence: priv.rich_presence,
-      }
-    );
-
-    return isInCompetitiveOrPremier;
-  }
-
   // Private helper methods
   /**
-   * Extract Steam IDs of players in supported modes (casual and deathmatch)
+   * Extract Steam IDs of players in a casual match
    * @param {Object[]} cs2Players - Players playing CS2
    * @returns {string[]} - Steam IDs of players in supported modes
    * @private
@@ -609,7 +500,7 @@ class SteamAPIResponseProcessor {
 
     logger.info(
       "SteamAPIResponseProcessor",
-      `Found ${supportedFriends.length} friends in supported modes (casual/deathmatch), ${joinableFriends.length} joinable`
+      `Found ${supportedFriends.length} friends in casual, ${joinableFriends.length} joinable`
     );
 
     // Debug: Show non-supported CS2 friends and why they're not supported
@@ -622,7 +513,7 @@ class SteamAPIResponseProcessor {
         game_state: f.game_state || "Unknown",
         reason: !f.game_mode
           ? "No game mode"
-          : !["casual", "deathmatch"].includes(f.game_mode)
+          : f.game_mode !== "casual"
             ? `Playing ${f.game_mode}`
             : ["", null, "lobby"].includes(f.game_state)
               ? `In ${f.game_state || "lobby"}`

@@ -1,5 +1,9 @@
 // Shared constants
-import { ERROR_CODES, GAME_MODES } from "../shared/constants.js";
+import {
+  ERROR_CODES,
+  GAME_MODES,
+  VALIDATION_PATTERNS,
+} from "../shared/constants.js";
 
 // UI and utilities
 import logger from "../utils/logger.js";
@@ -33,7 +37,37 @@ class SteamAPIUtils {
       game_score: extract("game:score"),
       connect: extract("connect"),
       game_server_steam_id: extract("game_server_steam_id"),
+      game_server: extract("game:server"),
+      steam_display: extract("steam_display"),
+      addon: extract("Addon"),
     };
+  }
+
+  /**
+   * Whether rich presence describes a match on one of Valve's own servers.
+   * Community servers say "community" or carry a workshop Addon, and the
+   * ones on Valve's relay network still show their own map names, which
+   * the client displays through the workshop-map string.
+   * @param {Object} richPresence - Parsed rich presence data
+   * @returns {boolean} - True for an official server
+   */
+  static isOfficialServer(richPresence) {
+    return (
+      richPresence?.game_server === "kv" &&
+      typeof richPresence.steam_display === "string" &&
+      richPresence.steam_display.startsWith("#display_GameKnownMap") &&
+      !richPresence.addon
+    );
+  }
+
+  /**
+   * Rounds played according to a rich presence score such as "[ 3 : 1 ]"
+   * @param {string|null} score - game:score value
+   * @returns {number|null} - Rounds played, or null when there is no score
+   */
+  static parseRoundsPlayed(score) {
+    const match = String(score ?? "").match(/(\d+)\s*:\s*(\d+)/);
+    return match ? Number(match[1]) + Number(match[2]) : null;
   }
 
   /**
@@ -114,13 +148,13 @@ class SteamAPIUtils {
   }
 
   /**
-   * Check if player is in supported game mode (casual or deathmatch) and not in lobby
+   * Check if player is in a casual match, not in the lobby
    * @param {Object} richPresence - Parsed rich presence data
    * @returns {boolean} - True if in supported mode
-   */ static isInSupportedMode(richPresence) {
+   */
+  static isInSupportedMode(richPresence) {
     return (
-      (richPresence.game_mode === GAME_MODES.CASUAL ||
-        richPresence.game_mode === GAME_MODES.DEATHMATCH) &&
+      richPresence.game_mode === GAME_MODES.CASUAL &&
       !["", null, "lobby"].includes(richPresence.game_state)
     );
   }
@@ -133,7 +167,21 @@ class SteamAPIUtils {
   static isJoinAvailable(richPresence) {
     return (
       this.isInSupportedMode(richPresence) &&
-      richPresence.connect?.startsWith("+gcconnect")
+      this.isValidConnect(richPresence.connect)
+    );
+  }
+
+  /**
+   * Check that a rich presence connect string is a bare +gcconnect token.
+   * The value is written by the other player's client and becomes CS2 launch
+   * arguments via steam://rungame, so anything else in it (spaces, encoded
+   * characters, extra +commands) must never reach the game.
+   * @param {*} connect - Connect value from rich presence
+   * @returns {boolean} - True if the connect string is safe to launch with
+   */
+  static isValidConnect(connect) {
+    return (
+      typeof connect === "string" && VALIDATION_PATTERNS.GC_CONNECT.test(connect)
     );
   }
 
@@ -236,9 +284,9 @@ class SteamAPIUtils {
   }
 
   /**
-   * Check if player is in Competitive or Premier mode
+   * Check if player is in a Competitive or Premier match
    * @param {Object} privateData - Private data from Steam API response
-   * @returns {boolean} - True if player is in Competitive or Premier mode
+   * @returns {boolean} - True if player is in a Competitive or Premier match (not the lobby)
    */
   static isPlayerInCompetitiveOrPremier(privateData) {
     if (!privateData) return false;
@@ -246,13 +294,18 @@ class SteamAPIUtils {
     // Parse rich presence to get game mode
     const richPresence = this.parseRichPresence(privateData.rich_presence_kv);
 
-    // Check if game mode is competitive or premier
     const gameMode = richPresence.game_mode;
+    const gameState = richPresence.game_state;
+    // In the lobby the mode may only be what is picked in the play menu, so it
+    // counts only once a match is actually running
     const isCompetitive =
-      gameMode === GAME_MODES.COMPETITIVE || gameMode === GAME_MODES.PREMIER;
+      (gameMode === GAME_MODES.COMPETITIVE ||
+        gameMode === GAME_MODES.PREMIER) &&
+      !["", null, "lobby"].includes(gameState);
 
     logger.debug("SteamAPIUtils", "Checking competitive/premier mode", {
       game_mode: gameMode,
+      game_state: gameState,
       isCompetitive,
       rich_presence_kv: privateData.rich_presence_kv,
     });

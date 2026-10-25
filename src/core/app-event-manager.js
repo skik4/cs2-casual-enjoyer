@@ -6,7 +6,14 @@ import appStateManager from "./app-state-manager.js";
 
 // UI and utilities
 import UIManager from "../ui/ui-manager.js";
-import VirtualFriendsManager from "../ui/virtual-friends-manager.js";
+import FakeFriendsManager from "../ui/fake-friends-manager.js";
+import ViewTabs from "../ui/view-tabs.js";
+import { FRIENDS_TEMPLATES } from "../ui/html-templates.js";
+
+/**
+ * How long a remove button waits for the confirming second click
+ */
+const REMOVE_CONFIRM_MS = 3000;
 import DOMUtils from "../utils/dom-utils.js";
 import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
@@ -22,6 +29,8 @@ class AppEventManager {
     this.inputManager = null;
     this.friendsManager = null;
     this.friendsClickHandler = null;
+    // Pending confirmations of remove buttons
+    this.removeTimers = new WeakMap();
   }
 
   /**
@@ -53,7 +62,11 @@ class AppEventManager {
     }
 
     if (tutorialBtn) {
-      tutorialBtn.addEventListener("click", () => tutorialManager.start());
+      tutorialBtn.addEventListener("click", () => {
+        // The tutorial walks through the friends view
+        ViewTabs.show("friends");
+        tutorialManager.start();
+      });
     }
 
     if (languageBtn) {
@@ -121,34 +134,126 @@ class AppEventManager {
       });
     }
 
-    // Virtual friend controls
-    const addVirtualFriendBtn = DOMUtils.getElementById(
-      "add-virtual-friend-btn"
+    // Fake friend controls
+    const addFakeFriendBtn = DOMUtils.getElementById(
+      "add-fake-friend-btn"
     );
-    const virtualFriendInput = DOMUtils.getElementById(
-      "virtual-friend-steamid"
+    const fakeFriendInput = DOMUtils.getElementById(
+      "fake-friend-steamid"
     );
-    if (addVirtualFriendBtn && virtualFriendInput) {
-      addVirtualFriendBtn.addEventListener("click", () =>
-        this.addVirtualFriend(virtualFriendInput)
+    if (addFakeFriendBtn && fakeFriendInput) {
+      addFakeFriendBtn.addEventListener("click", () =>
+        this.addFakeFriend(fakeFriendInput)
       );
-      virtualFriendInput.addEventListener("input", () =>
-        this.setVirtualFriendError(virtualFriendInput, null)
+      fakeFriendInput.addEventListener("input", () =>
+        this.setFakeFriendError(fakeFriendInput, null)
       );
     }
 
     // Setup friend listeners using event delegation
     this.setupFriendListeners();
+    this.setupFakeFriendListeners();
   }
 
   /**
-   * Show or clear the virtual friend validation error
+   * Join, cancel and remove buttons of the manually added IDs. The list
+   * container stays in place, so one delegated listener serves every render.
+   */
+  setupFakeFriendListeners() {
+    const container = DOMUtils.getElementById("fake-friends");
+    if (!container) return;
+
+    container.addEventListener("click", (event) => {
+      const removeButton = event.target.closest('[id^="remove-fake-btn-"]');
+      if (removeButton) {
+        // The × looks like a close button, and a removal cannot be undone,
+        // so the first click only asks for a second one
+        if (removeButton.classList.contains("confirm-remove")) {
+          this.disarmRemoveButton(removeButton);
+          this.removeFakeFriend(removeButton.id.replace("remove-fake-btn-", ""));
+        } else {
+          this.armRemoveButton(removeButton);
+        }
+        return;
+      }
+
+      const joinButton = event.target.closest('[id^="join-btn-"]');
+      if (!joinButton) return;
+      const steamId = joinButton.id.replace("join-btn-", "");
+      if (joinButton.classList.contains("cancel-btn")) {
+        joinManager.cancelJoin(steamId);
+      } else {
+        joinManager.startJoin(steamId);
+      }
+    });
+  }
+
+  /**
+   * Turn a remove button into a confirmation for a few seconds
+   * @param {HTMLElement} button - Remove button
+   */
+  armRemoveButton(button) {
+    clearTimeout(this.removeTimers.get(button));
+    button.classList.add("confirm-remove");
+    button.textContent = t("friends.confirmRemove");
+    this.removeTimers.set(
+      button,
+      setTimeout(() => this.disarmRemoveButton(button), REMOVE_CONFIRM_MS)
+    );
+  }
+
+  /**
+   * Put a remove button back to its icon
+   * @param {HTMLElement} button - Remove button
+   */
+  disarmRemoveButton(button) {
+    clearTimeout(this.removeTimers.get(button));
+    this.removeTimers.delete(button);
+    button.classList.remove("confirm-remove");
+    button.innerHTML = FRIENDS_TEMPLATES.REMOVE_FAKE_ICON();
+  }
+
+  /**
+   * Stop tracking a manually added ID and drop it from the list at once
+   * @param {string} steamId - SteamID64 to remove
+   */
+  async removeFakeFriend(steamId) {
+    if (tutorialManager.stateManager.getIsActive()) return;
+
+    let removed;
+    try {
+      removed = await FakeFriendsManager.removeId(steamId);
+    } catch (error) {
+      ErrorHandler.logError("AppEventManager.removeFakeFriend", error);
+      UIManager.showError(error.message || error);
+      return;
+    }
+    if (!removed) return;
+
+    // A running attempt for an ID that is no longer listed would be invisible
+    joinManager.cancelJoin(steamId);
+
+    // The next poll no longer asks about it; until then, stop showing it
+    const remaining = UIManager.lastRenderedFakeFriends.filter(
+      (friend) => friend.steamid !== steamId
+    );
+    UIManager.renderFakeFriendsList(remaining, joinManager.getJoinStates());
+    appStateManager.setState(
+      "friendsData",
+      (appStateManager.getState("friendsData") || []).filter(
+        (friend) => friend.steamid !== steamId
+      )
+    );
+  }
+
+  /**
+   * Show or clear the fake friend validation error
    * @param {HTMLInputElement} input - Steam ID input
    * @param {string|null} messageKey - i18n key, or null to clear the error
    */
-  setVirtualFriendError(input, messageKey) {
-    DOMUtils.setText("virtual-friend-error", messageKey ? t(messageKey) : "");
-    DOMUtils.toggleClass("virtual-friend-error", "hidden", !messageKey);
+  setFakeFriendError(input, messageKey) {
+    DOMUtils.setText("fake-friend-error", messageKey ? t(messageKey) : "");
+    DOMUtils.toggleClass("fake-friend-error", "hidden", !messageKey);
     input.classList.toggle("invalid-input", Boolean(messageKey));
   }
 
@@ -156,13 +261,13 @@ class AppEventManager {
    * Validate and persist a manually tracked Steam ID
    * @param {HTMLInputElement} input - Steam ID input
    */
-  async addVirtualFriend(input) {
+  async addFakeFriend(input) {
     if (tutorialManager.stateManager.getIsActive()) return;
 
     const steamId = input.value.trim();
 
     if (!Validators.validateSteamId(steamId)) {
-      this.setVirtualFriendError(input, "friends.invalidSteamId");
+      this.setFakeFriendError(input, "friends.invalidSteamId");
       return;
     }
 
@@ -170,35 +275,35 @@ class AppEventManager {
       (this.inputManager && this.inputManager.getSteamId()) ||
       appStateManager.getState("savedSettings")?.steam_id;
     if (steamId === ownSteamId) {
-      this.setVirtualFriendError(input, "friends.alreadyInList");
+      this.setFakeFriendError(input, "friends.alreadyInList");
       return;
     }
 
     let added;
     try {
-      added = await VirtualFriendsManager.addId(steamId);
+      added = await FakeFriendsManager.addId(steamId);
     } catch (error) {
-      ErrorHandler.logError("AppEventManager.addVirtualFriend", error);
+      ErrorHandler.logError("AppEventManager.addFakeFriend", error);
       UIManager.showError(error.message || error);
       return;
     }
 
     if (!added) {
-      this.setVirtualFriendError(input, "friends.alreadyInList");
+      this.setFakeFriendError(input, "friends.alreadyInList");
       return;
     }
 
-    this.setVirtualFriendError(input, null);
+    this.setFakeFriendError(input, null);
     input.value = "";
     UIManager.showNotification(
-      `<span>${t("friends.virtualFriendAdded")}</span>`,
+      `<span>${t("friends.fakeFriendAdded")}</span>`,
       "info"
     );
 
     // Pick the new ID up on the next poll so its real Steam status shows
     if (this.friendsManager) {
       this.friendsManager.startAutoRefresh().catch((error) => {
-        ErrorHandler.logError("AppEventManager.addVirtualFriend", error);
+        ErrorHandler.logError("AppEventManager.addFakeFriend", error);
       });
     }
   }

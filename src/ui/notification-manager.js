@@ -240,6 +240,43 @@ class NotificationManager {
   }
 
   /**
+   * Render a phase of the CS2 launch overlay
+   * The phase is stored on the content element so a language switch can
+   * re-render it instead of guessing it from the launch button state.
+   * @param {HTMLElement} overlay - CS2 launch overlay element
+   * @param {"initial"|"launching"|"timeout"} phase - Phase to render
+   * @private
+   */
+  static _renderCS2LaunchPhase(overlay, phase) {
+    const templates = NOTIFICATION_TEMPLATES.CS2_LAUNCH;
+    let tpl;
+    if (phase === "launching") {
+      tpl = templates.LAUNCHING();
+    } else if (phase === "timeout") {
+      tpl = templates.TIMEOUT();
+    } else {
+      tpl = templates.INITIAL();
+    }
+
+    const content = overlay.querySelector(".cs2-launch-content");
+    const title = overlay.querySelector(".cs2-launch-title");
+    const message = overlay.querySelector(".cs2-launch-message");
+    const hint = overlay.querySelector(".cs2-launch-hint");
+    const launchBtn = overlay.querySelector("#launch-cs2-btn");
+    const closeBtn = overlay.querySelector("#close-cs2-launch");
+
+    if (content) content.dataset.phase = phase;
+    if (title) title.textContent = tpl.title;
+    if (message) message.textContent = tpl.message;
+    if (hint) hint.textContent = tpl.hint;
+    if (launchBtn) {
+      launchBtn.innerHTML = tpl.launchButton;
+      launchBtn.disabled = phase === "launching";
+    }
+    if (closeBtn) closeBtn.textContent = tpl.closeButton;
+  }
+
+  /**
    * Show CS2 launch notification
    * @param {string} friendId - Steam ID of the friend being joined
    * @param {CS2Manager} cs2Manager - CS2Manager instance for handling launch operations
@@ -295,27 +332,17 @@ class NotificationManager {
 
         state.isLaunching = true;
 
-        // Update UI to launching state using templates
-        const title = overlay.querySelector(".cs2-launch-title");
-        const message = overlay.querySelector(".cs2-launch-message");
-        const hint = overlay.querySelector(".cs2-launch-hint");
-
-        const launching = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING();
-        if (title) title.textContent = launching.title;
-        if (message) message.textContent = launching.message;
-        if (hint) hint.textContent = launching.hint;
-
-        // Update button to loading state
-        launchBtn.disabled = true;
-        const launching2 = NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING();
-        launchBtn.innerHTML = launching2.launchButton;
+        // Update UI and button to launching state
+        this._renderCS2LaunchPhase(overlay, "launching");
 
         // Use CS2Manager to handle launch and monitoring
         try {
+          let timedOut = false;
           const success = await cs2Manager.launchAndWaitForLobby((status) => {
             logger.debug("NotificationManager", "CS2 launch progress", {
               status,
             });
+            if (status === "timeout") timedOut = true;
           });
 
           if (success && !state.isResolved) {
@@ -328,6 +355,12 @@ class NotificationManager {
               handleClose
             );
             resolve(true);
+          } else if (timedOut && !state.isResolved) {
+            // Keep the overlay open and let the user retry: the same button
+            // runs handleLaunch again once isLaunching is cleared.
+            logger.warn("NotificationManager", "CS2 launch timed out");
+            state.isLaunching = false;
+            this._renderCS2LaunchPhase(overlay, "timeout");
           }
         } catch (error) {
           logger.error(
@@ -426,22 +459,9 @@ class NotificationManager {
       // Refresh CS2 launch overlay texts if visible
       const overlay = DOMUtils.getElementById("cs2-launch-notification");
       if (overlay && overlay.style.display !== "none") {
-        const titleEl = overlay.querySelector(".cs2-launch-title");
-        const messageEl = overlay.querySelector(".cs2-launch-message");
-        const hintEl = overlay.querySelector(".cs2-launch-hint");
-        const launchBtn = DOMUtils.getElementById("launch-cs2-btn");
-        const closeBtn = DOMUtils.getElementById("close-cs2-launch");
-
-        const isLaunching = !!launchBtn && launchBtn.disabled === true;
-        const tpl = isLaunching
-          ? NOTIFICATION_TEMPLATES.CS2_LAUNCH.LAUNCHING()
-          : NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL();
-
-        if (titleEl) titleEl.textContent = tpl.title;
-        if (messageEl) messageEl.textContent = tpl.message;
-        if (hintEl) hintEl.textContent = tpl.hint;
-        if (launchBtn) launchBtn.innerHTML = tpl.launchButton;
-        if (closeBtn) closeBtn.textContent = tpl.closeButton;
+        const content = overlay.querySelector(".cs2-launch-content");
+        const phase = content?.dataset.phase || "initial";
+        this._renderCS2LaunchPhase(overlay, phase);
       }
 
       // Refresh main notification if visible and we know its kind

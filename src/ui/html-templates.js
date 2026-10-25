@@ -135,13 +135,24 @@ export const NOTIFICATION_TEMPLATES = {
     }),
 
     /**
+     * State when CS2 did not reach the lobby before the launch deadline
+     */
+    TIMEOUT: () => ({
+      title: t("notifications.cs2Launch.timeout.title"),
+      message: t("notifications.cs2Launch.timeout.message"),
+      hint: t("notifications.cs2Launch.timeout.hint"),
+      launchButton: t("notifications.cs2Launch.timeout.launchButton"),
+      closeButton: t("notifications.cs2Launch.timeout.closeButton"),
+    }),
+
+    /**
      * Complete CS2 launch notification HTML template
      * @returns {string} Complete CS2 notification HTML
      */
     FULL_TEMPLATE: () => {
       const initial = NOTIFICATION_TEMPLATES.CS2_LAUNCH.INITIAL();
       return `
-            <div class="cs2-launch-content">
+            <div class="cs2-launch-content" data-phase="initial">
                 <div class="cs2-launch-title">${initial.title}</div>
                 <div class="cs2-launch-message">${initial.message}</div>                
                 <div class="cs2-launch-buttons">
@@ -271,6 +282,7 @@ export const FRIENDS_TEMPLATES = {
    * @param {boolean} hasStatus - Whether friend has status
    * @param {boolean} isMissing - Whether friend is missing
    * @param {boolean} isActive - Whether join is active
+   * @param {boolean} [removable] - Whether to show a remove button (manually added IDs)
    * @returns {string} Friend item HTML
    */
   FRIEND_ITEM: (
@@ -280,7 +292,8 @@ export const FRIENDS_TEMPLATES = {
     statusText,
     hasStatus,
     isMissing,
-    isActive
+    isActive,
+    removable = false
   ) => `
         <div class="friend" id="friend-${steamid}">
             <div class="friend-info-row">
@@ -293,9 +306,17 @@ export const FRIENDS_TEMPLATES = {
             <div class="join-section" id="join-section-${steamid}">
                 <span class="status-dot ${isMissing ? "dot-missing" : "dot-cancelled"}" id="dot-${steamid}"></span>
                 <button id="join-btn-${steamid}" class="action-btn${isActive ? " cancel-btn" : ""}" data-i18n="${isActive ? "common.cancel" : "common.join"}" data-i18n-attr="text">${isActive ? t("common.cancel") : t("common.join")}</button>
+                ${removable ? `<button id="remove-fake-btn-${steamid}" class="remove-fake-btn" data-i18n="friends.removeFakeFriend" data-i18n-attr="title" title="${t("friends.removeFakeFriend")}">${FRIENDS_TEMPLATES.REMOVE_FAKE_ICON()}</button>` : ""}
             </div>
         </div>
     `,
+
+  /**
+   * Icon of the remove button, also restored when a removal is not confirmed
+   * @returns {string} Icon HTML
+   */
+  REMOVE_FAKE_ICON: () =>
+    '<img src="assets/icons-svg/close_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="×" class="icon-16" />',
 };
 
 // =============================================================================

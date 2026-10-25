@@ -17,6 +17,7 @@ import DOMUtils from "../utils/dom-utils.js";
 class AppInputManager {
   constructor() {
     this.validationManager = null;
+    this.lastAuth = null;
   }
 
   /**
@@ -129,9 +130,18 @@ class AppInputManager {
 
     const val = authInput.value.trim();
     const token = Validators.extractTokenIfAny(val);
+    const auth = Validators.extractApiKeyOrToken(val);
 
-    // Reset join states when auth changes
-    joinManager.resetAll();
+    // This runs on every keystroke, so only reset joins when the credential
+    // really changed. At startup the input is filled from saved settings
+    // without an input event, and running joins use that value.
+    const previous =
+      this.lastAuth ??
+      Validators.extractApiKeyOrToken(
+        appStateManager.getState("savedSettings")?.auth || ""
+      );
+    this.lastAuth = auth;
+    if (auth !== previous) joinManager.resetAll();
 
     if (token) {
       const info = Validators.parseWebApiToken(token);

@@ -6,7 +6,7 @@ import joinManager from "../game/join-manager.js";
 
 // UI and utilities
 import UIManager from "../ui/ui-manager.js";
-import VirtualFriendsManager from "../ui/virtual-friends-manager.js";
+import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import SteamAPI from "../steam/steam-api.js";
 import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
@@ -65,16 +65,18 @@ class AppFriendsManager {
 
     try {
       const allStatuses = await SteamAPI.getFriendsStatuses(
-        VirtualFriendsManager.mergeIds(friendIds),
+        FakeFriendsManager.mergeIds(friendIds),
         auth
       );
 
-      const supportedFriends =
-        VirtualFriendsManager.withVirtualFriends(allStatuses);
+      const joinStates = keepStates ? joinManager.getJoinStates() : {};
+      const supportedFriends = FakeFriendsManager.withFakeFriends(
+        allStatuses,
+        this.getFriendsWithActiveJoins(joinStates)
+      );
 
       appStateManager.setState("friendsData", supportedFriends);
-      const joinStates = keepStates ? joinManager.getJoinStates() : {};
-      UIManager.renderFriendsList(supportedFriends, joinStates);
+      this.renderLists(supportedFriends, joinStates);
 
       // Setup friend listeners after rendering
       if (this.eventManager) {
@@ -92,6 +94,53 @@ class AppFriendsManager {
       if (!keepStates) UIManager.showError(error.message || error);
       throw error;
     }
+  }
+
+  /**
+   * Render real friends and manually tracked IDs, each in its own tab
+   * @param {import('../shared/types.js').Friend[]} list - Everyone to show
+   * @param {Object} joinStates - Join states by Steam ID
+   */
+  renderLists(list, joinStates) {
+    const { friends, fakeFriends } = FakeFriendsManager.splitFakeFriends(list);
+    UIManager.renderFriendsList(friends, joinStates);
+    UIManager.renderFakeFriendsList(fakeFriends, joinStates);
+  }
+
+  /**
+   * Friends whose join attempt is still running. The join loop keeps waiting
+   * after a friend leaves casual, so they must stay listed or the card and
+   * its Cancel button vanish while the loop can still join. Must be called
+   * before `friendsData` is overwritten.
+   * @param {Object<string, import('../shared/types.js').JoinState>} joinStates - Join states by Steam ID
+   * @returns {import('../shared/types.js').Friend[]} - Last known entries or placeholders
+   */
+  getFriendsWithActiveJoins(joinStates) {
+    const previous = new Map(
+      (appStateManager.getState("friendsData") || []).map((friend) => [
+        friend.steamid,
+        friend,
+      ])
+    );
+
+    const friends = [];
+    for (const [steamid, state] of Object.entries(joinStates || {})) {
+      if (!joinManager.isActive(state)) continue;
+      // Map and server attempts live in the maps view, not as friends
+      if (!Validators.validateSteamId(steamid)) continue;
+
+      const entry = previous.get(steamid);
+      if (entry) {
+        friends.push(entry);
+        continue;
+      }
+
+      const placeholder = FakeFriendsManager.createPlaceholder(steamid);
+      if (state.personaname) placeholder.personaname = state.personaname;
+      friends.push(placeholder);
+    }
+
+    return friends;
   }
 
   /**
@@ -166,16 +215,16 @@ class AppFriendsManager {
 
       // Get friend statuses (avatars will be loaded only for supported players)
       const statuses = await SteamAPI.getFriendsStatuses(
-        VirtualFriendsManager.mergeIds(allFriendIds),
+        FakeFriendsManager.mergeIds(allFriendIds),
         auth
       );
       const supportedFriends =
-        VirtualFriendsManager.withVirtualFriends(statuses);
+        FakeFriendsManager.withFakeFriends(statuses);
 
       // Save settings without avatars (they will be loaded on demand)
       // Merge into the stored settings - a bare save replaces the whole file
       // (SettingsManager.writeSettings), which would drop language and
-      // virtual_friend_ids.
+      // fake_friend_ids.
       const currentSettings =
         (await window.electronAPI.settings.load()) || {};
       const updatedSettings = {
@@ -193,7 +242,7 @@ class AppFriendsManager {
       // Render friends
       appStateManager.setState("friendsData", supportedFriends);
       const joinStates = joinManager.getJoinStates();
-      UIManager.renderFriendsList(supportedFriends, joinStates);
+      this.renderLists(supportedFriends, joinStates);
 
       // Setup friend listeners after rendering
       if (this.eventManager) {
@@ -237,7 +286,7 @@ class AppFriendsManager {
 
     const auth = this.inputManager ? this.inputManager.getAuth() : "";
 
-    const savedFriendsIds = VirtualFriendsManager.mergeIds(
+    const savedFriendsIds = FakeFriendsManager.mergeIds(
       appStateManager.getState("savedFriendsIds") || []
     );
     if (
@@ -271,7 +320,7 @@ class AppFriendsManager {
         }
 
         const usingSavedFriends = appStateManager.getState("usingSavedFriends");
-        const currentSavedFriendsIds = VirtualFriendsManager.mergeIds(
+        const currentSavedFriendsIds = FakeFriendsManager.mergeIds(
           appStateManager.getState("savedFriendsIds") || []
         );
 

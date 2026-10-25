@@ -54,6 +54,22 @@ class UIManager {
     return FriendsRenderer.renderFriendsList(friends, joinStates);
   }
 
+  /**
+   * Render the manually tracked IDs in their own tab
+   * @param {import('../shared/types.js').Friend[]} friends - Manually tracked entries
+   * @param {Object} joinStates - Map of join states by Steam ID
+   */
+  static renderFakeFriendsList(friends, joinStates = {}) {
+    return FriendsRenderer.renderFakeFriendsList(friends, joinStates);
+  }
+
+  /**
+   * Last rendered manually tracked IDs
+   */
+  static get lastRenderedFakeFriends() {
+    return FriendsRenderer.lastRenderedFakeFriends;
+  }
+
   // Notification Methods - delegate to NotificationManager
   /**
    * Show a notification with close button

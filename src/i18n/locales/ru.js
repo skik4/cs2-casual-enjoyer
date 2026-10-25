@@ -73,6 +73,13 @@ export default {
         ,
         closeButton: "Закрыть",
       },
+      timeout: {
+        title: "CS2 не запустился",
+        message: "Counter-Strike 2 так и не дошёл до главного меню.",
+        hint: "Проверь, что Steam запущен и игра стартует, затем попробуй снова.",
+        launchButton: "Повторить",
+        closeButton: "Закрыть",
+      },
     },
   },
 
@@ -125,12 +132,62 @@ export default {
 
   friends: {
     temporarilyNotSupported: "Временно не в поддерживаемом режиме",
-    addVirtualFriend: "Добавить виртуального друга",
-    virtualFriendSteamIdPlaceholder: "Введи Steam ID друга (17 цифр)",
+    addFakeFriend: "Добавить фейкового друга",
+    fakeFriendSteamIdPlaceholder: "Введи Steam ID друга (17 цифр)",
     addButton: "Добавить",
     invalidSteamId: "Введи корректный Steam ID из 17 цифр",
     alreadyInList: "Этот Steam ID уже есть в твоём списке друзей",
-    virtualFriendAdded: "Виртуальный друг успешно добавлен",
+    fakeFriendAdded: "Фейковый друг успешно добавлен",
+    removeFakeFriend: "Удалить из фейковых друзей",
+    confirmRemove: "Удалить?",
+  },
+
+  views: {
+    friends: "Друзья",
+    fakeFriends: "Фейк-друзья",
+    maps: "Карты",
+    fakeFriendsEmpty: "Фейковых друзей пока нет. Добавь Steam ID выше.",
+  },
+
+  mapFinder: {
+    mapSummary: "Серверов: {servers} · со свободным местом: {free}",
+    knownPlayers: "Известных игроков: {count}",
+    freeSlot: "есть место",
+    full: "мест нет",
+    noScore: "Счёта пока нет",
+    poolCount: "Пул игроков: {count}",
+    fofCount: "друзей друзей: {count}",
+    fofCrawling: "читаю друзей друзей…",
+    searching: "поиск…",
+    updatedAt: "обновлено в {time}",
+    needAuth: "Сначала введи токен или ключ Steam Web API и SteamID64.",
+    searchingEmpty: "Ищу игроков на официальных серверах…",
+    nothingFound:
+      "Сейчас никого не нашёл на официальных серверах в обычном режиме. Поиск продолжается.",
+    fofTitle: "Друзья друзей",
+    fofKeyPlaceholder: "Ключ Steam Web API (32 символа)",
+    fofKeySave: "Сохранить",
+    fofNeedsKey:
+      "Для друзей друзей нужен ключ Steam Web API: токен не может читать чужие списки друзей.",
+    fofKeySaved: "Ключ сохранён. Друзья друзей читаются раз в сутки.",
+    fofUsesMainKey: "Для друзей друзей используется твой основной API-ключ.",
+    fofKeyInvalid: "Это не API-ключ: нужно 32 буквы и цифры.",
+    fofKeyError: "С этим ключом не прочитался ни один список друзей. Проверь ключ.",
+  },
+
+  gsi: {
+    active:
+      "CS2 Game State Integration подключена: приложение получает состояние игры прямо из CS2.",
+    waiting:
+      "CS2 Game State Integration настроена и подключится, когда запустится CS2.",
+    restart:
+      "CS2 Game State Integration только что настроена. Если CS2 уже запущена, перезапусти её один раз.",
+    otherAccount:
+      "CS2 запущена на другом аккаунте Steam, а не на указанном здесь, поэтому её данные не используются.",
+    unavailable:
+      "Папка CS2 не найдена, поэтому Game State Integration выключена. Приложение использует Steam Web API.",
+    error:
+      "Не удалось настроить CS2 Game State Integration. Приложение использует Steam Web API.",
   },
 
   errors: {
@@ -170,7 +227,7 @@ export default {
     step6Content: "Введи текст для фильтрации по нику если необходимо.",
     step7Title: "Отображение списка друзей",
     step7Content:
-      "Друзья, играющие в Casual или Deathmatch, появятся в этом списке.",
+      "Друзья, играющие в Casual, появятся в этом списке.",
     step8Title: "Присоединись к игре друга",
     step8Content:
       "Например, твой лучший друг <strong>Gabe Newell</strong> играет в Casual на Dust 2.<br>Нажми 'Присоединиться', чтобы автоматически подключиться к его матчу!",

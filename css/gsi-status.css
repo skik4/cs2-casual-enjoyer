@@ -1,0 +1,39 @@
+/* CS2 Game State Integration status indicator (footer) */
+
+.gsi-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  margin-right: auto;
+  padding-left: var(--space-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  opacity: 0.7;
+  cursor: default;
+}
+
+.gsi-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gray-600);
+  flex-shrink: 0;
+}
+
+.gsi-status[data-state="active"] .gsi-status-dot {
+  background: var(--green-primary);
+}
+
+.gsi-status[data-state="waiting"] .gsi-status-dot {
+  background: var(--gray-600);
+}
+
+.gsi-status[data-state="restart"] .gsi-status-dot,
+.gsi-status[data-state="other-account"] .gsi-status-dot {
+  background: var(--yellow-primary);
+}
+
+.gsi-status[data-state="unavailable"] .gsi-status-dot,
+.gsi-status[data-state="error"] .gsi-status-dot {
+  background: var(--red-primary);
+}

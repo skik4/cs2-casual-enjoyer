@@ -19,6 +19,30 @@ import DOMUtils from "../utils/dom-utils.js";
 class FriendsRenderer {
   // Cache for last rendered friends (for re-rendering on filter)
   static lastRenderedFriends = [];
+  // Manually tracked IDs, rendered in their own tab
+  static lastRenderedFakeFriends = [];
+
+  /**
+   * Render the manually tracked IDs in their own tab, each with a remove button
+   * @param {import('../shared/types.js').Friend[]} friends - Manually tracked entries
+   * @param {Object} joinStates - Map of join states by Steam ID
+   */
+  static renderFakeFriendsList(friends, joinStates = {}) {
+    const container = DOMUtils.getElementById("fake-friends");
+    if (!container) return;
+
+    const sorted = (Array.isArray(friends) ? [...friends] : []).sort((a, b) =>
+      (a.personaname || "").localeCompare(b.personaname || "", undefined, {
+        sensitivity: "base",
+      })
+    );
+    FriendsRenderer.lastRenderedFakeFriends = sorted;
+
+    this.updateFriendsListIncremental(container, sorted, joinStates, {
+      removable: true,
+    });
+    DOMUtils.toggleClass("fake-friends-empty", "hidden", sorted.length > 0);
+  }
 
   /**
    * Render the list of friends in the UI
@@ -97,8 +121,14 @@ class FriendsRenderer {
    * @param {HTMLElement} container - Friends container element
    * @param {import('../shared/types.js').Friend[]} friends - Array of friend objects
    * @param {Object} joinStates - Map of join states by friend Steam ID
+   * @param {{removable?: boolean}} [options] - Show a remove button on new items
    */
-  static updateFriendsListIncremental(container, friends, joinStates = {}) {
+  static updateFriendsListIncremental(
+    container,
+    friends,
+    joinStates = {},
+    options = {}
+  ) {
     // Get current friend elements in the DOM
     const existingElements = new Map();
     const currentFriendElements = container.children;
@@ -154,7 +184,8 @@ class FriendsRenderer {
           friend,
           joinState,
           isMissing,
-          avatarUrl
+          avatarUrl,
+          options.removable
         );
 
         // Insert in correct position
@@ -173,15 +204,23 @@ class FriendsRenderer {
    * @param {import('../shared/types.js').JoinState} joinState - Join state
    * @param {boolean} isMissing - Whether friend is missing
    * @param {string} avatarUrl - Avatar URL
+   * @param {boolean} [removable] - Whether to show a remove button
    * @returns {HTMLElement} - Friend DOM element
    */
-  static createFriendElement(friend, joinState, isMissing, avatarUrl) {
+  static createFriendElement(
+    friend,
+    joinState,
+    isMissing,
+    avatarUrl,
+    removable = false
+  ) {
     const wrapper = document.createElement("div");
     wrapper.innerHTML = this.renderFriendItem(
       friend,
       joinState,
       isMissing,
-      avatarUrl
+      avatarUrl,
+      removable
     );
     return wrapper.firstElementChild;
   }
@@ -314,9 +353,16 @@ class FriendsRenderer {
    * @param {import('../shared/types.js').JoinState} joinState - Join state
    * @param {boolean} isMissing - Whether friend is missing
    * @param {string} avatarUrl - Avatar URL
+   * @param {boolean} [removable] - Whether to show a remove button
    * @returns {string} - Friend item HTML
    */
-  static renderFriendItem(friend, joinState, isMissing, avatarUrl) {
+  static renderFriendItem(
+    friend,
+    joinState,
+    isMissing,
+    avatarUrl,
+    removable = false
+  ) {
     const isActive =
       joinState &&
       (joinState.status === STATUS_TYPES.WAITING ||
@@ -335,7 +381,8 @@ class FriendsRenderer {
       statusText,
       hasStatus,
       isMissing,
-      isActive
+      isActive,
+      removable
     );
   }
 }

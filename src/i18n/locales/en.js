@@ -69,6 +69,13 @@ export default {
         launchButtonHtml: '<span class="loading-spinner"></span> Launching...',
         closeButton: "Close",
       },
+      timeout: {
+        title: "CS2 Did Not Start",
+        message: "Counter-Strike 2 has not reached the main menu.",
+        hint: "Check that Steam is running and the game starts, then try again.",
+        launchButton: "Try Again",
+        closeButton: "Close",
+      },
     },
   },
 
@@ -118,12 +125,62 @@ export default {
 
   friends: {
     temporarilyNotSupported: "Temporarily not in supported mode",
-    addVirtualFriend: "Add Virtual Friend",
-    virtualFriendSteamIdPlaceholder: "Enter friend's Steam ID (17 digits)",
+    addFakeFriend: "Add Fake Friend",
+    fakeFriendSteamIdPlaceholder: "Enter friend's Steam ID (17 digits)",
     addButton: "Add",
     invalidSteamId: "Please enter a valid 17-digit Steam ID",
     alreadyInList: "This Steam ID is already in your friends list",
-    virtualFriendAdded: "Virtual friend added successfully",
+    fakeFriendAdded: "Fake friend added successfully",
+    removeFakeFriend: "Remove from fake friends",
+    confirmRemove: "Remove?",
+  },
+
+  views: {
+    friends: "Friends",
+    fakeFriends: "Fake friends",
+    maps: "Maps",
+    fakeFriendsEmpty: "No fake friends yet. Add a Steam ID above.",
+  },
+
+  mapFinder: {
+    mapSummary: "Servers: {servers} · with a free slot: {free}",
+    knownPlayers: "Known players: {count}",
+    freeSlot: "free slot",
+    full: "no free slot",
+    noScore: "No score yet",
+    poolCount: "Player pool: {count}",
+    fofCount: "friends of friends: {count}",
+    fofCrawling: "reading friends of friends…",
+    searching: "searching…",
+    updatedAt: "updated {time}",
+    needAuth: "Enter your Steam Web API token or key and SteamID64 first.",
+    searchingEmpty: "Looking for players on official servers…",
+    nothingFound:
+      "Nobody found on official casual servers right now. The search keeps going.",
+    fofTitle: "Friends of friends",
+    fofKeyPlaceholder: "Steam Web API key (32 characters)",
+    fofKeySave: "Save",
+    fofNeedsKey:
+      "Friends of friends need a Steam Web API key: a token cannot read other people's friends lists.",
+    fofKeySaved: "API key saved. Friends of friends are read once a day.",
+    fofUsesMainKey: "Your main API key is used for friends of friends.",
+    fofKeyInvalid: "That is not an API key: it should be 32 letters and digits.",
+    fofKeyError: "No friends list could be read with this key. Check the key.",
+  },
+
+  gsi: {
+    active:
+      "CS2 Game State Integration is connected: the app gets your game state straight from CS2.",
+    waiting:
+      "CS2 Game State Integration is set up and connects when CS2 starts.",
+    restart:
+      "CS2 Game State Integration was just set up. If CS2 is already running, restart it once.",
+    otherAccount:
+      "CS2 is running on a different Steam account than the one entered here, so its game state is ignored.",
+    unavailable:
+      "CS2 installation not found, so Game State Integration is off. The app uses the Steam Web API instead.",
+    error:
+      "Could not set up CS2 Game State Integration. The app uses the Steam Web API instead.",
   },
 
   errors: {
@@ -162,7 +219,7 @@ export default {
     step6Content: "Type in highlighted box to filter friends by nickname.",
     step7Title: "Friends List Display",
     step7Content:
-      "Friends currently playing Casual or Deathmatch modes will appear in this list.",
+      "Friends currently playing Casual will appear in this list.",
     step8Title: "Join to Friend Game",
     step8Content:
       "For example, your best friend <strong>Gabe Newell</strong> is playing Casual on Dust 2.<br>Click 'Join' to automatically connect to his match!",

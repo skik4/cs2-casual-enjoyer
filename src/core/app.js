@@ -8,9 +8,15 @@ import appStateManager from "./app-state-manager.js";
 // Game singletons
 import joinManager from "../game/join-manager.js";
 import cs2Manager from "../game/cs2-manager.js";
+import gsiManager from "../game/gsi-manager.js";
+import mapFinder from "../game/map-finder.js";
 
 // UI and utilities
 import UIManager from "../ui/ui-manager.js";
+import GsiStatusIndicator from "../ui/gsi-status-indicator.js";
+import ViewTabs from "../ui/view-tabs.js";
+import MapFinderView from "../ui/map-finder-view.js";
+import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import DOMUtils from "../utils/dom-utils.js";
 import logger from "../utils/logger.js";
@@ -91,6 +97,37 @@ class App {
       // Initialize CS2Manager first
       this.cs2Manager.initialize(this.inputManager);
       logger.info("App", "CS2Manager initialized");
+
+      logger.info("App", "Step 5.1: Connecting to CS2 Game State Integration");
+      // Not awaited: GSI is optional, and the main process finishes setting it
+      // up on its own time - everything falls back to the Steam Web API
+      GsiStatusIndicator.initialize();
+      gsiManager
+        .initialize(() => this.inputManager.getSteamId())
+        .catch((error) =>
+          logger.warn("App", "GSI initialization failed", error?.message)
+        );
+
+      logger.info("App", "Step 5.2: Setting up view tabs and the map finder");
+      mapFinder.configure({
+        getAuth: () => this.inputManager.getAuth(),
+        getUserId: () => this.inputManager.getSteamId(),
+        getFriendIds: () =>
+          FakeFriendsManager.mergeIds(
+            appStateManager.getState("savedFriendsIds") || []
+          ),
+        getRealFriendIds: () => appStateManager.getState("savedFriendsIds") || [],
+        getFofKey: () => MapFinderView.getFofKey(),
+      });
+      MapFinderView.initialize({
+        getMainAuth: () => this.inputManager.getAuth(),
+      });
+      ViewTabs.initialize();
+      // The finder polls only while its view is open
+      ViewTabs.onChange((view, previous) => {
+        if (view === "maps") MapFinderView.show();
+        else if (previous === "maps") MapFinderView.hide();
+      });
 
       logger.info("App", "Step 6: Connecting JoinManager with CS2Manager");
       // Set CS2Manager for JoinManager

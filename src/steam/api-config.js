@@ -45,6 +45,14 @@ class SteamAPIConfig {
           endpoint: "/ISteamUser/ResolveVanityURL/v1/",
         },
       },
+      // Someone else's friends list - Steam answers this for an API key
+      // only, a web token gets HTTP 400
+      GetFriendListOf: {
+        unified: {
+          endpoint: "/ISteamUser/GetFriendList/v1/",
+          params: { relationship: "friend" },
+        },
+      },
     };
 
     const config = configs[method];

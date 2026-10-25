@@ -1,10 +1,10 @@
 # Casual Enjoyer
 
-**Casual Enjoyer** is an Electron-based desktop application that automates the process of joining a friend's **Casual** or **Deathmatch** matches in Counter-Strike 2 (CS2). Steam does not provide a built-in feature for this in CS2, and the Steam client may show outdated or delayed information about available slots in a match. This app helps you connect to your friend's match as soon as a slot becomes available, improving your experience and saving time.
+**Casual Enjoyer** is an Electron-based desktop application that automates the process of joining a friend's **Casual** matches in Counter-Strike 2 (CS2). Steam does not provide a built-in feature for this in CS2, and the Steam client may show outdated or delayed information about available slots in a match. This app helps you connect to your friend's match as soon as a slot becomes available, improving your experience and saving time.
 
 ## ✨ Key Features
 
-- **🎮 Dual Game Mode Support**: Automatically join friends playing in both Casual and Deathmatch modes
+- **🎮 Casual Auto-Join**: Automatically join friends playing Casual as soon as a slot frees up
 - **🎯 Interactive Tutorial System**: Comprehensive step-by-step tutorial for new users with automatic launch on first run
 - **🚀 Smart CS2 Launch Integration**: Automatically launches CS2 if not running when trying to join a friend
 - **🔄 Real-time Status Monitoring**: Live updates of friends' game status with visual status indicators
@@ -19,6 +19,9 @@
   - **Session Token** (Recommended): Valid for 24 hours, obtained through Steam client integration. No privacy restrictions required.
   - **API Key**: Permanent but requires your profile and friends list to be public at least once for initial setup.
 - **Smart Connection Process**: After pressing "Join", the app continuously monitors for available slots. When found, it attempts to connect automatically.
+- **Maps tab**: Picks a casual map on Valve's official servers. Valve publishes no server list, so the app finds people playing there: your friends, a pool of players it has seen on official servers before, players you spectate in your own matches, and friends of your friends (needs a Steam Web API key, which can be entered on the tab). Join on a map takes any of its servers with a free slot; expand the map to see each server with its score and join that one.
+- **Fake friends tab**: Steam IDs added by hand, with Join and a remove button (click it twice to remove).
+- **CS2 Game State Integration**: On start the app writes `gamestate_integration_casualenjoyer.cfg` into CS2's `game/csgo/cfg` folder. CS2 then reports your own game state (main menu or match, mode, map) straight to the app on `127.0.0.1`, so the app reacts instantly and makes fewer Steam API requests. CS2 reads the file only at startup, so restart CS2 once after the first run. The GSI dot in the footer shows the status. Friends' status still comes from the Steam Web API.
 - **CS2 Integration**: If CS2 isn't running, the app can automatically launch it and wait for you to be ready before starting the join process.
 
 ## How to Run
@@ -33,7 +36,7 @@ The easiest way to use the application is to download the prebuilt `.exe` from t
    - Click on **"Steam Web API Token / Key"** label for detailed setup instructions
    - Choose between Session Token (recommended) or API Key
 3. **Load Friends**: Click "Update Friends List" to fetch your Steam friends
-4. **Join Games**: Friends playing Casual or Deathmatch will appear in the list - simply click "Join" to connect automatically
+4. **Join Games**: Friends playing Casual will appear in the list - simply click "Join" to connect automatically
 5. **Status Monitoring**:
    - 🔴 Red dot = No slots available
    - 🟡 Yellow dot = Attempting to connect

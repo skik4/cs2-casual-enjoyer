@@ -110,52 +110,89 @@
           <div class="center-row update-hint-container mb-md">
             <div id="update-hint" class="update-hint" data-i18n="index.updateHint" data-i18n-attr="text">Click "Update Friends List" to load your friends and start auto-refresh</div>
           </div>
-          <div class="center-row mb-sm" id="friend-filter-row">
-            <input
-              id="friend-filter-input"
-              type="text"
-              data-i18n="index.friendFilterPlaceholder"
-              data-i18n-attr="placeholder"
-              placeholder=""
-            />
+          <div class="view-tabs mb-sm" id="view-tabs" role="tablist">
+            <button class="view-tab active" data-view="friends" role="tab" data-i18n="views.friends" data-i18n-attr="text">Friends</button>
+            <button class="view-tab" data-view="fake" role="tab" data-i18n="views.fakeFriends" data-i18n-attr="text">Fake friends</button>
+            <button class="view-tab" data-view="maps" role="tab" data-i18n="views.maps" data-i18n-attr="text">Maps</button>
           </div>
           <div
             id="cs2-launch-notification"
             class="cs2-launch-overlay hidden"
           ></div>
-          <div class="friend-list" id="friends"></div>
-          <div id="virtual-friend-section" class="virtual-friend-add">
-            <div class="virtual-friend-add-header">
-              <h3 data-i18n="friends.addVirtualFriend">Add Virtual Friend</h3>
+          <div id="friends-view" class="app-view">
+            <div class="center-row mb-sm" id="friend-filter-row">
+              <input
+                id="friend-filter-input"
+                type="text"
+                data-i18n="index.friendFilterPlaceholder"
+                data-i18n-attr="placeholder"
+                placeholder=""
+              />
             </div>
-            <div class="virtual-friend-add-content">
-              <div class="virtual-friend-input-wrapper">
+            <div class="friend-list" id="friends"></div>
+          </div>
+          <div id="fake-view" class="app-view hidden">
+            <div id="fake-friend-section" class="fake-friend-add">
+              <div class="fake-friend-add-header">
+                <h3 data-i18n="friends.addFakeFriend">Add Fake Friend</h3>
+              </div>
+              <div class="fake-friend-add-content">
+                <div class="fake-friend-input-wrapper">
+                  <input
+                    id="fake-friend-steamid"
+                    type="text"
+                    data-i18n="friends.fakeFriendSteamIdPlaceholder"
+                    data-i18n-attr="placeholder"
+                    placeholder=""
+                  />
+                  <div
+                    id="fake-friend-error"
+                    class="error-message hidden"
+                  ></div>
+                </div>
+                <button
+                  id="add-fake-friend-btn"
+                  class="action-btn"
+                  data-i18n="friends.addButton"
+                  data-i18n-attr="text"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+            <div class="friend-list" id="fake-friends"></div>
+            <div id="fake-friends-empty" class="view-empty" data-i18n="views.fakeFriendsEmpty" data-i18n-attr="text">No fake friends yet.</div>
+          </div>
+          <div id="maps-view" class="app-view hidden">
+            <div class="maps-toolbar mb-sm">
+              <span id="map-finder-status" class="map-finder-status"></span>
+            </div>
+            <div class="friend-list" id="maps-list"></div>
+            <div id="maps-empty" class="view-empty hidden"></div>
+            <div class="fof-key" id="fof-key-section">
+              <div class="fof-key-header" data-i18n="mapFinder.fofTitle" data-i18n-attr="text">Friends of friends</div>
+              <div class="fof-key-row" id="fof-key-row">
                 <input
-                  id="virtual-friend-steamid"
-                  type="text"
-                  data-i18n="friends.virtualFriendSteamIdPlaceholder"
+                  id="fof-key-input"
+                  type="password"
+                  autocomplete="off"
+                  data-i18n="mapFinder.fofKeyPlaceholder"
                   data-i18n-attr="placeholder"
                   placeholder=""
                 />
-                <div
-                  id="virtual-friend-error"
-                  class="error-message hidden"
-                ></div>
+                <button id="fof-key-save" class="action-btn" data-i18n="mapFinder.fofKeySave" data-i18n-attr="text">Save</button>
               </div>
-              <button
-                id="add-virtual-friend-btn"
-                class="action-btn"
-                data-i18n="friends.addButton"
-                data-i18n-attr="text"
-              >
-                Add
-              </button>
+              <div id="fof-key-hint" class="map-finder-hint"></div>
             </div>
           </div>
         </div>
       </div>
     </div>
     <div class="custom-footer-bar">
+      <span id="gsi-status" class="gsi-status" data-state="waiting">
+        <span class="gsi-status-dot"></span>
+        <span class="gsi-status-label">GSI</span>
+      </span>
       <span class="footer-app-title">
         <span id="app-version"></span>
         <span class="footer-author-info">

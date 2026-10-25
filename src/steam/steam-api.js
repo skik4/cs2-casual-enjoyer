@@ -52,23 +52,34 @@ class SteamAPI {
   }
 
   /**
-   * Get connect information for a specific friend
+   * Get the join-relevant state of the user and the friend from one request
+   * @param {string} user_steam_id - User's Steam ID
    * @param {string} friend_id - Friend's Steam ID
    * @param {string} auth - API key or token
-   * @returns {Promise<string|null>} - Connect string or null
+   * @returns {Promise<import('../shared/types.js').JoinSnapshot>} - Each side is null when Steam could not be asked
    */
-  static async getFriendConnectInfo(friend_id, auth) {
-    return SteamAPIClient.getFriendConnectInfo(friend_id, auth);
+  static async getJoinSnapshot(user_steam_id, friend_id, auth) {
+    return SteamAPIClient.getJoinSnapshot(user_steam_id, friend_id, auth);
   }
 
   /**
-   * Get the game server Steam ID for a user
-   * @param {string} steam_id - Steam ID to check
+   * Get where many players are playing, 100 per request
+   * @param {string[]} steamids - Steam IDs to ask about
    * @param {string} auth - API key or token
-   * @returns {Promise<string|null>} - Game server Steam ID or null
+   * @returns {Promise<Map<string, import('../shared/types.js').PlayerPresence>>} - Answered ids only
    */
-  static async getUserGameServerSteamId(steam_id, auth) {
-    return SteamAPIClient.getUserGameServerSteamId(steam_id, auth);
+  static async getPresence(steamids, auth) {
+    return SteamAPIClient.getPresence(steamids, auth);
+  }
+
+  /**
+   * Get someone else's friends list (API key only)
+   * @param {string} steamid - Whose friends to list
+   * @param {string} key - Steam Web API key
+   * @returns {Promise<string[]>} - Friend ids, empty when private or failed
+   */
+  static async getFriendIdsOf(steamid, key) {
+    return SteamAPIClient.getFriendIdsOf(steamid, key);
   }
 
   /**
@@ -86,20 +97,11 @@ class SteamAPI {
    * @param {string} steam_id - Steam ID to check
    * @param {string} auth - API key or token
    * @param {boolean} requireLobby - Whether to require lobby state (default: false)
-   * @returns {Promise<boolean>} - Whether the player is playing CS2 (and in lobby if required)
+   * @returns {Promise<boolean|null>} - Whether the player is playing CS2 (and in lobby if required),
+   *   null when Steam could not be asked
    */
   static async isPlayerInCS2(steam_id, auth, requireLobby = false) {
     return SteamAPIClient.isPlayerInCS2(steam_id, auth, requireLobby);
-  }
-
-  /**
-   * Check if a player is currently playing in Competitive or Premier mode
-   * @param {string} steam_id - Steam ID to check
-   * @param {string} auth - API key or token
-   * @returns {Promise<boolean>} - Whether the player is playing in Competitive or Premier mode
-   */
-  static async checkUserGameMode(steam_id, auth) {
-    return SteamAPIClient.checkUserGameMode(steam_id, auth);
   }
 }
 
