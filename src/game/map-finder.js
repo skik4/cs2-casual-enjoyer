@@ -1,5 +1,5 @@
 // Shared constants
-import { API_CONFIG, GAME_MODES, MAP_FINDER_CONFIG } from "../shared/constants.js";
+import { GAME_MODES, MAP_FINDER_CONFIG } from "../shared/constants.js";
 
 // Game singletons
 import gsiManager from "./gsi-manager.js";
@@ -132,7 +132,6 @@ class MapFinder {
     this._checkedSeeds = new Set();
     this._checkingSeeds = false;
     this._checkSeedsAgain = false;
-    this._seedTimer = null;
     this.journal = joinJournal;
   }
 
@@ -241,12 +240,11 @@ class MapFinder {
 
   /**
    * Settle the seeds Steam answered about: one on an official server is in
-   * the pool by now, and one on no server the pool wants is dropped. One on
-   * a server Steam gave no address for yet - a server just started may not
-   * be listed - stays for another look, as does one Steam did not answer.
+   * the pool by now, and one on no server the pool wants is dropped. One
+   * Steam did not answer about stays for another look.
    * @param {string[]} ids - Seeds that were asked about
    * @param {Map<string, import('../shared/types.js').PlayerPresence>} presence
-   * @returns {{asked: number, answered: number, pooled: number, waiting: number, notInGame: number, other: number}}
+   * @returns {{asked: number, answered: number, pooled: number, notInGame: number, other: number}}
    *   What became of them, for the join journal
    * @private
    */
@@ -255,7 +253,6 @@ class MapFinder {
       asked: ids.length,
       answered: 0,
       pooled: 0,
-      waiting: 0,
       notInGame: 0,
       other: 0,
     };
@@ -263,10 +260,6 @@ class MapFinder {
       const player = presence.get(id);
       if (!player) continue;
       counts.answered++;
-      if (player.serverAddressUnknown) {
-        counts.waiting++;
-        continue;
-      }
       if (player.official) counts.pooled++;
       // Steam shows no CS2: the player left the game or hides game details
       else if (!player.inCS2) counts.notInGame++;
@@ -274,21 +267,7 @@ class MapFinder {
       this.seeds.delete(id);
       this._checkedSeeds.add(id);
     }
-    if (counts.waiting) this._scheduleSeedCheck();
     return counts;
-  }
-
-  /**
-   * Look at the waiting seeds again once Steam is asked about their server
-   * again: an address it did not list is asked for anew after this long
-   * @private
-   */
-  _scheduleSeedCheck() {
-    if (this._seedTimer) return;
-    this._seedTimer = setTimeout(() => {
-      this._seedTimer = null;
-      this._checkSeeds();
-    }, API_CONFIG.NO_SERVER_ADDRESS_TTL_MS);
   }
 
   /**
@@ -462,8 +441,6 @@ class MapFinder {
     this._fofRunning = false;
     this._fofOffset = 0;
     this._refreshAgain = false;
-    if (this._seedTimer) clearTimeout(this._seedTimer);
-    this._seedTimer = null;
     this._checkedSeeds = new Set();
     this._checkingSeeds = false;
     this._checkSeedsAgain = false;

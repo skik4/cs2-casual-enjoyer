@@ -13,10 +13,6 @@ export const API_CONFIG = {
   // How long a map load reported by GSI after a connect holds off further
   // connects while Steam catches up with the user's new server
   JOIN_GSI_CONFIRM_MS: 15000,
-  // A game server keeps its address for life; one Steam lists no address
-  // for may be too new to be listed, so it is asked about again sooner
-  SERVER_ADDRESS_TTL_MS: 30 * 60 * 1000,
-  NO_SERVER_ADDRESS_TTL_MS: 60 * 1000,
 };
 
 /**
@@ -62,13 +58,6 @@ export const GSI_SETUP = {
  * token; community servers that use one are type 3.
  */
 export const ANON_GAME_SERVER_ACCOUNT_TYPE = 4;
-
-/**
- * Valve's matchmaking servers sit behind its relay network, so Steam lists
- * them at an address in this block (100.64.0.0/10). Community servers have a
- * public address or none.
- */
-export const VALVE_SERVER_NETWORK = { BASE: "100.64.0.0", PREFIX_LENGTH: 10 };
 
 export const MAP_FINDER_CONFIG = {
   REFRESH_INTERVAL_MS: 30000,

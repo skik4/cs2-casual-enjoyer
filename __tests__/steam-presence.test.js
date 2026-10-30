@@ -18,9 +18,6 @@ const B = "76561198000000012";
 const KEY = "ABCDEF0123456789ABCDEF0123456789";
 const CONNECT = "+gcconnect0A1B2C3D4E5F60718293A4B5";
 const OFFICIAL_SERVER = "90071992547409921";
-// Where Steam lists Valve's servers, and where a community server was seen
-const VALVE_ADDR = "100.64.166.22:27305";
-const PUBLIC_ADDR = "37.27.234.203:27131";
 
 const OFFICIAL_CASUAL = `"status" "Casual Dust II [ 3 : 1 ]" "game:state" "game" "steam_display" "#display_GameKnownMapScore" "game:mode" "casual" "game:map" "de_dust2" "game:score" "[ 3 : 1 ]" "game:server" "kv" "connect" "${CONNECT}" "game_server_steam_id" "90071992547409921"`;
 const COMMUNITY_CASUAL = `"status" "Community Casual Dust II" "game:state" "game" "steam_display" "#display_GameKnownMap" "game:mode" "casual" "game:map" "de_dust2" "game:server" "community" "game:act" "community" "Addon" "3329709053" "game_server_steam_id" "85568392920039425"`;
@@ -38,31 +35,14 @@ const okResponse = (body) => ({
   json: async () => body,
 });
 
-const failedResponse = () => ({
-  ok: false,
-  status: 500,
-  statusText: "Internal Server Error",
-  json: async () => ({}),
-});
-
-const isAddressLookup = (url) => String(url).includes("/GetServerIPsBySteamID/");
-
-/** Answer presence and server address requests the way Steam does */
-const mockSteam = ({ accounts = [], servers = [] }) => {
-  global.fetch.mockImplementation(async (url) =>
-    okResponse(
-      isAddressLookup(url) ? { response: { servers } } : { response: { accounts } }
-    )
-  );
+/** Answer presence requests the way Steam does */
+const mockSteam = ({ accounts = [] }) => {
+  global.fetch.mockImplementation(async () => okResponse({ response: { accounts } }));
 };
-
-const addressLookups = () =>
-  global.fetch.mock.calls.filter(([url]) => isAddressLookup(url));
 
 beforeEach(() => {
   jest.clearAllMocks();
   SteamAPIClient._cache.clear();
-  SteamAPIClient._serverAddressCache.clear();
   global.fetch = jest.fn();
   // Real token/key detection decides which parameter carries the auth
   Validators.isWebApiToken.mockImplementation((value) =>
@@ -119,7 +99,6 @@ describe("official server signals", () => {
           },
         },
       ],
-      servers: [{ steamid: OFFICIAL_SERVER, addr: VALVE_ADDR }],
     });
 
     const presence = await SteamAPIClient.getPresence([A], KEY);
@@ -129,98 +108,22 @@ describe("official server signals", () => {
       official: true,
     });
   });
-
-  test.each([
-    [VALVE_ADDR, true],
-    ["100.65.98.19:27181", true],
-    ["100.127.255.255:27015", true],
-    ["100.128.0.1:27015", false],
-    ["100.63.255.255:27015", false],
-    [PUBLIC_ADDR, false],
-    ["46.174.48.57:27021", false],
-    ["300.64.1.1:27015", false],
-    [null, false],
-    ["", false],
-  ])("isValveServerAddress(%s) is %s", (addr, expected) => {
-    expect(SteamAPIUtils.isValveServerAddress(addr)).toBe(expected);
-  });
 });
 
-describe("official server address", () => {
-  const officialPlayer = () => account(A, OFFICIAL_CASUAL);
-
-  test("a server outside Valve's network is not official", async () => {
+describe("official servers without addresses", () => {
+  test("rich presence and the server account decide, with no address lookup", async () => {
+    // Steam has listed no address for any anonymous server since late
+    // October 2026, Valve's included, so none is asked for
     mockSteam({
-      accounts: [officialPlayer()],
-      servers: [{ steamid: OFFICIAL_SERVER, addr: PUBLIC_ADDR }],
+      accounts: [account(A, OFFICIAL_CASUAL), account(B, RELAYED_COMMUNITY)],
     });
 
-    const presence = await SteamAPIClient.getPresence([A], KEY);
-
-    expect(presence.get(A)).toMatchObject({
-      map: "de_dust2",
-      official: false,
-      serverAddressUnknown: false,
-    });
-  });
-
-  test("a server Steam lists no address for is not official, for now", async () => {
-    mockSteam({ accounts: [officialPlayer()], servers: [] });
-
-    const presence = await SteamAPIClient.getPresence([A], KEY);
-
-    expect(presence.get(A)).toMatchObject({
-      official: false,
-      serverAddressUnknown: true,
-    });
-  });
-
-  test("an address is looked up once and then reused", async () => {
-    mockSteam({
-      accounts: [officialPlayer()],
-      servers: [{ steamid: OFFICIAL_SERVER, addr: VALVE_ADDR }],
-    });
-
-    await SteamAPIClient.getPresence([A], KEY);
-    SteamAPIClient._cache.clear();
-    const presence = await SteamAPIClient.getPresence([A], KEY);
+    const presence = await SteamAPIClient.getPresence([A, B], KEY);
 
     expect(presence.get(A).official).toBe(true);
-    expect(addressLookups()).toHaveLength(1);
-    const url = new URL(addressLookups()[0][0]);
-    expect(url.searchParams.get("server_steamids[0]")).toBe(OFFICIAL_SERVER);
-    expect(url.searchParams.get("key")).toBe(KEY);
-  });
-
-  test("a failed lookup counts as not official and is asked again", async () => {
-    let lookupsFailing = true;
-    global.fetch.mockImplementation(async (url) => {
-      if (!isAddressLookup(url)) {
-        return okResponse({ response: { accounts: [officialPlayer()] } });
-      }
-      return lookupsFailing
-        ? failedResponse()
-        : okResponse({
-            response: { servers: [{ steamid: OFFICIAL_SERVER, addr: VALVE_ADDR }] },
-          });
-    });
-
-    const first = await SteamAPIClient.getPresence([A], KEY);
-    lookupsFailing = false;
-    SteamAPIClient._cache.clear();
-    const second = await SteamAPIClient.getPresence([A], KEY);
-
-    expect(first.get(A).official).toBe(false);
-    expect(second.get(A).official).toBe(true);
-    expect(addressLookups()).toHaveLength(2);
-  });
-
-  test("players off official servers need no lookup", async () => {
-    mockSteam({ accounts: [account(B, COMMUNITY_CASUAL)] });
-
-    await SteamAPIClient.getPresence([B], KEY);
-
-    expect(addressLookups()).toHaveLength(0);
+    expect(presence.get(B).official).toBe(false);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(String(global.fetch.mock.calls[0][0])).toContain("/GetPlayerLinkDetails/");
   });
 });
 
@@ -302,14 +205,12 @@ describe("getPresence", () => {
   test("reads map, score and whether the server is official", async () => {
     mockSteam({
       accounts: [account(A, OFFICIAL_CASUAL), account(B, COMMUNITY_CASUAL)],
-      servers: [{ steamid: OFFICIAL_SERVER, addr: VALVE_ADDR }],
     });
 
     const presence = await SteamAPIClient.getPresence([A, B], KEY);
 
-    // One request for both players, one for the address of A's server
-    expect(global.fetch).toHaveBeenCalledTimes(2);
-    expect(addressLookups()).toHaveLength(1);
+    // One request for both players
+    expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(presence.get(A)).toMatchObject({
       steamid: A,
       inSupportedMode: true,

@@ -18,7 +18,7 @@ import mapFinder, {
 } from "../src/game/map-finder.js";
 import gsiManager from "../src/game/gsi-manager.js";
 import SteamAPI from "../src/steam/steam-api.js";
-import { API_CONFIG, MAP_FINDER_CONFIG } from "../src/shared/constants.js";
+import { MAP_FINDER_CONFIG } from "../src/shared/constants.js";
 
 const USER = "76561198000000001";
 const A = "76561198000000011";
@@ -315,7 +315,6 @@ describe("players seen in the user's match", () => {
       asked: 2,
       answered: 2,
       pooled: 1,
-      waiting: 0,
       notInGame: 1,
       other: 0,
     });
@@ -345,30 +344,6 @@ describe("players seen in the user's match", () => {
     await settle();
 
     expect(SteamAPI.getPresence).toHaveBeenCalledTimes(1);
-  });
-
-  test("a server Steam gives no address for yet is looked at again later", async () => {
-    jest.useFakeTimers();
-    try {
-      SteamAPI.getPresence
-        .mockResolvedValueOnce(
-          presenceMap(presence(D, { official: false, serverAddressUnknown: true }))
-        )
-        .mockResolvedValueOnce(presenceMap(presence(D)));
-
-      matchWith(D);
-      await jest.advanceTimersByTimeAsync(0);
-      expect(mapFinder.seeds.has(D)).toBe(true);
-      expect(mapFinder.pool.has(D)).toBe(false);
-
-      await jest.advanceTimersByTimeAsync(API_CONFIG.NO_SERVER_ADDRESS_TTL_MS);
-
-      expect(SteamAPI.getPresence).toHaveBeenCalledTimes(2);
-      expect(mapFinder.pool.has(D)).toBe(true);
-      expect(mapFinder.seeds.size).toBe(0);
-    } finally {
-      jest.useRealTimers();
-    }
   });
 });
 
