@@ -6,7 +6,7 @@
 
 jest.mock("../src/steam/steam-api.js", () => ({
   __esModule: true,
-  default: { getPresence: jest.fn() },
+  default: { getPlayerSummaries: jest.fn() },
 }));
 
 import AccountView from "../src/ui/account-view.js";
@@ -14,6 +14,7 @@ import SteamAPI from "../src/steam/steam-api.js";
 import { setLanguage } from "../src/i18n/i18n-manager.js";
 
 const STEAM_ID = "76561198000000001";
+const AVATAR = "https://avatars.steamstatic.com/abc_medium.jpg";
 const nowSeconds = () => Math.floor(Date.now() / 1000);
 
 /** What input validation reports for a working token */
@@ -36,10 +37,10 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 beforeEach(() => {
   setLanguage("en");
   AccountView.reset();
-  SteamAPI.getPresence.mockReset();
-  SteamAPI.getPresence.mockResolvedValue(
-    new Map([[STEAM_ID, { personaname: "skik4" }]])
-  );
+  SteamAPI.getPlayerSummaries.mockReset();
+  SteamAPI.getPlayerSummaries.mockResolvedValue({
+    [STEAM_ID]: { steamid: STEAM_ID, personaname: "skik4", avatarmedium: AVATAR },
+  });
   document.body.innerHTML = `
     <div id="account-bar" class="hidden">
       <span id="account-avatar"></span>
@@ -56,18 +57,40 @@ beforeEach(() => {
 
 afterEach(() => AccountView.reset());
 
-test("a working account shows the bar: name, initial and the token's expiry", async () => {
+test("a working account shows the bar: name, avatar and the token's expiry", async () => {
   AccountView.update(facts());
   await flush();
 
   expect(visible("account-bar")).toBe(true);
   expect(visible("account-panel")).toBe(false);
   expect(element("account-name").textContent).toBe("skik4");
-  expect(element("account-avatar").textContent).toBe("S");
+  expect(element("account-avatar").querySelector("img").getAttribute("src")).toBe(
+    AVATAR
+  );
   expect(element("account-status").textContent).toMatch(
     /^Token valid until \d\d\.\d\d, \d\d:\d\d$/
   );
   expect(element("account-status").dataset.state).toBe("ok");
+});
+
+test("the avatar shows the first letter until Steam names a picture, and if it fails to load", async () => {
+  SteamAPI.getPlayerSummaries.mockResolvedValue({
+    [STEAM_ID]: { steamid: STEAM_ID, personaname: "skik4" },
+  });
+  AccountView.update(facts());
+  expect(element("account-avatar").textContent).toBe(STEAM_ID[0]);
+  await flush();
+  expect(element("account-avatar").textContent).toBe("S");
+  expect(element("account-avatar").querySelector("img")).toBeNull();
+
+  AccountView.reset();
+  SteamAPI.getPlayerSummaries.mockResolvedValue({
+    [STEAM_ID]: { steamid: STEAM_ID, personaname: "skik4", avatarmedium: AVATAR },
+  });
+  AccountView.update(facts());
+  await flush();
+  element("account-avatar").querySelector("img").dispatchEvent(new Event("error"));
+  expect(element("account-avatar").textContent).toBe("S");
 });
 
 test.each([
@@ -131,15 +154,15 @@ test("the SteamID step: read from a token, typed in for an API key", () => {
   expect(element("steamid-step-num").textContent).toBe("3");
 });
 
-test("the Steam name is asked for once per account, and not without one", async () => {
+test("the Steam profile is asked for once per account, and not without one", async () => {
   AccountView.update(facts());
   AccountView.update(facts());
   await flush();
   AccountView.update(facts());
 
-  expect(SteamAPI.getPresence).toHaveBeenCalledTimes(1);
-  expect(SteamAPI.getPresence).toHaveBeenCalledWith([STEAM_ID], "a.b.c");
+  expect(SteamAPI.getPlayerSummaries).toHaveBeenCalledTimes(1);
+  expect(SteamAPI.getPlayerSummaries).toHaveBeenCalledWith([STEAM_ID], "a.b.c");
 
   AccountView.update(facts({ steamId: "76561198000000002", validAuth: false }));
-  expect(SteamAPI.getPresence).toHaveBeenCalledTimes(1);
+  expect(SteamAPI.getPlayerSummaries).toHaveBeenCalledTimes(1);
 });

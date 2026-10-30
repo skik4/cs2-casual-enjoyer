@@ -49,6 +49,16 @@ class SteamAPI {
   }
 
   /**
+   * Get players' profiles: name and avatar
+   * @param {string[]} steamids - Steam IDs to ask about
+   * @param {string} auth - API key or token
+   * @returns {Promise<Object>} - Profile by Steam ID, for the ids Steam answered
+   */
+  static async getPlayerSummaries(steamids, auth) {
+    return SteamAPIClient.getPlayerSummaries(steamids, auth);
+  }
+
+  /**
    * Get someone else's friends list (API key only)
    * @param {string} steamid - Whose friends to list
    * @param {string} key - Steam Web API key

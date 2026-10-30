@@ -33,7 +33,7 @@ The easiest way to use the application is to download the prebuilt `.exe` from t
 ## How to Use
 
 1. **First Launch**: The app will automatically start with an interactive tutorial to guide you through all features
-2. **Connect to Steam**: The "Connect to Steam" panel walks you through it: open the token page in Steam, copy everything and paste it; your SteamID is read from the token. "Token or API key: how to get one" explains both options. Once your friends are loaded, the panel folds into a one-line account bar that shows how long the token lasts; "Account" opens it again.
+2. **Connect to Steam**: The "Connect to Steam" panel walks you through it: open the token page in Steam, copy everything and paste it; your SteamID is read from the token. "Token or API key: how to get one" explains both options. Once your friends are loaded, the panel folds into a one-line account bar with your Steam avatar and name and how long the token lasts; "Account" opens it again.
 3. **Load Friends**: Click "Load friends"; the ↻ button in the account bar reloads them later
 4. **Join Games**: Friends playing Casual are listed with their map and score - click "Join" to connect automatically, or "Wait for a slot" when their server is full
 5. **Status Monitoring**: The label next to the score says what is going on: "free slot" or "no free slot" before you join, then "connecting…", "waiting for a slot" and "on the server ✓". The bar above the tabs shows the running attempt from any tab, with Cancel

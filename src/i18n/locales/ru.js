@@ -188,7 +188,6 @@ export default {
     },
     freeServers: "{count} со свободным местом",
     round: "Раунд {round} · {score}",
-    knownPlayers: "знаем игроков: {count}",
     noScore: "Счёта пока нет",
     searchingAmong: {
       one: "ищем среди {count} игрока",

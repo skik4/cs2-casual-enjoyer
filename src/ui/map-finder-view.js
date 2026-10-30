@@ -279,13 +279,12 @@ class MapFinderView {
       score && server.rounds !== null
         ? t("mapFinder.round", { round: server.rounds + 1, score })
         : t("mapFinder.noScore");
-    const known = t("mapFinder.knownPlayers", { count: server.players.length });
 
     return `
       <div class="friend server-row">
         <div class="friend-info">
           <span class="personaname">${escapeHtml(title)}</span>
-          <span class="game-line"><span class="game-where">${escapeHtml(known)}</span>${this.renderLabel(joinId, joinStates, slot)}</span>
+          <span class="game-line">${this.renderLabel(joinId, joinStates, slot)}</span>
         </div>
         ${this.renderJoinButton(joinId, joinStates, slot)}
       </div>`;

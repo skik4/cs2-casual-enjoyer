@@ -177,7 +177,6 @@ export default {
     servers: { one: "{count} server", other: "{count} servers" },
     freeServers: "{count} with a free slot",
     round: "Round {round} · {score}",
-    knownPlayers: "known players: {count}",
     noScore: "No score yet",
     searchingAmong: {
       one: "searching {count} player",

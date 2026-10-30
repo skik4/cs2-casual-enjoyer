@@ -36,8 +36,9 @@ class AccountView {
   /** @type {import('../shared/types.js').AccountFacts|null} */
   static facts = null;
   static editing = false;
-  static _names = new Map();
-  static _pendingName = null;
+  /** @type {Map<string, {name: string|null, avatarUrl: string|null}>} */
+  static _profiles = new Map();
+  static _pendingProfile = null;
   static _clock = null;
   static _initialized = false;
 
@@ -81,7 +82,7 @@ class AccountView {
   static update(facts) {
     this.facts = facts;
     this.render();
-    this._loadName();
+    this._loadProfile();
     if (!this._clock && facts?.tokenInfo) {
       this._clock = setInterval(() => this.render(), CLOCK_MS);
     }
@@ -137,14 +138,43 @@ class AccountView {
    */
   static renderBar(facts) {
     if (!facts) return;
-    const name = this._names.get(facts.steamId) || facts.steamId;
+    const profile = this._profiles.get(facts.steamId);
+    const name = profile?.name || facts.steamId;
     DOMUtils.setText("account-name", name);
-    DOMUtils.setText("account-avatar", [...name][0]?.toUpperCase() || "?");
+    this.renderAvatar(profile?.avatarUrl, name);
 
     const { state, text } = this.describeAuth(facts);
     DOMUtils.setText("account-status", text);
     const status = DOMUtils.getElementById("account-status");
     if (status) status.dataset.state = state;
+  }
+
+  /**
+   * The user's Steam avatar, or the first letter of the name until it is
+   * known or when it does not load
+   * @param {string|null|undefined} url - Avatar picture
+   * @param {string} name - Name shown next to it
+   */
+  static renderAvatar(url, name) {
+    const avatar = DOMUtils.getElementById("account-avatar");
+    if (!avatar) return;
+    const letter = [...name][0]?.toUpperCase() || "?";
+    let picture = avatar.querySelector("img");
+    if (!url) {
+      avatar.textContent = letter;
+      return;
+    }
+    if (!picture) {
+      avatar.textContent = "";
+      picture = document.createElement("img");
+      picture.alt = "";
+      picture.className = "account-avatar-img";
+      picture.addEventListener("error", () => {
+        avatar.textContent = letter;
+      });
+      avatar.appendChild(picture);
+    }
+    if (picture.getAttribute("src") !== url) picture.setAttribute("src", url);
   }
 
   /**
@@ -204,28 +234,36 @@ class AccountView {
   }
 
   /**
-   * Fetch the user's Steam name once per account, for the bar
+   * Fetch the user's Steam name and avatar once per account, for the bar
    * @private
    */
-  static _loadName() {
+  static _loadProfile() {
     const facts = this.facts;
     if (!facts?.validSteamId || !facts.validAuth || facts.tokenExpired) return;
-    if (this._names.has(facts.steamId) || this._pendingName === facts.steamId) {
+    if (
+      this._profiles.has(facts.steamId) ||
+      this._pendingProfile === facts.steamId
+    ) {
       return;
     }
 
     const steamId = facts.steamId;
-    this._pendingName = steamId;
-    SteamAPI.getPresence([steamId], facts.auth)
-      .then((presence) => {
-        const name = presence.get(steamId)?.personaname;
-        if (!name) return;
-        this._names.set(steamId, name);
+    this._pendingProfile = steamId;
+    SteamAPI.getPlayerSummaries([steamId], facts.auth)
+      .then((profiles) => {
+        const player = profiles?.[steamId];
+        if (!player) return;
+        this._profiles.set(steamId, {
+          name: player.personaname || null,
+          // The bar's avatar is small; the medium picture is sharp enough
+          avatarUrl:
+            player.avatarmedium || player.avatarfull || player.avatar || null,
+        });
         this.render();
       })
       .catch(() => {})
       .finally(() => {
-        if (this._pendingName === steamId) this._pendingName = null;
+        if (this._pendingProfile === steamId) this._pendingProfile = null;
       });
   }
 
@@ -237,8 +275,8 @@ class AccountView {
     this._clock = null;
     this.facts = null;
     this.editing = false;
-    this._names.clear();
-    this._pendingName = null;
+    this._profiles.clear();
+    this._pendingProfile = null;
   }
 }
 
