@@ -57,16 +57,33 @@ class SteamAPIUtils {
 
   /**
    * Rich presence reduced to a string that changes whenever any of its values
-   * does, whatever order Steam lists them in
+   * does, whatever order Steam lists them in - except the join token in
+   * connect. CS2 hands out a new token as players arrive and leave, the
+   * user's own arrival included, and in live joins a new token alone never
+   * meant a slot the user could take. A connect showing up or going away
+   * still counts.
    * @param {string|null|undefined} kv - Key-value string from Steam rich presence
    * @returns {string}
    */
   static richPresenceKey(kv) {
     const pairs = [];
     for (const match of String(kv ?? "").matchAll(/"([^"]*)"\s+"([^"]*)"/g)) {
-      pairs.push(`${match[1]}=${match[2]}`);
+      const value =
+        match[1] === "connect" ? this.connectKind(match[2]) : match[2];
+      pairs.push(`${match[1]}=${value}`);
     }
     return pairs.sort().join("\n");
+  }
+
+  /**
+   * A connect string without its join token: what it joins (a server, a
+   * lobby or a local server) but not the token that comes with it
+   * @param {string|null|undefined} connect - E.g. "+gcconnect0A1B2C3D..."
+   * @returns {string|null} - E.g. "+gcconnect", or null without a connect
+   */
+  static connectKind(connect) {
+    if (!connect) return null;
+    return String(connect).replace(/^(\+gcconnect[GL]?)[0-9A-F]+$/i, "$1");
   }
 
   /**

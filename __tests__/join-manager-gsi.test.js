@@ -189,7 +189,7 @@ describe("JoinManager with CS2 Game State Integration", () => {
     cs2.gsiState = gsiMatch("casual", Date.now());
     SteamAPI.getJoinSnapshot.mockResolvedValue({
       user: userInfo(),
-      friend: friendInfo({ connect: NEW_CONNECT }),
+      friend: friendInfo({ connect: NEW_CONNECT, statusKey: "next round" }),
     });
 
     await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_GSI_CONFIRM_MS - 500);
@@ -231,11 +231,82 @@ describe("JoinManager with CS2 Game State Integration", () => {
 
     SteamAPI.getJoinSnapshot.mockResolvedValue({
       user: userInfo({ serverId: "90071992547409999" }),
-      friend: friendInfo({ connect: NEW_CONNECT }),
+      friend: friendInfo({ connect: NEW_CONNECT, statusKey: "next round" }),
     });
     await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
 
     expect(openExternal).toHaveBeenCalledTimes(2);
+  });
+
+  describe("a server Steam still shows after the user left it", () => {
+    /** Steam showing the user on the friend's server */
+    const onFriendServer = (friend = friendInfo()) => ({
+      user: userInfo({ serverId: FRIEND_SERVER }),
+      friend,
+    });
+
+    test("does not count as joined while CS2 shows the menu", async () => {
+      SteamAPI.getJoinSnapshot.mockResolvedValue(onFriendServer());
+      cs2.gsiState = gsiMenu();
+
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(100);
+
+      expect(status()).toBe(STATUS_TYPES.CONNECTING);
+      expect(joinCalls()).toBe(1);
+    });
+
+    test("counts once CS2 has a map loaded again", async () => {
+      SteamAPI.getJoinSnapshot.mockResolvedValue(onFriendServer());
+      cs2.gsiState = gsiMenu();
+
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(100);
+      expect(status()).toBe(STATUS_TYPES.CONNECTING);
+
+      cs2.gsiState = gsiMatch("casual", Date.now());
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+
+      expect(status()).toBe(STATUS_TYPES.JOINED);
+      expect(joinCalls()).toBe(1);
+    });
+
+    test("once Steam lets go of it, the server it shows after a connect counts at once", async () => {
+      SteamAPI.getJoinSnapshot.mockResolvedValue(
+        onFriendServer(friendInfo({ connect: null }))
+      );
+      cs2.gsiState = gsiMenu();
+
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(100);
+      expect(status()).toBe(STATUS_TYPES.WAITING);
+
+      // Steam catches up, then a slot opens
+      SteamAPI.getJoinSnapshot.mockResolvedValue({
+        user: userInfo(),
+        friend: friendInfo(),
+      });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+      expect(joinCalls()).toBe(1);
+
+      // The connect lands while CS2 is still loading the map
+      SteamAPI.getJoinSnapshot.mockResolvedValue(onFriendServer());
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+
+      expect(status()).toBe(STATUS_TYPES.JOINED);
+      expect(joinCalls()).toBe(1);
+    });
+
+    test("in a match there it counts at once, without a connect", async () => {
+      SteamAPI.getJoinSnapshot.mockResolvedValue(onFriendServer());
+      cs2.gsiState = gsiMatch("casual", Date.now() - 60000);
+
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(100);
+
+      expect(status()).toBe(STATUS_TYPES.JOINED);
+      expect(joinCalls()).toBe(0);
+    });
   });
 
   describe("isAwaitingJoinConfirmation", () => {

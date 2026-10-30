@@ -185,7 +185,10 @@ describe("JoinManager - Competitive/Premier Mode Interruption", () => {
       expect(openExternal).toHaveBeenCalledWith(joinUrl(FRIEND_ID, CONNECT));
 
       // The friend's new status is what earns the second connect
-      steam.friends[FRIEND_ID] = friendWithFreeSlot({ connect: CONNECT_2 });
+      steam.friends[FRIEND_ID] = friendWithFreeSlot({
+        connect: CONNECT_2,
+        statusKey: "next round",
+      });
       await advance(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
       expect(connects()).toBe(2);
 

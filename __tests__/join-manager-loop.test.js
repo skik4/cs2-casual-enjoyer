@@ -167,28 +167,49 @@ describe("JoinManager join loop", () => {
       expect(polls()).toBeGreaterThan(10);
     });
 
-    test("a new connect string gets a connect at once", async () => {
+    test("a new join token alone gets no second connect: the user's own arrival brings one", async () => {
+      steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 7:3" });
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+
+      // As seen live: the friend's join token changed 1.8 s after the
+      // connect, as the user took the slot, and Steam showed the user on the
+      // server 1.3 s later
+      await jest.advanceTimersByTimeAsync(1800);
+      steam.friends[FRIEND_ID] = friendInfo({
+        statusKey: "score 7:3",
+        connect: CONNECT_B,
+      });
+      await jest.advanceTimersByTimeAsync(1300);
+      steam.user = userInfo({ inSupportedMode: true, serverId: FRIEND_SERVER });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+
+      expect(status()).toBe(JOINED);
+      expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
+    });
+
+    test("without a status key the connect stands in for it, minus its token", async () => {
       joinManager.startJoin(FRIEND_ID);
       await flush();
       steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
+      await jest.advanceTimersByTimeAsync(5000);
+
+      expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
+    });
+
+    test("any change in the friend's status gets a connect at once", async () => {
+      steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 3:1" });
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      steam.friends[FRIEND_ID] = friendInfo({
+        statusKey: "score 3:2",
+        connect: CONNECT_B,
+      });
       await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
 
       expect(openedUrls()).toEqual([
         joinUrl(FRIEND_ID, CONNECT),
         joinUrl(FRIEND_ID, CONNECT_B),
-      ]);
-    });
-
-    test("any change in the friend's status counts, not only the connect string", async () => {
-      steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 3:1" });
-      joinManager.startJoin(FRIEND_ID);
-      await flush();
-      steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 3:2" });
-      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
-
-      expect(openedUrls()).toEqual([
-        joinUrl(FRIEND_ID, CONNECT),
-        joinUrl(FRIEND_ID, CONNECT),
       ]);
     });
 

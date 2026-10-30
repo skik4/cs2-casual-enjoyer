@@ -5,6 +5,7 @@ import {
   STATUS_TYPES,
 } from "../shared/constants.js";
 import SteamAPI from "../steam/steam-api.js";
+import SteamAPIUtils from "../steam/steam-api-utils.js";
 import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
@@ -190,7 +191,9 @@ class JoinManager {
         inSupportedMode: onMap.length > 0,
         connect: pick?.connect ?? null,
         joinAs: pick?.steamid ?? null,
-        statusKey: pick ? `${pick.steamid}\n${pick.statusKey ?? pick.connect}` : null,
+        statusKey: pick
+          ? `${pick.steamid}\n${pick.statusKey ?? SteamAPIUtils.connectKind(pick.connect)}`
+          : null,
         isJoined: (userInfo) => {
           if (!userInfo.serverId) return false;
           if (target.serverId) return userInfo.serverId === target.serverId;
@@ -344,6 +347,9 @@ class JoinManager {
     let failingSince = null;
     // When this attempt first asked CS2 to connect
     let firstConnectAt = null;
+    // The server Steam showed for the user while CS2 had them out of a match
+    // and this attempt had not connected yet: the one they just left
+    let leftServerId = null;
     // What Steam showed about the target when the last connect went out, until
     // it shows something else. A connect on the same status would only be
     // turned away again or - while CS2 is still connecting - run after the
@@ -388,7 +394,8 @@ class JoinManager {
 
         // Any change in what Steam shows about the target makes the next
         // connect worth sending, even one that changes back
-        const targetStatus = target.statusKey ?? target.connect ?? null;
+        const targetStatus =
+          target.statusKey ?? SteamAPIUtils.connectKind(target.connect);
         if (connectedOn !== null && targetStatus !== connectedOn) {
           connectedOn = null;
         }
@@ -419,9 +426,23 @@ class JoinManager {
           break;
         }
 
+        // Steam keeps showing a server for seconds after the user leaves it,
+        // so a server it shows while CS2 has the user in the menu counts only
+        // once CS2 has a map loaded again
+        if (gsiState && !gsiState.inMatch && firstConnectAt === null) {
+          leftServerId = user.serverId ?? null;
+        } else if (user.serverId !== leftServerId) {
+          // Steam has caught up; whatever it shows from now on is current
+          leftServerId = null;
+        }
+        const onLeftServer =
+          leftServerId !== null &&
+          user.serverId === leftServerId &&
+          !gsiState?.inMatch;
+
         // Checked before connecting, so a game that is already where it
         // should be never gets another connect
-        if (target.isJoined(user)) {
+        if (!onLeftServer && target.isJoined(user)) {
           this.updateJoinState(join_id, { status: STATUS_TYPES.JOINED });
           this.journal.attemptEnded(join_id, "joined");
 

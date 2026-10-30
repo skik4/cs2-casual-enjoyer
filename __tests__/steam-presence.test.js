@@ -238,6 +238,31 @@ describe("status key", () => {
     expect(key(null)).toBe("");
   });
 
+  test("a new join token alone is no change; a connect showing up or going away is", () => {
+    const key = (kv) => SteamAPIUtils.richPresenceKey(kv);
+    // Seen live: only the token changed, as the user arrived on the server
+    const before = '"connect" "+gcconnect62805B3F4B1347F135DF8FBE" "game:map" "de_dust2"';
+    const after = '"connect" "+gcconnect0FB32A434B1347F1A291CB89" "game:map" "de_dust2"';
+
+    expect(key(after)).toBe(key(before));
+    expect(key('"game:map" "de_dust2"')).not.toBe(key(before));
+    // Joining a lobby is not joining a server
+    expect(key('"connect" "+gcconnectG4B1347F1" "game:map" "de_dust2"')).not.toBe(
+      key(before)
+    );
+  });
+
+  test("connectKind keeps what a connect joins and drops its token", () => {
+    expect(SteamAPIUtils.connectKind("+gcconnect62805B3F4B1347F135DF8FBE")).toBe(
+      "+gcconnect"
+    );
+    expect(SteamAPIUtils.connectKind("+gcconnectG4B1347F1")).toBe("+gcconnectG");
+    expect(SteamAPIUtils.connectKind("+gcconnectL0A0B0C0D0E0F0A0B0C0D0E0F")).toBe(
+      "+gcconnectL"
+    );
+    expect(SteamAPIUtils.connectKind(null)).toBeNull();
+  });
+
   test("a player's key covers the whole rich presence and the server", () => {
     const base = joinInfo(OFFICIAL_CASUAL).statusKey;
 

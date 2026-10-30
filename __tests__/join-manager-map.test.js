@@ -228,6 +228,35 @@ describe("startMapJoin", () => {
     expect(joinManager.getJoinStates()[joinId].status).toBe(STATUS_TYPES.JOINED);
   });
 
+  test("a server of the map the user just left does not count while CS2 shows the menu", async () => {
+    // As seen live: Steam kept showing the old server after CS2 was back in
+    // the menu, and a new attempt ended as joined at once
+    joinManager.setCS2Manager({
+      checkUserInCS2: jest.fn().mockResolvedValue(true),
+      getGsiUserState: () => ({
+        inMatch: false,
+        inMenu: true,
+        mode: null,
+        inCompetitiveOrPremier: false,
+        mapLoadedAt: 0,
+      }),
+    });
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        user({ serverId: DUST_1, official: true, mode: "casual", map: "de_dust2" }),
+        presence(A)
+      )
+    );
+
+    joinManager.startMapJoin(dustTarget());
+    await jest.advanceTimersByTimeAsync(1000);
+
+    expect(joinManager.getJoinStates()[getMapJoinId("de_dust2")].status).toBe(
+      STATUS_TYPES.WAITING
+    );
+    expect(openExternal).not.toHaveBeenCalled();
+  });
+
   test("waits while every known server of the map is full", async () => {
     SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A), presence(B)));
 
