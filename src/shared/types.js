@@ -56,9 +56,12 @@
  *   map: string|null,
  *   score: string|null,
  *   official: boolean,
+ *   serverAddressUnknown?: boolean,
  * }} PlayerPresence - Join facts plus where the match is played; `official`
  *   is true for a casual match on Valve's own servers. processPresenceResponse
  *   judges by rich presence alone, getPresence also by the server's address.
+ *   serverAddressUnknown marks a player who would be official but for a
+ *   server address Steam did not give, e.g. for a server just started.
  */
 
 /**

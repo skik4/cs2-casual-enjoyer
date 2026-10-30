@@ -157,15 +157,22 @@ describe("official server address", () => {
 
     const presence = await SteamAPIClient.getPresence([A], KEY);
 
-    expect(presence.get(A)).toMatchObject({ map: "de_dust2", official: false });
+    expect(presence.get(A)).toMatchObject({
+      map: "de_dust2",
+      official: false,
+      serverAddressUnknown: false,
+    });
   });
 
-  test("a server Steam lists no address for is not official", async () => {
+  test("a server Steam lists no address for is not official, for now", async () => {
     mockSteam({ accounts: [officialPlayer()], servers: [] });
 
     const presence = await SteamAPIClient.getPresence([A], KEY);
 
-    expect(presence.get(A).official).toBe(false);
+    expect(presence.get(A)).toMatchObject({
+      official: false,
+      serverAddressUnknown: true,
+    });
   });
 
   test("an address is looked up once and then reused", async () => {

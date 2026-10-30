@@ -18,7 +18,7 @@ import mapFinder, {
 } from "../src/game/map-finder.js";
 import gsiManager from "../src/game/gsi-manager.js";
 import SteamAPI from "../src/steam/steam-api.js";
-import { MAP_FINDER_CONFIG } from "../src/shared/constants.js";
+import { API_CONFIG, MAP_FINDER_CONFIG } from "../src/shared/constants.js";
 
 const USER = "76561198000000001";
 const A = "76561198000000011";
@@ -64,6 +64,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mapFinder.reset();
   gsiManager.reset();
+  mapFinder.journal = { record: jest.fn() };
   SteamAPI.getPresence.mockResolvedValue(new Map());
   SteamAPI.getFriendIdsOf.mockResolvedValue([]);
 });
@@ -152,15 +153,28 @@ describe("refresh", () => {
     expect(SteamAPI.getPresence.mock.calls[0][1]).toBe("token");
   });
 
-  test("a seed is looked at once", async () => {
+  test("a seed Steam answered about is looked at once", async () => {
     configure();
     mapFinder.seeds.add(C);
+    SteamAPI.getPresence.mockResolvedValueOnce(
+      presenceMap(presence(C, { official: false, inCS2: false }))
+    );
 
     await mapFinder.refresh();
     expect(mapFinder.seeds.size).toBe(0);
 
     await mapFinder.refresh();
     expect(SteamAPI.getPresence.mock.calls[1][0]).toEqual([]);
+  });
+
+  test("a seed Steam did not answer about is asked about again", async () => {
+    configure();
+    mapFinder.seeds.add(C);
+
+    await mapFinder.refresh();
+    await mapFinder.refresh();
+
+    expect(SteamAPI.getPresence.mock.calls[1][0]).toEqual([C]);
   });
 
   test("a seed is asked about even when friends and the pool fill every slot", async () => {
@@ -171,6 +185,7 @@ describe("refresh", () => {
       mapFinder.pool.set(id, { lastSeen: now, map: "de_dust2" });
     }
     mapFinder.seeds.add(C);
+    SteamAPI.getPresence.mockResolvedValueOnce(presenceMap(presence(C)));
 
     await mapFinder.refresh();
 
@@ -253,6 +268,107 @@ describe("refresh", () => {
     });
 
     expect([...mapFinder.seeds].sort()).toEqual([D, E].sort());
+  });
+});
+
+describe("players seen in the user's match", () => {
+  /** CS2 reporting a casual match on Dust II with everyone listed */
+  const matchWith = (...ids) =>
+    gsiManager.handlePayload({
+      provider: { steamid: USER },
+      map: { mode: "casual", name: "de_dust2" },
+      player: { steamid: USER, activity: "playing" },
+      allplayers: Object.fromEntries([USER, ...ids].map((id) => [id, {}])),
+    });
+  /** Let the check that a GSI state started run to its end */
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  beforeEach(() => {
+    configure();
+  });
+
+  test("are asked about at once, with no refresh, and the official ones join the pool", async () => {
+    const save = jest.fn().mockResolvedValue(true);
+    global.window.electronAPI = {
+      mapFinder: {
+        load: jest.fn().mockResolvedValue({
+          pool: { [A]: { lastSeen: Date.now(), map: "de_mirage" } },
+        }),
+        save,
+      },
+    };
+    SteamAPI.getPresence.mockResolvedValueOnce(
+      presenceMap(presence(D), presence(E, { official: false, inCS2: false }))
+    );
+
+    matchWith(D, E);
+    await settle();
+
+    expect(SteamAPI.getPresence).toHaveBeenCalledWith(
+      expect.arrayContaining([D, E]),
+      "token"
+    );
+    // The pool on disk was read first, so it keeps what it had
+    expect([...mapFinder.pool.keys()].sort()).toEqual([A, D].sort());
+    expect(mapFinder.seeds.size).toBe(0);
+    expect(mapFinder.journal.record).toHaveBeenCalledWith("seeds", {
+      asked: 2,
+      answered: 2,
+      pooled: 1,
+      waiting: 0,
+      notInGame: 1,
+      other: 0,
+    });
+  });
+
+  test("in another mode are not asked about", async () => {
+    gsiManager.handlePayload({
+      provider: { steamid: USER },
+      map: { mode: "competitive", name: "de_dust2" },
+      player: { steamid: E, activity: "playing" },
+      allplayers: { [USER]: {}, [D]: {}, [E]: {} },
+    });
+    await settle();
+
+    expect(mapFinder.seeds.size).toBe(0);
+    expect(SteamAPI.getPresence).not.toHaveBeenCalled();
+  });
+
+  test("a player answered about once is not asked about again", async () => {
+    SteamAPI.getPresence.mockResolvedValueOnce(
+      presenceMap(presence(D, { official: false, inCS2: false }))
+    );
+
+    matchWith(D);
+    await settle();
+    matchWith(D);
+    await settle();
+
+    expect(SteamAPI.getPresence).toHaveBeenCalledTimes(1);
+  });
+
+  test("a server Steam gives no address for yet is looked at again later", async () => {
+    jest.useFakeTimers();
+    try {
+      SteamAPI.getPresence
+        .mockResolvedValueOnce(
+          presenceMap(presence(D, { official: false, serverAddressUnknown: true }))
+        )
+        .mockResolvedValueOnce(presenceMap(presence(D)));
+
+      matchWith(D);
+      await jest.advanceTimersByTimeAsync(0);
+      expect(mapFinder.seeds.has(D)).toBe(true);
+      expect(mapFinder.pool.has(D)).toBe(false);
+
+      await jest.advanceTimersByTimeAsync(API_CONFIG.NO_SERVER_ADDRESS_TTL_MS);
+
+      expect(SteamAPI.getPresence).toHaveBeenCalledTimes(2);
+      expect(mapFinder.pool.has(D)).toBe(true);
+      expect(mapFinder.seeds.size).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
 

@@ -548,7 +548,8 @@ class SteamAPIClient {
    * Rich presence and the server account can still pass a community server
    * off as one of Valve's; its address cannot. A player stays on an official
    * server only when the server's address is in Valve's network - one whose
-   * address could not be looked up counts as not official this time.
+   * address could not be looked up counts as not official this time, and is
+   * marked so that a caller can ask again later.
    * @param {Map<string, import('../shared/types.js').PlayerPresence>} presence - Changed in place
    * @param {string} auth - API key or token
    * @private
@@ -561,11 +562,13 @@ class SteamAPIClient {
 
     const addresses = await this.getServerAddresses(candidates, auth);
     for (const player of presence.values()) {
-      if (
-        player.official &&
-        !SteamAPIUtils.isValveServerAddress(addresses.get(String(player.serverId)))
-      ) {
+      if (!player.official) continue;
+      const address = addresses.get(String(player.serverId));
+      if (!SteamAPIUtils.isValveServerAddress(address)) {
         player.official = false;
+        // No address at all, rather than one outside Valve's network: a
+        // server that has only just started may not be listed yet
+        player.serverAddressUnknown = !address;
       }
     }
   }

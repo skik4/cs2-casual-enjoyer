@@ -1,8 +1,9 @@
 // Shared constants
-import { MAP_FINDER_CONFIG } from "../shared/constants.js";
+import { API_CONFIG, GAME_MODES, MAP_FINDER_CONFIG } from "../shared/constants.js";
 
 // Game singletons
 import gsiManager from "./gsi-manager.js";
+import joinJournal from "./join-journal.js";
 
 // UI and utilities
 import SteamAPI from "../steam/steam-api.js";
@@ -126,6 +127,13 @@ class MapFinder {
     this._fofOffset = 0;
     this._refreshAgain = false;
     this._gsiUnsubscribe = null;
+    // Seeds Steam has answered about this run, so watching the same player
+    // again asks nothing new
+    this._checkedSeeds = new Set();
+    this._checkingSeeds = false;
+    this._checkSeedsAgain = false;
+    this._seedTimer = null;
+    this.journal = joinJournal;
   }
 
   /**
@@ -145,22 +153,142 @@ class MapFinder {
   }
 
   /**
-   * Seed whoever CS2 reports in the user's own match: the player the user
-   * spectates and, when CS2 lists them, everyone on the server
+   * Seed whoever CS2 reports in the user's own casual match: the player the
+   * user spectates and, when CS2 lists them, everyone on the server. They are
+   * asked about at once, whatever view is open: right now they share a server
+   * with the user, which a later refresh cannot promise.
    * @private
    */
   _seedFromGsi() {
+    // Players from a match in any other mode could never join a pool of
+    // casual players, so Steam is not even asked about them
+    if (gsiManager.getUserState()?.mode !== GAME_MODES.CASUAL) return;
     const listed = gsiManager.getListedPlayerIds();
     const before = this.seeds.size;
     for (const id of [gsiManager.getObservedSteamId(), ...listed]) {
-      if (id && this.seeds.size < MAX_SEEDS) this.seeds.add(id);
+      if (
+        id &&
+        this.seeds.size < MAX_SEEDS &&
+        !this._checkedSeeds.has(id) &&
+        !this.pool.has(id)
+      ) {
+        this.seeds.add(id);
+      }
     }
-    if (listed.length && this.seeds.size > before) {
+    if (this.seeds.size === before) return;
+    if (listed.length) {
       logger.info("MapFinder", "Seeded players listed by CS2", {
         listed: listed.length,
         added: this.seeds.size - before,
       });
     }
+    this._checkSeeds();
+  }
+
+  /**
+   * Ask Steam about the seeds now and put the ones on an official server
+   * into the pool
+   * @private
+   */
+  async _checkSeeds() {
+    if (this._checkingSeeds) {
+      this._checkSeedsAgain = true;
+      return;
+    }
+    const auth = this.deps?.getAuth?.();
+    if (!auth || !this.seeds.size) return;
+
+    this._checkingSeeds = true;
+    try {
+      // The pool on disk comes first, or saving would replace it
+      await this._load();
+      do {
+        this._checkSeedsAgain = false;
+        const ids = [...this.seeds];
+        const presence = await SteamAPI.getPresence(ids, auth);
+        const added = this._addToPool(presence.values(), Date.now());
+        this.journal.record("seeds", this._takeSeedAnswers(ids, presence));
+        if (added) {
+          this._scheduleSave();
+          this._notify();
+        }
+      } while (this._checkSeedsAgain && this.seeds.size);
+    } catch (error) {
+      logger.warn("MapFinder", "Checking seeds failed", {
+        error: error.message,
+      });
+    } finally {
+      this._checkingSeeds = false;
+    }
+  }
+
+  /**
+   * Remember the players on official servers
+   * @param {Iterable<import('../shared/types.js').PlayerPresence>} players
+   * @param {number} now - Time to remember them by
+   * @returns {number} - How many were not in the pool before
+   * @private
+   */
+  _addToPool(players, now) {
+    let added = 0;
+    for (const player of players) {
+      if (!player.official || !player.steamid) continue;
+      if (!this.pool.has(player.steamid)) added++;
+      this.pool.set(player.steamid, { lastSeen: now, map: player.map });
+    }
+    return added;
+  }
+
+  /**
+   * Settle the seeds Steam answered about: one on an official server is in
+   * the pool by now, and one on no server the pool wants is dropped. One on
+   * a server Steam gave no address for yet - a server just started may not
+   * be listed - stays for another look, as does one Steam did not answer.
+   * @param {string[]} ids - Seeds that were asked about
+   * @param {Map<string, import('../shared/types.js').PlayerPresence>} presence
+   * @returns {{asked: number, answered: number, pooled: number, waiting: number, notInGame: number, other: number}}
+   *   What became of them, for the join journal
+   * @private
+   */
+  _takeSeedAnswers(ids, presence) {
+    const counts = {
+      asked: ids.length,
+      answered: 0,
+      pooled: 0,
+      waiting: 0,
+      notInGame: 0,
+      other: 0,
+    };
+    for (const id of ids) {
+      const player = presence.get(id);
+      if (!player) continue;
+      counts.answered++;
+      if (player.serverAddressUnknown) {
+        counts.waiting++;
+        continue;
+      }
+      if (player.official) counts.pooled++;
+      // Steam shows no CS2: the player left the game or hides game details
+      else if (!player.inCS2) counts.notInGame++;
+      else counts.other++;
+      this.seeds.delete(id);
+      this._checkedSeeds.add(id);
+    }
+    if (counts.waiting) this._scheduleSeedCheck();
+    return counts;
+  }
+
+  /**
+   * Look at the waiting seeds again once Steam is asked about their server
+   * again: an address it did not list is asked for anew after this long
+   * @private
+   */
+  _scheduleSeedCheck() {
+    if (this._seedTimer) return;
+    this._seedTimer = setTimeout(() => {
+      this._seedTimer = null;
+      this._checkSeeds();
+    }, API_CONFIG.NO_SERVER_ADDRESS_TTL_MS);
   }
 
   /**
@@ -209,12 +337,10 @@ class MapFinder {
       const presence = await SteamAPI.getPresence([...ids], auth);
 
       const now = Date.now();
-      for (const player of presence.values()) {
-        if (player.official && player.steamid) {
-          this.pool.set(player.steamid, { lastSeen: now, map: player.map });
-        }
+      this._addToPool(presence.values(), now);
+      if (polledSeeds.length) {
+        this.journal.record("seeds", this._takeSeedAnswers(polledSeeds, presence));
       }
-      polledSeeds.forEach((id) => this.seeds.delete(id));
       this._prunePool(now);
 
       this.servers = buildServers(presence.values());
@@ -336,6 +462,11 @@ class MapFinder {
     this._fofRunning = false;
     this._fofOffset = 0;
     this._refreshAgain = false;
+    if (this._seedTimer) clearTimeout(this._seedTimer);
+    this._seedTimer = null;
+    this._checkedSeeds = new Set();
+    this._checkingSeeds = false;
+    this._checkSeedsAgain = false;
   }
 
   /**
