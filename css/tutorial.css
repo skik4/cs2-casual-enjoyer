@@ -151,13 +151,19 @@
   border-radius: var(--border-radius-md);
   animation: tutorialHighlightGlow 3s infinite ease-in-out;
   transition: all var(--anim-duration);
-  display: inline-block;
   will-change: transform, box-shadow;
   transform-origin: center center;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   perspective: 1000px;
   -webkit-perspective: 1000px;
+}
+
+/* Links and labels glow as one box; anything else keeps its own display, so
+   a highlighted list does not shrink to the width of its content */
+a.tutorial-highlight,
+span.tutorial-highlight {
+  display: inline-block;
 }
 
 @keyframes tutorialHighlightGlow {
