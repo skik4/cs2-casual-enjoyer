@@ -95,13 +95,6 @@ class UIManager {
     return NotificationManager.showCS2LaunchNotification(friendId, cs2Manager);
   }
 
-  /**
-   * Hide CS2 launch notification
-   */
-  static hideCS2LaunchNotification() {
-    return NotificationManager.hideCS2LaunchNotification();
-  }
-
   // Help Methods - delegate to NotificationManager
   /**
    * Show help notification for Steam ID

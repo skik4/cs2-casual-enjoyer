@@ -24,7 +24,7 @@ import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import DOMUtils from "../utils/dom-utils.js";
 import logger from "../utils/logger.js";
 import { applyI18nToDom, setupInitialLanguage } from "../i18n/dom-i18n.js";
-import { onLanguageChange } from "../i18n/i18n-manager.js";
+import { onLanguageChange, t } from "../i18n/i18n-manager.js";
 
 /**
  * Main application module
@@ -250,7 +250,6 @@ class App {
         "Error during frontend app initialization: " + error.message
       );
       logger.error("App", "Stack trace: " + error.stack);
-      const { t } = await import("../i18n/i18n-manager.js");
       UIManager.showError(
         t("common.failedToInitializeAppPrefix") + error.message
       );

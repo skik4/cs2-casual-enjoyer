@@ -277,5 +277,3 @@ class AppInputManager {
 const appInputManager = new AppInputManager();
 
 export default appInputManager;
-
-//  export default AppInputManager;

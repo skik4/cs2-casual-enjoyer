@@ -20,6 +20,7 @@ import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import { t } from "../i18n/i18n-manager.js";
+import { toggleLanguageAndApply } from "../i18n/dom-i18n.js";
 
 /**
  * Event management module
@@ -71,9 +72,7 @@ class AppEventManager {
     }
 
     if (languageBtn) {
-      import("../i18n/dom-i18n.js").then((mod) => {
-        languageBtn.addEventListener("click", () => mod.toggleLanguageAndApply());
-      });
+      languageBtn.addEventListener("click", () => toggleLanguageAndApply());
     }
 
     if (minimizeBtn && window.electronAPI?.window?.minimize) {
@@ -369,5 +368,3 @@ class AppEventManager {
 const appEventManager = new AppEventManager();
 
 export default appEventManager;
-
-// export default AppEventManager;

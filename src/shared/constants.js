@@ -146,14 +146,10 @@ export const LOG_LEVEL_PRIORITY = {
 };
 
 export const LOGGING_CONFIG = {
-  // Default mode (production)
-  DEFAULT_LEVEL: LOG_LEVELS.INFO, // Maximum number of logs in memory
-  MAX_LOG_ENTRIES: 1000,
-
   // Settings for different types of logs
   ENABLE_STATE_CHANGE_LOGGING: false, // Enabled only in DEBUG/TRACE
 
-  // Global variable for switching level through console
+  // The one knob: raised by hand for a debug build
   CURRENT_LEVEL: LOG_LEVELS.INFO,
 };
 

@@ -229,10 +229,6 @@ class AppFriendsManager {
           updateBtn.textContent = t("index.updateFriendsButton");
         }
       }
-      if (!allFriendIds.length) {
-        UIManager.showError(t("errors.noFriendsFound"), steam_id);
-        return;
-      }
 
       // Update state
       appStateManager.batchUpdate({

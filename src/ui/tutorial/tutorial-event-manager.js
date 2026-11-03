@@ -5,7 +5,6 @@
 export class TutorialEventManager {
   constructor() {
     this.handleAPIKeyClick = null;
-    this.handleSteamTokenLinkClick = null;
     this.handleKeyDown = null; // Add keyboard handler
     this.handleGithubLinkClick = null; // Add github link handler
     this.nextStepCallback = null;
@@ -178,7 +177,6 @@ export class TutorialEventManager {
   cleanup() {
     this.removeEventListeners();
     this.handleAPIKeyClick = null;
-    this.handleSteamTokenLinkClick = null;
     this.handleKeyDown = null;
     this.handleGithubLinkClick = null;
     this.nextStepCallback = null;

@@ -466,7 +466,7 @@ export class TutorialUIManager {
   }
 }
 
-// // Singleton instance
+// Singleton instance
 const tutorialUIManager = new TutorialUIManager();
 
 export default tutorialUIManager;

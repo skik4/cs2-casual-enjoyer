@@ -427,11 +427,11 @@ class SteamAPIClient {
     const result = {};
 
     try {
-      // Process in chunks of 100
-      for (let i = 0; i < steamids.length; i += 100) {
-        const chunk = steamids.slice(i, i + 100).map(String);
-        const chunkIndex = Math.floor(i / 100) + 1;
-        const totalChunks = Math.ceil(steamids.length / 100);
+      const size = this._MAX_IDS_PER_REQUEST;
+      for (let i = 0; i < steamids.length; i += size) {
+        const chunk = steamids.slice(i, i + size).map(String);
+        const chunkIndex = Math.floor(i / size) + 1;
+        const totalChunks = Math.ceil(steamids.length / size);
 
         const params = { steamids: chunk.join(",") };
         const data = await this._makeRequest(
@@ -617,10 +617,9 @@ class SteamAPIClient {
    * Get friends statuses with avatars
    * @param {string[]} friend_ids - Array of friend Steam IDs
    * @param {string} auth - API key or token
-   * @param {Object} avatarsCache - Cache of avatar data
    * @returns {Promise<import('../shared/types.js').Friend[]>} - Array of friend objects
    */
-  static async getFriendsStatuses(friend_ids, auth, avatarsCache = {}) {
+  static async getFriendsStatuses(friend_ids, auth) {
     if (!friend_ids.length) {
       return [];
     }
@@ -641,9 +640,8 @@ class SteamAPIClient {
       }
       const data = { response: { accounts } };
 
-      // Reuse avatars fetched on earlier refreshes; anything the caller
-      // supplies explicitly wins over the module cache.
-      const avatars = { ...this._avatarCache, ...avatarsCache };
+      // Reuse avatars fetched on earlier refreshes
+      const avatars = { ...this._avatarCache };
 
       // Create callback for fetching additional avatars
       const getPlayerSummariesCallback = async (steamids) => {

@@ -89,5 +89,3 @@ class AppValidationManager {
 const appValidationManager = new AppValidationManager();
 
 export default appValidationManager;
-
-// export default AppValidationManager;

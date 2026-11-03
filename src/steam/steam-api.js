@@ -20,11 +20,10 @@ class SteamAPI {
    * Get details about friends including their game status and avatars
    * @param {string[]} friend_ids - Array of friend Steam IDs
    * @param {string} auth - API key or token
-   * @param {Object} [avatarsCache] - Cache of avatar data
    * @returns {Promise<import('../shared/types.js').Friend[]>} - Array of friend objects
    */
-  static async getFriendsStatuses(friend_ids, auth, avatarsCache = {}) {
-    return SteamAPIClient.getFriendsStatuses(friend_ids, auth, avatarsCache);
+  static async getFriendsStatuses(friend_ids, auth) {
+    return SteamAPIClient.getFriendsStatuses(friend_ids, auth);
   }
 
   /**

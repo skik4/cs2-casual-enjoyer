@@ -275,14 +275,6 @@ class TutorialManager {
     return this.stateManager.getIsActive();
   }
 
-  get currentStep() {
-    return this.stateManager.getCurrentStep();
-  }
-
-  get steps() {
-    return this.stateManager.steps;
-  }
-
   /**
    * Stop auto-refresh before starting tutorial
    */
