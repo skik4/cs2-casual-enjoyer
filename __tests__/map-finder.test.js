@@ -331,11 +331,42 @@ describe("refresh", () => {
     expect(SteamAPI.getPresence).toHaveBeenCalledTimes(2);
   });
 
+  test("a refresh Steam did not answer at all keeps the servers known", async () => {
+    jest.useFakeTimers();
+    try {
+      configure({ getFriendIds: () => [A] });
+      SteamAPI.getPresence.mockResolvedValueOnce(
+        presenceMap(presence(A, { connect: CONNECT }))
+      );
+      await mapFinder.refresh();
+      const { lastRefreshAt } = mapFinder.getStatus();
+
+      // Every request failed - Steam down, the token expired, the daily limit
+      // reached - so not one id was answered about. A join under way would
+      // otherwise lose its candidates and the list go blank.
+      jest.advanceTimersByTime(MAP_FINDER_CONFIG.REFRESH_INTERVAL_MS);
+      SteamAPI.getPresence.mockResolvedValueOnce(new Map());
+      await mapFinder.refresh();
+
+      expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A]);
+      expect(mapFinder.getStatus()).toMatchObject({ lastRefreshAt, refreshing: false });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   test("drops pool entries past their time and keeps the newest", async () => {
     configure();
     const now = Date.now();
     mapFinder.pool.set(A, { lastSeen: now - MAP_FINDER_CONFIG.POOL_TTL_MS - 1, map: "de_dust2" });
     mapFinder.pool.set(B, { lastSeen: now - 1000, map: "de_dust2" });
+    // Steam answers about both: neither is in CS2 right now
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        presence(A, { official: false, inCS2: false }),
+        presence(B, { official: false, inCS2: false })
+      )
+    );
 
     await mapFinder.refresh();
 
@@ -466,17 +497,49 @@ describe("friends of friends", () => {
     expect(mapFinder.getStatus().fof).toBe("ready");
   });
 
-  test("not one readable list counts as an error and is retried later", async () => {
-    configure({
-      getRealFriendIds: () => [FRIEND_1, FRIEND_2],
-      getFofKey: () => "ABCDEF0123456789ABCDEF0123456789",
-    });
+  test("not one readable list counts as an error, tried again after a while", async () => {
+    jest.useFakeTimers();
+    try {
+      configure({
+        getRealFriendIds: () => [FRIEND_1, FRIEND_2],
+        getFofKey: () => "ABCDEF0123456789ABCDEF0123456789",
+      });
 
-    await mapFinder._crawlFof();
+      const crawl = mapFinder._crawlFof();
+      await jest.advanceTimersByTimeAsync(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS * 2);
+      await crawl;
 
-    expect(mapFinder.getStatus().fof).toBe("error");
-    expect(mapFinder.fof.fetchedAt).toBe(0);
-    expect(mapFinder._fofDue()).toBe(true);
+      expect(mapFinder.getStatus().fof).toBe("error");
+      expect(mapFinder.fof.fetchedAt).toBe(0);
+      // Not on the very next refresh: a wrong key would then cost a request
+      // per friend every refresh for as long as the finder ran
+      expect(mapFinder._fofDue()).toBe(false);
+
+      jest.advanceTimersByTime(MAP_FINDER_CONFIG.FOF_RETRY_MS);
+      expect(mapFinder._fofDue()).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test("a new key is tried at once after a failed crawl", async () => {
+    jest.useFakeTimers();
+    try {
+      configure({
+        getRealFriendIds: () => [FRIEND_1],
+        getFofKey: () => "ABCDEF0123456789ABCDEF0123456789",
+      });
+
+      const crawl = mapFinder._crawlFof();
+      await jest.advanceTimersByTimeAsync(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS);
+      await crawl;
+      expect(mapFinder._fofDue()).toBe(false);
+
+      mapFinder.restartFof();
+      expect(mapFinder._fofDue()).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   test("is not due without a key, and due again a day later", () => {
@@ -527,6 +590,32 @@ describe("store", () => {
 
     expect([...mapFinder.pool.keys()]).toEqual([A]);
     expect(mapFinder.fof).toEqual({ ids: [C], fetchedAt: 123, friendsCount: 4 });
+  });
+
+  test("a load asked for while the first is still reading waits for its data", async () => {
+    let deliver;
+    global.window.electronAPI = {
+      mapFinder: {
+        load: jest.fn(() => new Promise((resolve) => (deliver = resolve))),
+        save: jest.fn().mockResolvedValue(true),
+      },
+    };
+
+    const first = mapFinder._load();
+    let secondDone = false;
+    const second = mapFinder._load().then(() => {
+      secondDone = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Whoever asked second - seeds checked as the app starts, the view
+    // opening - would otherwise go on with an empty pool and empty lists
+    expect(secondDone).toBe(false);
+    deliver({ pool: { [A]: { lastSeen: Date.now(), map: "de_dust2" } } });
+    await Promise.all([first, second]);
+
+    expect(mapFinder.pool.has(A)).toBe(true);
+    expect(global.window.electronAPI.mapFinder.load).toHaveBeenCalledTimes(1);
   });
 
   test("saves once shortly after changes", async () => {
