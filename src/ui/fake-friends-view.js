@@ -132,7 +132,7 @@ class FakeFriendsView {
       removed = await FakeFriendsManager.removeId(steamId);
     } catch (error) {
       ErrorHandler.logError("FakeFriendsView.removeFakeFriend", error);
-      NotificationManager.showError(error.message || error);
+      NotificationManager.showError(error);
       return;
     }
     if (!removed) return;
@@ -188,7 +188,7 @@ class FakeFriendsView {
       added = await FakeFriendsManager.addId(steamId);
     } catch (error) {
       ErrorHandler.logError("FakeFriendsView.addFakeFriend", error);
-      NotificationManager.showError(error.message || error);
+      NotificationManager.showError(error);
       return;
     }
 

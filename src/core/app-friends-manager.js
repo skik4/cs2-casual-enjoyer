@@ -144,7 +144,7 @@ class AppFriendsManager {
       return supportedFriends;
     } catch (error) {
       ErrorHandler.logError("App.fetchAndRenderFriendsByIds", error);
-      if (!keepStates) NotificationManager.showError(error.message || error);
+      if (!keepStates) NotificationManager.showError(error);
       throw error;
     }
   }
@@ -326,7 +326,7 @@ class AppFriendsManager {
       }
     } catch (error) {
       ErrorHandler.logError("App.updateFriendsList", error);
-      NotificationManager.showError(error.message || error, steam_id);
+      NotificationManager.showError(error, steam_id);
     } finally {
       if (updateBtn) {
         updateBtn.disabled = false;

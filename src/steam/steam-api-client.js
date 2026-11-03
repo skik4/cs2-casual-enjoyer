@@ -387,10 +387,12 @@ class SteamAPIClient {
       }
 
       // Handle HTTP errors
+      const isToken = Validators.isWebApiToken(auth);
       const isOk = SteamAPIUtils.handleHttpResponse(response, {
         method,
         allowFailure,
-        errorHandlers: SteamAPIUtils.getMethodErrorHandlers(method),
+        isToken,
+        errorHandlers: SteamAPIUtils.getMethodErrorHandlers(method, isToken),
       });
 
       if (!isOk) {

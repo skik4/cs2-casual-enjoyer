@@ -47,20 +47,20 @@ class NotificationManager {
 
   /**
    * Show error to the user
-   * @param {string|Error} message - Error message
+   * @param {string|Error} error - Text written for the user, or an error
+   *   told by its code (ErrorHandler.userMessage)
    * @param {string} steamId - Steam ID for context
    */
-  static showError(message, steamId = "") {
-    const errorMessage = ErrorHandler.formatErrorMessage(message);
-
-    if (ErrorHandler.isPrivacyError(message)) {
+  static showError(error, steamId = "") {
+    if (ErrorHandler.isPrivacyError(error)) {
       this.showUpdateError(steamId);
     } else {
       this.showNotification(
-        NOTIFICATION_TEMPLATES.ERROR_MESSAGE(errorMessage),
+        NOTIFICATION_TEMPLATES.ERROR_MESSAGE(ErrorHandler.userMessage(error)),
         "error"
       );
-      NotificationManager._lastMain = { kind: "error", payload: { errorMessage } };
+      // The error itself, so a language switch tells it again
+      NotificationManager._lastMain = { kind: "error", payload: { error } };
     }
   }
 
@@ -422,7 +422,7 @@ class NotificationManager {
           break;
         }
         case "error": {
-          const errorMessage = main.payload?.errorMessage || "";
+          const errorMessage = ErrorHandler.userMessage(main.payload?.error ?? "");
           contentDiv.className = "notification-content error";
           contentDiv.innerHTML = NOTIFICATION_TEMPLATES.ERROR_MESSAGE(errorMessage);
           break;

@@ -4,7 +4,7 @@
  */
 
 import SteamAPIHttpClient from "../src/steam/http-client.js";
-import { API_CONFIG } from "../src/shared/constants.js";
+import { API_CONFIG, ERROR_CODES } from "../src/shared/constants.js";
 
 const TIMEOUT = API_CONFIG.REQUEST_TIMEOUT_MS;
 
@@ -30,6 +30,18 @@ test("a request that hangs fails after the timeout", async () => {
   await expect(SteamAPIHttpClient.makeRequest("https://example.test/")).rejects.toThrow(
     "HTTP request failed"
   );
+});
+
+test("a request that cannot reach Steam is a network error", async () => {
+  const offline = new TypeError("Failed to fetch");
+  global.fetch = jest.fn(async () => {
+    throw offline;
+  });
+
+  await expect(SteamAPIHttpClient.makeRequest("https://example.test/")).rejects.toMatchObject({
+    code: ERROR_CODES.NETWORK_ERROR,
+    cause: offline,
+  });
 });
 
 test("the caller's own cancellation still surfaces as an abort", async () => {

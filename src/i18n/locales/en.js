@@ -255,6 +255,15 @@ export default {
   errors: {
     pleaseEnterSteamIdAndApiKey: "Please enter your SteamID64 and API Key",
     noFriendsFound: "No friends found in your friends list.",
+    tokenRejected: "Steam turned the token down, get a new one.",
+    keyRejected: "Steam turned the key down, check it.",
+    rateLimited:
+      "Steam asks to slow down: too many requests. Try again a bit later.",
+    steamUnavailable: "Steam is unavailable right now, try again later.",
+    steamError: "Steam answered with error {status}, try again later.",
+    noConnection:
+      "Couldn't reach Steam. Check your internet connection and try again.",
+    unexpected: "Something went wrong: {message}",
   },
 
   validation: {

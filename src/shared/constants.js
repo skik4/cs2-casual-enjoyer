@@ -122,11 +122,17 @@ export const STATUS_TYPES = {
   MISSING: "missing",
 };
 
+// What went wrong, for ErrorHandler.userMessage to tell the user in their
+// language; the error's message stays technical, for the log
 export const ERROR_CODES = {
   PRIVATE_FRIENDS_LIST: "PRIVATE_FRIENDS_LIST",
   EMPTY_FRIENDS_LIST: "EMPTY_FRIENDS_LIST",
-  API_ERROR_403: "API_ERROR_403",
-  API_ERROR_401: "API_ERROR_401",
+  TOKEN_REJECTED: "TOKEN_REJECTED",
+  KEY_REJECTED: "KEY_REJECTED",
+  RATE_LIMITED: "RATE_LIMITED",
+  STEAM_UNAVAILABLE: "STEAM_UNAVAILABLE",
+  STEAM_ERROR: "STEAM_ERROR",
+  NETWORK_ERROR: "NETWORK_ERROR",
 };
 
 export const VALIDATION_PATTERNS = {

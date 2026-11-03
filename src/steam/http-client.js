@@ -1,5 +1,5 @@
 // Shared constants
-import { API_CONFIG } from "../shared/constants.js";
+import { API_CONFIG, ERROR_CODES } from "../shared/constants.js";
 
 /**
  * A signal that gives up on a request after API_CONFIG.REQUEST_TIMEOUT_MS,
@@ -39,9 +39,11 @@ class SteamAPIHttpClient {
       // Keep a deliberate cancellation recognisable, and preserve the
       // original error as the cause so DNS/TLS/offline stay distinguishable.
       if (error?.name === "AbortError") throw error;
-      throw new Error(`HTTP request failed: ${error.message}`, {
+      const failure = new Error(`HTTP request failed: ${error.message}`, {
         cause: error,
       });
+      failure.code = ERROR_CODES.NETWORK_ERROR;
+      throw failure;
     }
   }
 

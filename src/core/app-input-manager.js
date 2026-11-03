@@ -112,7 +112,9 @@ class AppInputManager {
         }
       } catch (error) {
         steamIdInput.value = originalValue;
-        NotificationManager.showError(t("validation.vanityError") + error.message);
+        NotificationManager.showError(
+          t("validation.vanityError") + ErrorHandler.userMessage(error)
+        );
       } finally {
         steamIdInput.disabled = false;
         this.validateInputs();

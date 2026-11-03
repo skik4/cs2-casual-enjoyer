@@ -269,6 +269,15 @@ export default {
     pleaseEnterSteamIdAndApiKey:
       "Введи свой SteamID64 и API Key",
     noFriendsFound: "В твоём списке друзей никого не найдено.",
+    tokenRejected: "Steam не принял токен, получи новый.",
+    keyRejected: "Steam не принял ключ, проверь его.",
+    rateLimited:
+      "Steam просит подождать: слишком много запросов. Попробуй чуть позже.",
+    steamUnavailable: "Steam сейчас недоступен, попробуй позже.",
+    steamError: "Steam ответил ошибкой {status}, попробуй позже.",
+    noConnection:
+      "Не удалось связаться со Steam. Проверь интернет и попробуй ещё раз.",
+    unexpected: "Что-то пошло не так: {message}",
   },
 
   validation: {

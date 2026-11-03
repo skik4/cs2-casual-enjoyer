@@ -13,13 +13,33 @@ import ErrorHandler from "../utils/error-handler.js";
 import logger from "../utils/logger.js";
 
 /**
- * Errors with a meaning of their own, by API method and HTTP status
+ * Errors with a meaning of their own, by API method, credential kind and
+ * HTTP status. A private friends list answers 401 to an API key. A web
+ * token reads its owner's own list, so a 401 there is Steam turning the
+ * token down, as it answers a made-up token (checked 2026-11-03).
  */
 const METHOD_ERROR_HANDLERS = {
   GetFriendsList: {
-    401: () => ErrorHandler.createError(ERROR_CODES.PRIVATE_FRIENDS_LIST),
+    key: {
+      401: () => ErrorHandler.createError(ERROR_CODES.PRIVATE_FRIENDS_LIST),
+    },
   },
 };
+
+/**
+ * The error code of an HTTP status Steam failed a request with
+ * @param {number} status - HTTP status
+ * @param {boolean} isToken - Whether the request carried a web token
+ * @returns {string} - One of ERROR_CODES
+ */
+function httpErrorCode(status, isToken) {
+  if (status === 401 || status === 403) {
+    return isToken ? ERROR_CODES.TOKEN_REJECTED : ERROR_CODES.KEY_REJECTED;
+  }
+  if (status === 429) return ERROR_CODES.RATE_LIMITED;
+  if (status >= 500) return ERROR_CODES.STEAM_UNAVAILABLE;
+  return ERROR_CODES.STEAM_ERROR;
+}
 
 /**
  * Steam API utilities and parsers
@@ -319,8 +339,10 @@ class SteamAPIUtils {
    * Handle HTTP response status and errors
    * @param {Response} response - Fetch response object
    * @param {Object} config - Request configuration
+   * @param {boolean} [config.isToken] - Whether the request carried a web token
    * @returns {boolean} - True if response is OK, false if handled error with allowFailure
-   * @throws {Error} - For unhandled errors or custom error handlers
+   * @throws {Error} - For unhandled errors or custom error handlers, with
+   *   the HTTP status in its status
    */
   static handleHttpResponse(response, config) {
     if (response.ok) {
@@ -335,19 +357,22 @@ class SteamAPIUtils {
       return false;
     }
 
-    throw ErrorHandler.createError(
-      `API_ERROR_${response.status}`,
+    const error = ErrorHandler.createError(
+      httpErrorCode(response.status, config.isToken),
       `${config.method} failed: ${response.status} ${response.statusText}`
     );
+    error.status = response.status;
+    throw error;
   }
 
   /**
    * Get error handlers for specific API methods
    * @param {string} method - API method name
+   * @param {boolean} isToken - Whether the request carries a web token
    * @returns {Object} - Error handlers by HTTP status
    */
-  static getMethodErrorHandlers(method) {
-    return METHOD_ERROR_HANDLERS[method] || {};
+  static getMethodErrorHandlers(method, isToken) {
+    return METHOD_ERROR_HANDLERS[method]?.[isToken ? "token" : "key"] || {};
   }
 
   /**

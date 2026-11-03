@@ -151,7 +151,7 @@ describe("HTTP errors", () => {
   });
 
   test("a private friends list has an error of its own", () => {
-    const errorHandlers = SteamAPIUtils.getMethodErrorHandlers("GetFriendsList");
+    const errorHandlers = SteamAPIUtils.getMethodErrorHandlers("GetFriendsList", false);
 
     expect(() =>
       SteamAPIUtils.handleHttpResponse(response(401), {
@@ -160,6 +160,35 @@ describe("HTTP errors", () => {
         allowFailure: true,
       })
     ).toThrow(expect.objectContaining({ code: ERROR_CODES.PRIVATE_FRIENDS_LIST }));
+  });
+
+  test("a token's 401 on the friends list is the token turned down, not a private list", () => {
+    expect(() =>
+      SteamAPIUtils.handleHttpResponse(response(401), {
+        method: "GetFriendsList",
+        isToken: true,
+        errorHandlers: SteamAPIUtils.getMethodErrorHandlers("GetFriendsList", true),
+      })
+    ).toThrow(
+      expect.objectContaining({ code: ERROR_CODES.TOKEN_REJECTED, status: 401 })
+    );
+  });
+
+  test.each([
+    [401, true, ERROR_CODES.TOKEN_REJECTED],
+    [403, true, ERROR_CODES.TOKEN_REJECTED],
+    [403, false, ERROR_CODES.KEY_REJECTED],
+    [429, false, ERROR_CODES.RATE_LIMITED],
+    [503, true, ERROR_CODES.STEAM_UNAVAILABLE],
+    [404, false, ERROR_CODES.STEAM_ERROR],
+  ])("status %i (token: %s) is %s", (status, isToken, code) => {
+    expect(() =>
+      SteamAPIUtils.handleHttpResponse(response(status), {
+        method: "GetPlayerSummaries",
+        isToken,
+        errorHandlers: SteamAPIUtils.getMethodErrorHandlers("GetPlayerSummaries", isToken),
+      })
+    ).toThrow(expect.objectContaining({ code, status }));
   });
 
   test("allowFailure turns other errors into false", () => {
@@ -172,12 +201,18 @@ describe("HTTP errors", () => {
     ).toBe(false);
   });
 
-  test("without allowFailure an error carries the status", () => {
+  test("without allowFailure an error carries the status, and the log its method", () => {
     expect(() =>
       SteamAPIUtils.handleHttpResponse(response(500), {
         method: "GetPlayerLinkDetails",
         errorHandlers: {},
       })
-    ).toThrow(expect.objectContaining({ code: "API_ERROR_500" }));
+    ).toThrow(
+      expect.objectContaining({
+        code: ERROR_CODES.STEAM_UNAVAILABLE,
+        status: 500,
+        message: "GetPlayerLinkDetails failed: 500 S",
+      })
+    );
   });
 });
