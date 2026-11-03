@@ -96,6 +96,21 @@
   color: var(--text-secondary);
 }
 
+/* Pin that keeps a map; lit while the map is kept */
+.keep-btn {
+  flex-shrink: 0;
+}
+
+.keep-btn.active {
+  border-color: var(--blue-primary);
+  background: color-mix(in srgb, var(--blue-primary) 18%, transparent);
+}
+
+.keep-btn.active img {
+  filter: brightness(0) saturate(100%) invert(72%) sepia(39%) saturate(1013%)
+    hue-rotate(184deg) brightness(102%) contrast(101%);
+}
+
 .map-servers {
   display: flex;
   flex-direction: column;

@@ -53,6 +53,9 @@ class JoinManager {
     this.cs2Manager = null;
     this.onRequestCS2Launch = null; // Callback for requesting CS2 launch from UI layer
     this.journal = joinJournal;
+    // Connect string -> the attempt that sent it, so two attempts going
+    // through the same player send it once
+    this._sentConnects = new Map();
   }
 
   /**
@@ -73,6 +76,19 @@ class JoinManager {
       Boolean(state) &&
       !state.cancelled &&
       ACTIVE_STATUSES.includes(state.status)
+    );
+  }
+
+  /**
+   * Whether a map or server join is running
+   * @returns {boolean}
+   */
+  hasActiveMapJoin() {
+    return Object.entries(this.joinStates).some(
+      ([id, state]) =>
+        (id.startsWith(JOIN_TARGET_PREFIXES.MAP) ||
+          id.startsWith(JOIN_TARGET_PREFIXES.SERVER)) &&
+        this.isActive(state)
     );
   }
 
@@ -532,9 +548,20 @@ class JoinManager {
           continue;
         }
 
+        // Another running attempt has just sent this very connect - a server
+        // and its map joined at once through the same player. A second one
+        // would only be turned away.
+        const sender = this._sentConnects.get(target.connect);
+        if (sender && sender !== join_id && this.isActive(this.joinStates[sender])) {
+          connectedOn = targetStatus;
+          await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+          continue;
+        }
+
         // Attempt to join via Steam protocol through main process
         if (firstConnectAt === null) firstConnectAt = Date.now();
         connectedOn = targetStatus;
+        this._sentConnects.set(target.connect, join_id);
         this.journal.record("connect", {
           join: join_id,
           joinAs: target.joinAs,
@@ -595,6 +622,7 @@ class JoinManager {
     if (state.interval) {
       clearInterval(state.interval);
     }
+    this._forgetConnects(friend_id);
     this.journal.attemptEnded(friend_id, reason);
     // updateJoinState pushes the CANCELLED status to the UI
     this.updateJoinState(friend_id, {
@@ -633,6 +661,7 @@ class JoinManager {
         clearInterval(state.interval);
       }
       delete this.joinStates[friendId];
+      this._forgetConnects(friendId);
       this.journal.attemptEnded(friendId, "reset");
 
       // The loops notice the missing state and stop without touching the UI,
@@ -641,6 +670,17 @@ class JoinManager {
       if (this.onUpdateJoinButton)
         this.onUpdateJoinButton(friendId, STATUS_TYPES.CANCELLED);
     });
+  }
+
+  /**
+   * Drop the connects an attempt sent, once it is over
+   * @param {string} join_id - The attempt
+   * @private
+   */
+  _forgetConnects(join_id) {
+    for (const [connect, sender] of this._sentConnects) {
+      if (sender === join_id) this._sentConnects.delete(connect);
+    }
   }
 
   /**

@@ -295,6 +295,21 @@ describe("startMapJoin", () => {
     expect(openExternal).not.toHaveBeenCalled();
   });
 
+  test("a server and its map joined at once through one player send one connect", async () => {
+    // As seen live on 2026-11-03: both attempts sent the same connect in the
+    // same second, and the second could only be turned away
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(user(), presence(B, { connect: CONNECT_B }))
+    );
+
+    joinManager.startMapJoin(dustTarget({ serverId: DUST_1 }));
+    joinManager.startMapJoin(dustTarget());
+    await jest.advanceTimersByTimeAsync(1000);
+
+    expect(openExternal).toHaveBeenCalledTimes(1);
+    expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${B}/${CONNECT_B}`);
+  });
+
   test("waits while every known server of the map is full", async () => {
     SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A), presence(B)));
 

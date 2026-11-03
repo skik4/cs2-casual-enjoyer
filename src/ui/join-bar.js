@@ -3,6 +3,7 @@ import { JOIN_TARGET_PREFIXES, STATUS_TYPES } from "../shared/constants.js";
 
 // Game singletons
 import joinManager from "../game/join-manager.js";
+import mapKeeper from "../game/map-keeper.js";
 import { mapLabel } from "../game/map-finder.js";
 
 // UI and utilities
@@ -37,7 +38,9 @@ class JoinBar {
       "click",
       (event) => {
         const joinId = event.currentTarget.dataset.joinId;
-        if (joinId) joinManager.cancelJoin(joinId);
+        if (!joinId) return;
+        mapKeeper.userCancelled(joinId);
+        joinManager.cancelJoin(joinId);
       }
     );
     onLanguageChange(() => this.render());

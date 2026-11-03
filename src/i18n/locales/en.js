@@ -182,6 +182,8 @@ export default {
     freeServers: "{count} with a free slot",
     round: "Round {round} · {score}",
     finalScore: "Final score {score}",
+    keep: "Keep this map: when the match ends, join another server playing it",
+    keeping: "Keeping this map. Click to stop",
     noScore: "No score yet",
     searchingAmong: {
       one: "searching {count} player",
@@ -286,7 +288,7 @@ export default {
       "For example, your best friend <strong>Gabe Newell</strong> is playing Casual on Dust 2.<br>Click 'Join' to automatically connect to his match!",
     step9Title: "Connection Process",
     step9ContentTop:
-      "The label next to the score shows what is going on: «free slot» or «no free slot» before you join, «connecting…» once the connect is sent, «waiting for a slot» while the server is full, and «on the server ✓» once you are in.",
+      "The label next to the score shows what is going on: «free slot» or «no free slot» before you join, «connecting…» once the connect is sent, «waiting for a slot» while the server is full, and «on the server ✓» once you are in. A friend on your server says «you're together» and cannot be joined.",
     step9ContentNote1:
       "While waiting for a slot, the app joins by itself as soon as one opens.",
     step9ContentNote2:

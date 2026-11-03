@@ -545,3 +545,24 @@ describe("store", () => {
     jest.useRealTimers();
   });
 });
+
+describe("setNeed", () => {
+  test("polls while anything needs fresh servers and stops when nothing does", () => {
+    const start = jest.spyOn(mapFinder, "start").mockResolvedValue();
+    const stop = jest.spyOn(mapFinder, "stop");
+    try {
+      mapFinder.setNeed("view", true);
+      mapFinder.setNeed("join", true);
+      // The Maps view closed, but a join still waits for a slot
+      mapFinder.setNeed("view", false);
+      expect(stop).not.toHaveBeenCalled();
+
+      mapFinder.setNeed("join", false);
+      expect(stop).toHaveBeenCalledTimes(1);
+      expect(start).toHaveBeenCalledTimes(3);
+    } finally {
+      start.mockRestore();
+      stop.mockRestore();
+    }
+  });
+});

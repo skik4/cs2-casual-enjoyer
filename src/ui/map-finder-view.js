@@ -11,6 +11,7 @@ import joinManager, {
   getServerJoinId,
 } from "../game/join-manager.js";
 import userLocation from "../game/user-location.js";
+import mapKeeper from "../game/map-keeper.js";
 
 // UI and utilities
 import ViewTabs from "./view-tabs.js";
@@ -57,6 +58,11 @@ class MapFinderView {
     this.getMainAuth = getMainAuth;
 
     DOMUtils.getElementById("maps-list")?.addEventListener("click", (event) => {
+      const keep = event.target.closest("[data-keep-map]");
+      if (keep) {
+        mapKeeper.toggle(keep.dataset.keepMap);
+        return;
+      }
       const button = event.target.closest('[id^="join-btn-"]');
       if (button) {
         this.handleJoinClick(button);
@@ -80,6 +86,7 @@ class MapFinderView {
     mapFinder.onChange(() => this.render());
     // Where the user is decides which rows to block
     userLocation.onChange(() => this.render());
+    mapKeeper.onChange(() => this.render());
     onLanguageChange(() => this.render());
   }
 
@@ -87,15 +94,15 @@ class MapFinderView {
    * The view opened: start finding
    */
   static show() {
-    mapFinder.start();
+    mapFinder.setNeed("view", true);
     this.render();
   }
 
   /**
-   * The view closed: stop polling
+   * The view closed: the finder goes on only for a join or a kept map
    */
   static hide() {
-    mapFinder.stop();
+    mapFinder.setNeed("view", false);
   }
 
   /**
@@ -127,12 +134,15 @@ class MapFinderView {
   static handleJoinClick(button) {
     const joinId = button.id.replace("join-btn-", "");
     if (button.classList.contains("cancel-btn")) {
+      mapKeeper.userCancelled(joinId);
       joinManager.cancelJoin(joinId);
       return;
     }
 
     const map = button.closest(".map-card")?.dataset.map;
     if (!map) return;
+    // Joining another map, the user no longer keeps the one kept
+    mapKeeper.userJoined(map);
 
     if (joinId.startsWith(JOIN_TARGET_PREFIXES.SERVER)) {
       const serverId = joinId.slice(JOIN_TARGET_PREFIXES.SERVER.length);
@@ -261,6 +271,7 @@ class MapFinderView {
             <span class="personaname">${escapeHtml(entry.label)}</span>
             <span class="game-line"><span class="game-where">${escapeHtml(tPlural("mapFinder.servers", entry.servers))}</span>${this.renderLabel(joinId, joinStates, slot)}</span>
           </div>
+          ${this.renderKeepButton(entry.map)}
           ${this.renderJoinButton(joinId, joinStates, slot)}
         </div>
         ${servers}
@@ -308,6 +319,21 @@ class MapFinderView {
   static renderLabel(joinId, joinStates, slot) {
     const look = statusLabel(joinStates[joinId]?.status, slot);
     return `<span id="status-${joinId}" class="status-label status-${look.kind}" ${slotAttributes(slot)}>${escapeHtml(look.text)}</span>`;
+  }
+
+  /**
+   * Pin that keeps a map: after a match there ends, another server of the
+   * map is joined
+   * @param {string} map - Map code
+   * @returns {string}
+   */
+  static renderKeepButton(map) {
+    const kept = mapKeeper.getMap() === map;
+    const title = t(kept ? "mapFinder.keeping" : "mapFinder.keep");
+    return `
+      <button class="icon-btn keep-btn${kept ? " active" : ""}" data-keep-map="${escapeHtml(map)}" title="${escapeHtml(title)}" aria-pressed="${kept}">
+        <img src="assets/icons-svg/keep.svg" alt="" />
+      </button>`;
   }
 
   /**

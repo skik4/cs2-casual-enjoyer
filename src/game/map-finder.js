@@ -155,6 +155,8 @@ class MapFinder {
     // Each polled player's status and when it last changed
     /** @type {Map<string, {key: string, since: number}>} */
     this._statusSince = new Map();
+    // Whoever currently needs polling, see setNeed
+    this._needs = new Set();
     this.journal = joinJournal;
   }
 
@@ -294,7 +296,21 @@ class MapFinder {
   }
 
   /**
-   * Start finding while the maps view is open
+   * Keep polling while anything needs fresh servers: the open Maps view, a
+   * running map or server join, a kept map. A join waiting on another tab
+   * would otherwise go on with the servers known when the view closed.
+   * @param {string} name - Who needs it, e.g. "view"
+   * @param {boolean} needed
+   */
+  setNeed(name, needed) {
+    if (needed) this._needs.add(name);
+    else this._needs.delete(name);
+    if (this._needs.size) this.start();
+    else this.stop();
+  }
+
+  /**
+   * Start finding
    */
   async start() {
     if (this.active) return;
@@ -531,6 +547,7 @@ class MapFinder {
     this._checkingSeeds = false;
     this._checkSeedsAgain = false;
     this._statusSince = new Map();
+    this._needs = new Set();
   }
 
   /**

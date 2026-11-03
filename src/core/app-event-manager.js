@@ -1,5 +1,6 @@
 // Game singletons
 import joinManager from "../game/join-manager.js";
+import mapKeeper from "../game/map-keeper.js";
 
 // Core singletons
 import appStateManager from "./app-state-manager.js";
@@ -183,6 +184,8 @@ class AppEventManager {
       if (joinButton.classList.contains("cancel-btn")) {
         joinManager.cancelJoin(steamId);
       } else {
+        // Following a friend, the user no longer keeps a map
+        mapKeeper.userJoined(null);
         joinManager.startJoin(steamId);
       }
     });
@@ -351,6 +354,8 @@ class AppEventManager {
       if (button.classList.contains("cancel-btn")) {
         joinManager.cancelJoin(steamId);
       } else {
+        // Following a friend, the user no longer keeps a map
+        mapKeeper.userJoined(null);
         joinManager.startJoin(steamId);
       }
     };

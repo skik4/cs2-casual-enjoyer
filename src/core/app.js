@@ -92,7 +92,11 @@ class App {
       logger.info("App", "Step 4: Configuring JoinManager UI callbacks");
       // Setup JoinManager UI callbacks
       joinManager.setUICallbacks(
-        (friendId, status) => UIManager.updateLabel(friendId, status),
+        (friendId, status) => {
+          UIManager.updateLabel(friendId, status);
+          // A map or server join needs fresh servers whatever tab is open
+          mapFinder.setNeed("join", joinManager.hasActiveMapJoin());
+        },
         (friendId, status) => UIManager.updateJoinButton(friendId, status)
       );
       logger.info("App", "JoinManager UI callbacks set");
