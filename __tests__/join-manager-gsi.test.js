@@ -27,7 +27,7 @@ const NEW_CONNECT = "+gcconnect0C0C0C0C0C0C0C0C0C0C0C0C";
 const playerInfo = (overrides = {}) => ({
   personaname: "",
   inCS2: true,
-  inCompetitiveOrPremier: false,
+  inProtectedMatch: false,
   inSupportedMode: false,
   connect: null,
   serverId: null,
@@ -49,14 +49,15 @@ const gsiMenu = () => ({
   inMatch: false,
   inMenu: true,
   mode: null,
-  inCompetitiveOrPremier: false,
+  inProtectedMatch: false,
   mapLoadedAt: 0,
 });
-const gsiMatch = (mode, mapLoadedAt) => ({
+const gsiMatch = (mode, mapLoadedAt, mapName = "de_dust2") => ({
   inMatch: true,
   inMenu: false,
   mode,
-  inCompetitiveOrPremier: mode === "competitive" || mode === "premier",
+  mapName,
+  inProtectedMatch: !["casual", "deathmatch"].includes(mode),
   mapLoadedAt,
 });
 
@@ -138,9 +139,67 @@ describe("JoinManager with CS2 Game State Integration", () => {
     expect(status()).toBe(STATUS_TYPES.CANCELLED);
   });
 
+  test.each(["premier", "scrimcomp2v2", "rush", "custom"])(
+    "cancels as soon as CS2 reports a %s match",
+    async (mode) => {
+      SteamAPI.getJoinSnapshot.mockResolvedValue({
+        user: userInfo(),
+        friend: friendInfo(),
+      });
+      cs2.gsiState = gsiMatch(mode, Date.now());
+
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(1000);
+
+      expect(joinCalls()).toBe(0);
+      expect(status()).toBe(STATUS_TYPES.CANCELLED);
+    }
+  );
+
+  test("a deathmatch may be left: the join goes ahead", async () => {
+    SteamAPI.getJoinSnapshot.mockResolvedValue({
+      user: userInfo(),
+      friend: friendInfo(),
+    });
+    cs2.gsiState = gsiMatch("deathmatch", Date.now());
+
+    joinManager.startJoin(FRIEND_ID);
+    await jest.advanceTimersByTimeAsync(1000);
+
+    expect(joinCalls()).toBe(1);
+  });
+
+  test("training: a competitive game Steam shows offline on the same map may be left", async () => {
+    SteamAPI.getJoinSnapshot.mockResolvedValue({
+      user: userInfo({ offlineGame: { map: "de_mirage", mode: "competitive" } }),
+      friend: friendInfo(),
+    });
+    cs2.gsiState = gsiMatch("competitive", Date.now(), "de_mirage");
+
+    joinManager.startJoin(FRIEND_ID);
+    await jest.advanceTimersByTimeAsync(1000);
+
+    expect(joinCalls()).toBe(1);
+  });
+
+  test("a competitive match just found after training is not taken for training", async () => {
+    // Steam still shows the offline game on Mirage; CS2 is on Inferno
+    SteamAPI.getJoinSnapshot.mockResolvedValue({
+      user: userInfo({ offlineGame: { map: "de_mirage", mode: "competitive" } }),
+      friend: friendInfo(),
+    });
+    cs2.gsiState = gsiMatch("competitive", Date.now(), "de_inferno");
+
+    joinManager.startJoin(FRIEND_ID);
+    await jest.advanceTimersByTimeAsync(1000);
+
+    expect(joinCalls()).toBe(0);
+    expect(status()).toBe(STATUS_TYPES.CANCELLED);
+  });
+
   test("a casual state from CS2 outweighs a stale competitive one from Steam", async () => {
     SteamAPI.getJoinSnapshot.mockResolvedValue({
-      user: userInfo({ inCompetitiveOrPremier: true }),
+      user: userInfo({ inProtectedMatch: true }),
       friend: friendInfo(),
     });
     cs2.gsiState = gsiMenu();

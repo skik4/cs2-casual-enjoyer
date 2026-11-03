@@ -47,7 +47,7 @@ describe("interpretGsiPayload", () => {
       mapName: null,
       phase: null,
       activity: "menu",
-      inCompetitiveOrPremier: false,
+      inProtectedMatch: false,
     });
   });
 
@@ -58,16 +58,25 @@ describe("interpretGsiPayload", () => {
       mode: "casual",
       mapName: "de_dust2",
       phase: "live",
-      inCompetitiveOrPremier: false,
+      inProtectedMatch: false,
     });
   });
 
-  test.each(["competitive", "premier"])(
-    "a %s match counts as competitive",
+  test.each(["competitive", "premier", "scrimcomp2v2", "rush", "custom"])(
+    "a %s match is one a join must not interrupt",
     (mode) => {
       expect(
-        interpretGsiPayload(matchPayload(mode)).inCompetitiveOrPremier
+        interpretGsiPayload(matchPayload(mode)).inProtectedMatch
       ).toBe(true);
+    }
+  );
+
+  test.each(["casual", "deathmatch"])(
+    "a %s match may be left for a join",
+    (mode) => {
+      expect(
+        interpretGsiPayload(matchPayload(mode)).inProtectedMatch
+      ).toBe(false);
     }
   );
 

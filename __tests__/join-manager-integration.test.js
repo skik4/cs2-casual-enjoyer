@@ -46,7 +46,7 @@ const joinUrl = (friendId, connect) =>
 const playerInfo = (overrides = {}) => ({
   personaname: "",
   inCS2: true,
-  inCompetitiveOrPremier: false,
+  inProtectedMatch: false,
   inSupportedMode: false,
   connect: null,
   serverId: null,
@@ -70,7 +70,7 @@ const userIn = {
   match: () =>
     playerInfo({
       personaname: "me",
-      inCompetitiveOrPremier: true,
+      inProtectedMatch: true,
       serverId: MATCH_SERVER,
     }),
   outsideCS2: () => playerInfo({ personaname: "me", inCS2: false }),

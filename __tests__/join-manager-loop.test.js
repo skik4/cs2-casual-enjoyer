@@ -39,7 +39,7 @@ const joinUrl = (friendId, connect) =>
 const playerInfo = (overrides = {}) => ({
   personaname: "",
   inCS2: true,
-  inCompetitiveOrPremier: false,
+  inProtectedMatch: false,
   inSupportedMode: false,
   connect: null,
   serverId: null,

@@ -55,16 +55,16 @@ describe("modes", () => {
   test("competitive or premier counts only once the match runs", () => {
     const priv = (kv) => ({ game_id: "730", rich_presence_kv: kv });
     expect(
-      SteamAPIUtils.isPlayerInCompetitiveOrPremier(
+      SteamAPIUtils.isInProtectedMatch(
         priv('"game:mode" "premier" "game:state" "game"')
       )
     ).toBe(true);
     expect(
-      SteamAPIUtils.isPlayerInCompetitiveOrPremier(
+      SteamAPIUtils.isInProtectedMatch(
         priv('"game:mode" "competitive" "game:state" "lobby"')
       )
     ).toBe(false);
-    expect(SteamAPIUtils.isPlayerInCompetitiveOrPremier(null)).toBe(false);
+    expect(SteamAPIUtils.isInProtectedMatch(null)).toBe(false);
   });
 
   test("isPlayerInCS2 checks the app id", () => {

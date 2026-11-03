@@ -4,6 +4,7 @@ import {
   CASUAL_ROUNDS_TO_WIN,
   ERROR_CODES,
   GAME_MODES,
+  INTERRUPTIBLE_MODES,
   VALIDATION_PATTERNS,
 } from "../shared/constants.js";
 
@@ -350,33 +351,41 @@ class SteamAPIUtils {
   }
 
   /**
-   * Check if player is in a Competitive or Premier match
-   * @param {Object} privateData - Private data from Steam API response
-   * @returns {boolean} - True if player is in a Competitive or Premier match (not the lobby)
+   * Whether a game runs offline: training against bots or on a workshop map
+   * @param {Object} richPresence - Parsed rich presence data
+   * @returns {boolean}
    */
-  static isPlayerInCompetitiveOrPremier(privateData) {
+  static isOffline(richPresence) {
+    return richPresence?.game_server === "offline";
+  }
+
+  /**
+   * Check if the player is in a match a join must not pull them out of: a
+   * running match in any mode but casual and deathmatch, unless it is
+   * offline training
+   * @param {Object} privateData - Private data from Steam API response
+   * @returns {boolean} - True if such a match is running (not the lobby)
+   */
+  static isInProtectedMatch(privateData) {
     if (!privateData) return false;
 
-    // Parse rich presence to get game mode
     const richPresence = this.parseRichPresence(privateData.rich_presence_kv);
-
-    const gameMode = richPresence.game_mode;
-    const gameState = richPresence.game_state;
     // In the lobby the mode may only be what is picked in the play menu, so it
     // counts only once a match is actually running
-    const isCompetitive =
-      (gameMode === GAME_MODES.COMPETITIVE ||
-        gameMode === GAME_MODES.PREMIER) &&
-      !["", null, "lobby"].includes(gameState);
+    const running = !["", null, "lobby"].includes(richPresence.game_state);
+    const isProtected =
+      running &&
+      !INTERRUPTIBLE_MODES.includes(richPresence.game_mode) &&
+      !this.isOffline(richPresence);
 
-    logger.debug("SteamAPIUtils", "Checking competitive/premier mode", {
-      game_mode: gameMode,
-      game_state: gameState,
-      isCompetitive,
-      rich_presence_kv: privateData.rich_presence_kv,
+    logger.debug("SteamAPIUtils", "Checking for a match not to leave", {
+      game_mode: richPresence.game_mode,
+      game_state: richPresence.game_state,
+      game_server: richPresence.game_server,
+      isProtected,
     });
 
-    return isCompetitive;
+    return isProtected;
   }
 }
 

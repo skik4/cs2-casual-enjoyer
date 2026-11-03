@@ -32,7 +32,7 @@ const presence = (steamid, overrides = {}) => ({
   steamid,
   personaname: steamid,
   inCS2: true,
-  inCompetitiveOrPremier: false,
+  inProtectedMatch: false,
   inSupportedMode: true,
   connect: null,
   serverId: DUST_1,
@@ -306,7 +306,7 @@ describe("startMapJoin", () => {
         inMatch: false,
         inMenu: true,
         mode: null,
-        inCompetitiveOrPremier: false,
+        inProtectedMatch: false,
         mapLoadedAt: 0,
       }),
     });

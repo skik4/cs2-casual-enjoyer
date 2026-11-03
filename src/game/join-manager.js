@@ -451,9 +451,7 @@ class JoinManager {
         // Steam's copy of it lags by seconds - a fresh GSI state wins
         const gsiState = this.cs2Manager?.getGsiUserState?.() ?? null;
         const userInCS2 = gsiState ? true : user.inCS2;
-        const userInCompetitiveOrPremier = gsiState
-          ? gsiState.inCompetitiveOrPremier
-          : user.inCompetitiveOrPremier;
+        const userInProtectedMatch = this._inProtectedMatch(user, gsiState);
 
         if (!userInCS2) {
           console.log(
@@ -464,12 +462,14 @@ class JoinManager {
           break;
         }
 
-        if (userInCompetitiveOrPremier) {
+        // Only casual, deathmatch and training may be left for the join;
+        // Competitive, Premier, Wingman and the rest never are
+        if (userInProtectedMatch) {
           console.log(
-            "JoinManager: User is in Competitive/Premier mode, stopping join process for:",
+            "JoinManager: User is in a match not to leave, stopping join process for:",
             join_id
           );
-          this.cancelJoin(join_id, "competitive");
+          this.cancelJoin(join_id, "protected-match");
           break;
         }
 
@@ -694,6 +694,26 @@ class JoinManager {
     for (const [connect, sender] of this._sentConnects) {
       if (sender === join_id) this._sentConnects.delete(connect);
     }
+  }
+
+  /**
+   * Whether the user is in a match a join must not pull them out of. CS2
+   * tells the mode the moment it changes; only Steam tells offline training
+   * apart, and its copy lags, so it counts only while it shows the map and
+   * mode CS2 is on - a match just found after training is not training.
+   * @param {import('../shared/types.js').PlayerJoinInfo} user - Steam's copy of the user
+   * @param {import('../shared/types.js').GsiUserState|null} gsiState - CS2's fresh state, if any
+   * @returns {boolean}
+   * @private
+   */
+  _inProtectedMatch(user, gsiState) {
+    if (!gsiState) return Boolean(user.inProtectedMatch);
+    if (!gsiState.inProtectedMatch) return false;
+    const training =
+      Boolean(user.offlineGame) &&
+      user.offlineGame.map === gsiState.mapName &&
+      user.offlineGame.mode === gsiState.mode;
+    return !training;
   }
 
   /**

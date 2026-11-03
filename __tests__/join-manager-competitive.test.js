@@ -5,7 +5,7 @@
  * The user's state comes from the same Steam snapshot as the friend's, one per
  * loop iteration (GSI is off here; join-manager-gsi.test.js covers CS2's own
  * reports). Steam reports Competitive and Premier through the one
- * inCompetitiveOrPremier flag - steam-api-join-snapshot.test.js covers how
+ * inProtectedMatch flag - steam-api-join-snapshot.test.js covers how
  * rich presence maps onto it - so every scenario below covers both modes.
  */
 
@@ -43,7 +43,7 @@ const joinUrl = (friendId, connect) =>
 const playerInfo = (overrides = {}) => ({
   personaname: "",
   inCS2: true,
-  inCompetitiveOrPremier: false,
+  inProtectedMatch: false,
   inSupportedMode: false,
   connect: null,
   serverId: null,
@@ -60,7 +60,7 @@ const userIn = {
   match: () =>
     playerInfo({
       personaname: "me",
-      inCompetitiveOrPremier: true,
+      inProtectedMatch: true,
       serverId: MATCH_SERVER,
     }),
   outsideCS2: () => playerInfo({ personaname: "me", inCS2: false }),

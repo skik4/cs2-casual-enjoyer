@@ -29,7 +29,8 @@
  * @typedef {Object} PlayerJoinInfo
  * @property {string} personaname - Display name
  * @property {boolean} inCS2 - Whether the player is in CS2
- * @property {boolean} inCompetitiveOrPremier - Whether the player is in a Competitive or Premier match
+ * @property {boolean} inProtectedMatch - Whether the player is in a match a join must not pull them out of: any running mode but casual and deathmatch, offline training aside
+ * @property {{map: string|null, mode: string|null}|null} offlineGame - The offline game (training) Steam shows, null for none
  * @property {boolean} inSupportedMode - Whether the player is in a casual match
  * @property {string|null} connect - Validated connect string, null when there is none to use
  * @property {string|null} serverId - Game server Steam ID
@@ -99,7 +100,7 @@
  * @property {string|null} mapName - Map of the match
  * @property {string|null} phase - Match phase (warmup, live, intermission, gameover)
  * @property {string|null} activity - Player activity (menu, playing, textinput)
- * @property {boolean} inCompetitiveOrPremier - Whether a Competitive or Premier match is running
+ * @property {boolean} inProtectedMatch - Whether a match runs in a mode a join must not interrupt (any but casual and deathmatch); CS2 does not tell offline training apart
  * @property {number} mapLoadedAt - When CS2 first reported the current map (ms), 0 if never
  */
 

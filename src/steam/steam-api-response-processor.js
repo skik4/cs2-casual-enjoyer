@@ -166,8 +166,14 @@ class SteamAPIResponseProcessor {
     const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv);
 
     const inCS2 = SteamAPIUtils.isPlayerInCS2(priv);
-    const inCompetitiveOrPremier =
-      inCS2 && SteamAPIUtils.isPlayerInCompetitiveOrPremier(priv);
+    const inProtectedMatch =
+      inCS2 && SteamAPIUtils.isInProtectedMatch(priv);
+    // CS2 reports training in the mode picked for it; only Steam knows the
+    // game is offline
+    const offlineGame =
+      inCS2 && SteamAPIUtils.isOffline(richPresence)
+        ? { map: richPresence.game_map, mode: richPresence.game_mode }
+        : null;
     const inSupportedMode =
       inCS2 && SteamAPIUtils.isInSupportedMode(richPresence);
 
@@ -191,7 +197,8 @@ class SteamAPIResponseProcessor {
     return {
       personaname: pub.persona_name || "",
       inCS2,
-      inCompetitiveOrPremier,
+      inProtectedMatch,
+      offlineGame,
       inSupportedMode,
       connect,
       serverId,

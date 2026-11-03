@@ -1,5 +1,9 @@
 // Shared constants
-import { GAME_MODES, GSI_CONFIG, GSI_SETUP } from "../shared/constants.js";
+import {
+  GSI_CONFIG,
+  GSI_SETUP,
+  INTERRUPTIBLE_MODES,
+} from "../shared/constants.js";
 
 // UI and utilities
 import Validators from "../utils/validators.js";
@@ -27,8 +31,8 @@ export function interpretGsiPayload(payload) {
       typeof payload?.player?.activity === "string"
         ? payload.player.activity
         : null,
-    inCompetitiveOrPremier:
-      mode === GAME_MODES.COMPETITIVE || mode === GAME_MODES.PREMIER,
+    // Whether it is offline training only Steam can tell
+    inProtectedMatch: inMatch && !INTERRUPTIBLE_MODES.includes(mode),
   };
 }
 

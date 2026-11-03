@@ -154,9 +154,16 @@ export const LOGGING_CONFIG = {
 
 export const GAME_MODES = {
   CASUAL: "casual",
-  COMPETITIVE: "competitive",
-  PREMIER: "premier",
+  DEATHMATCH: "deathmatch",
 };
+
+/**
+ * Modes a join may pull the user out of. A running match in any other mode -
+ * Competitive, Premier, Wingman ("scrimcomp2v2"), "rush", workshop maps
+ * ("custom") or one not seen yet - is left alone, unless it is offline
+ * training. Steam was seen naming all of these but deathmatch.
+ */
+export const INTERRUPTIBLE_MODES = [GAME_MODES.CASUAL, GAME_MODES.DEATHMATCH];
 
 /**
  * Rounds a side needs to win a casual match. The join journal saw matches

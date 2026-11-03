@@ -150,7 +150,8 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
         user: {
           personaname: "Me",
           inCS2: true,
-          inCompetitiveOrPremier: false,
+          inProtectedMatch: false,
+          offlineGame: null,
           inSupportedMode: true,
           connect: null,
           serverId: "8000",
@@ -159,7 +160,8 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
         friend: {
           personaname: "Friend",
           inCS2: true,
-          inCompetitiveOrPremier: false,
+          inProtectedMatch: false,
+          offlineGame: null,
           inSupportedMode: true,
           connect: VALID_CONNECT,
           serverId: "9001",
@@ -177,7 +179,8 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
       expect(friend).toEqual({
         personaname: "",
         inCS2: false,
-        inCompetitiveOrPremier: false,
+        inProtectedMatch: false,
+        offlineGame: null,
         inSupportedMode: false,
         connect: null,
         serverId: null,
@@ -260,21 +263,54 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
     });
   });
 
-  describe("competitive/premier detection", () => {
+  describe("matches a join must not interrupt", () => {
+    // Mode names as Steam showed them for players in CS2, deathmatch aside
     test.each([
       ["competitive", "lobby", false],
       ["premier", "lobby", false],
       ["competitive", null, false],
       ["competitive", "game", true],
       ["premier", "game", true],
+      ["scrimcomp2v2", "game", true],
+      ["rush", "game", true],
+      ["custom", "game", true],
       ["casual", "game", false],
+      ["deathmatch", "game", false],
     ])("mode %s with state %s -> %s", (mode, state, expected) => {
       const rich_presence_kv =
         `"game:mode" "${mode}"` + (state ? ` "game:state" "${state}"` : "");
 
       expect(
-        SteamAPIUtils.isPlayerInCompetitiveOrPremier({ game_id: "730", rich_presence_kv })
+        SteamAPIUtils.isInProtectedMatch({ game_id: "730", rich_presence_kv })
       ).toBe(expected);
+    });
+
+    test.each(["competitive", "custom"])(
+      "an offline %s game is training, which a join may interrupt",
+      (mode) => {
+        const rich_presence_kv = `"game:mode" "${mode}" "game:state" "game" "game:server" "offline"`;
+
+        expect(
+          SteamAPIUtils.isInProtectedMatch({ game_id: "730", rich_presence_kv })
+        ).toBe(false);
+      }
+    );
+
+    test("the snapshot names the offline game, for the loop to match it with CS2's", async () => {
+      global.fetch.mockResolvedValue(
+        okResponse([
+          account(USER_ID, {
+            rich_presence_kv: `"game:map" "de_mirage" "game:mode" "competitive" "game:state" "game" "game:server" "offline"`,
+          }),
+          account(FRIEND_ID),
+        ])
+      );
+
+      const { user, friend } = await SteamAPIClient.getJoinSnapshot(USER_ID, FRIEND_ID, AUTH);
+
+      expect(user.inProtectedMatch).toBe(false);
+      expect(user.offlineGame).toEqual({ map: "de_mirage", mode: "competitive" });
+      expect(friend.offlineGame).toBeNull();
     });
 
     test.each([
@@ -293,7 +329,7 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
       const { user } = await SteamAPIClient.getJoinSnapshot(USER_ID, FRIEND_ID, AUTH);
 
       expect(user.inCS2).toBe(true);
-      expect(user.inCompetitiveOrPremier).toBe(expected);
+      expect(user.inProtectedMatch).toBe(expected);
       expect(user.inSupportedMode).toBe(false);
     });
   });

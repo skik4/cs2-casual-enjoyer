@@ -37,7 +37,7 @@ const presence = (steamid, overrides = {}) => ({
   steamid,
   personaname: `player-${steamid.slice(-2)}`,
   inCS2: true,
-  inCompetitiveOrPremier: false,
+  inProtectedMatch: false,
   inSupportedMode: true,
   connect: null,
   serverId: DUST_SERVER,
