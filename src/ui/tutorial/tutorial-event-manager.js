@@ -1,3 +1,7 @@
+import { emojiImg } from "../emoji.js";
+import { TUTORIAL_TIMING } from "./tutorial-timing.js";
+import { TUTORIAL_STEPS } from "./tutorial-steps.js";
+
 /**
  * Tutorial Event Manager
  * Handles event listeners for tutorial interactions
@@ -5,7 +9,6 @@
 export class TutorialEventManager {
   constructor() {
     this.handleAPIKeyClick = null;
-    this.handleSteamTokenLinkClick = null;
     this.handleKeyDown = null; // Add keyboard handler
     this.handleGithubLinkClick = null; // Add github link handler
     this.nextStepCallback = null;
@@ -74,15 +77,15 @@ export class TutorialEventManager {
     // Add global keyboard listener
     document.addEventListener("keydown", this.handleKeyDown, true);
     this.handleAPIKeyClick = (event) => {
-      // If on step 1 (Steam Web API Token) and user clicks the help link
-      if (currentStep === 1) {
-        // Auto-advance to step 2 (Get Steam Web API Token)
+      // On the credential step the help link is the way on
+      if (currentStep === TUTORIAL_STEPS.CREDENTIAL) {
+        // Auto-advance to the token page step
         // Use setTimeout for smooth transition without blocking the render cycle
         setTimeout(() => {
           if (this.nextStepCallback) {
             this.nextStepCallback();
           }
-        }, 0);
+        }, TUTORIAL_TIMING.DEFER_MS);
       }
     };
 
@@ -106,17 +109,14 @@ export class TutorialEventManager {
         link.style.color = "var(--green-primary)";
         link.style.textDecoration = "none";
 
-        // Create and insert SVG emoji for clipboard
-        const { getEmojiSVG } = await import("../../utils/emoji-svg.js");
-        const clipboardSVG = await getEmojiSVG("📋", "emoji-svg copy-success");
-        link.innerHTML = `${clipboardSVG} Copied to clipboard!`;
+        const clipboard = emojiImg("📋", "emoji-svg copy-success");
+        link.innerHTML = `${clipboard} Copied to clipboard!`;
 
-        // Reset after 2 seconds
         setTimeout(() => {
           link.style.color = "var(--blue-primary)";
           link.style.textDecoration = "underline";
           link.textContent = originalText;
-        }, 2000);
+        }, TUTORIAL_TIMING.COPY_FEEDBACK_MS);
       } catch (err) {
         console.error("Failed to copy to clipboard:", err);
         // Fallback visual feedback even if clipboard fails
@@ -125,7 +125,7 @@ export class TutorialEventManager {
         setTimeout(() => {
           link.style.color = "var(--blue-primary)";
           link.textContent = originalText;
-        }, 2000);
+        }, TUTORIAL_TIMING.COPY_FEEDBACK_MS);
       }
     };
 
@@ -178,7 +178,6 @@ export class TutorialEventManager {
   cleanup() {
     this.removeEventListeners();
     this.handleAPIKeyClick = null;
-    this.handleSteamTokenLinkClick = null;
     this.handleKeyDown = null;
     this.handleGithubLinkClick = null;
     this.nextStepCallback = null;

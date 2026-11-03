@@ -1,3 +1,6 @@
+// Shared constants
+import { API_CONFIG } from "../shared/constants.js";
+
 // Core singletons
 import appStateManager from "./app-state-manager.js";
 
@@ -6,7 +9,8 @@ import joinManager from "../game/join-manager.js";
 import userLocation from "../game/user-location.js";
 
 // UI and utilities
-import UIManager from "../ui/ui-manager.js";
+import FriendsRenderer from "../ui/friends-renderer.js";
+import NotificationManager from "../ui/notification-manager.js";
 import AccountView from "../ui/account-view.js";
 import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import SteamAPI from "../steam/steam-api.js";
@@ -15,6 +19,7 @@ import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
+import { TUTORIAL_TIMING } from "../ui/tutorial/tutorial-timing.js";
 import logger from "../utils/logger.js";
 import { t } from "../i18n/i18n-manager.js";
 
@@ -25,20 +30,69 @@ import { t } from "../i18n/i18n-manager.js";
 class AppFriendsManager {
   constructor() {
     this.inputManager = null;
-    this.eventManager = null;
-    this.validationManager = null;
+    // Set once the startup refresh has started; it never starts twice
+    this.initialLoadAttempted = false;
   }
 
   /**
-   * Set manager references
+   * Set the input manager, which holds the credential fields
    * @param {Object} inputManager - Reference to input manager
-   * @param {Object} eventManager - Reference to event manager
-   * @param {Object} validationManager - Reference to validation manager
    */
-  setManagers(inputManager, eventManager, validationManager) {
+  setInputManager(inputManager) {
     this.inputManager = inputManager;
-    this.eventManager = eventManager;
-    this.validationManager = validationManager;
+  }
+
+  /**
+   * Start the auto-refresh once per run, when the inputs check out: saved
+   * settings whose token has not expired, and a saved friends list to
+   * refresh. Called on every validation of the inputs.
+   * @param {Object} facts - What validateInputs found
+   * @param {boolean} facts.hasSaved - Saved settings hold a SteamID and a credential
+   * @param {boolean} facts.validSteamId - The SteamID field holds a SteamID64
+   * @param {boolean} facts.validApiKey - The credential field holds a key or token
+   * @param {boolean} facts.tokenExpired - The token, in the field or saved, has expired
+   */
+  startAutoRefreshOnce({ hasSaved, validSteamId, validApiKey, tokenExpired }) {
+    // Don't start auto-refresh if tutorial is active
+    if (tutorialManager.isActive) {
+      logger.info("App", "Auto-refresh not started - tutorial is active");
+      return;
+    }
+
+    // Don't start auto-refresh if we already attempted initial load
+    if (this.initialLoadAttempted) {
+      return;
+    }
+
+    // Only start auto-refresh for users with saved settings that include friends list
+    const savedFriendsIds = appStateManager.getState("savedFriendsIds");
+    const hasSavedFriends = savedFriendsIds && savedFriendsIds.length > 0;
+    const hasValidSavedSettings = hasSaved && !tokenExpired;
+
+    const hasValidCurrentInputs = validSteamId && validApiKey && !tokenExpired;
+
+    // Start auto-refresh ONLY if we have valid saved settings AND saved friends list
+    if (hasValidSavedSettings && hasSavedFriends) {
+      logger.info("App", "Starting auto-refresh - validation passed", {
+        hasValidSavedSettings,
+        hasSavedFriends,
+        friendsCount: savedFriendsIds?.length || 0,
+      });
+
+      setTimeout(() => {
+        this.initialLoadAttempted = true;
+        this.startAutoRefresh().catch((error) => {
+          logger.error("App", "Auto-refresh startup failed: " + error.message);
+        });
+      }, API_CONFIG.AUTO_REFRESH_START_MS);
+    } else {
+      logger.info("App", "Auto-refresh not started - validation failed", {
+        hasValidCurrentInputs,
+        hasValidSavedSettings,
+        hasSavedFriends,
+        isTokenExpired: tokenExpired,
+      });
+    }
   }
 
   /**
@@ -82,11 +136,6 @@ class AppFriendsManager {
       appStateManager.setState("friendsData", supportedFriends);
       this.renderLists(supportedFriends, joinStates);
 
-      // Setup friend listeners after rendering
-      if (this.eventManager) {
-        this.eventManager.setupFriendListeners();
-      }
-
       logger.info(
         "App",
         `Friends update completed: ${supportedFriends.length} supported friends found, ${supportedFriends.filter((f) => f.join_available).length} joinable`
@@ -95,7 +144,7 @@ class AppFriendsManager {
       return supportedFriends;
     } catch (error) {
       ErrorHandler.logError("App.fetchAndRenderFriendsByIds", error);
-      if (!keepStates) UIManager.showError(error.message || error);
+      if (!keepStates) NotificationManager.showError(error.message || error);
       throw error;
     }
   }
@@ -129,8 +178,8 @@ class AppFriendsManager {
    */
   renderLists(list, joinStates) {
     const { friends, fakeFriends } = FakeFriendsManager.splitFakeFriends(list);
-    UIManager.renderFriendsList(friends, joinStates);
-    UIManager.renderFakeFriendsList(fakeFriends, joinStates);
+    FriendsRenderer.renderFriendsList(friends, joinStates);
+    FriendsRenderer.renderFakeFriendsList(fakeFriends, joinStates);
   }
 
   /**
@@ -186,7 +235,7 @@ class AppFriendsManager {
     auth = Validators.extractApiKeyOrToken(auth);
 
     if (!steam_id || !auth) {
-      UIManager.showError(t("errors.pleaseEnterSteamIdAndApiKey"));
+      NotificationManager.showError(t("errors.pleaseEnterSteamIdAndApiKey"));
       return;
     }
 
@@ -195,7 +244,7 @@ class AppFriendsManager {
       auth,
     });
     if (!validation.valid) {
-      UIManager.showError(validation.errors.join(". "));
+      NotificationManager.showError(validation.errors.join(". "));
       return;
     }
 
@@ -219,19 +268,15 @@ class AppFriendsManager {
       let allFriendIds = [];
       try {
         allFriendIds = await SteamAPI.getFriendsList(steam_id, auth);
-        UIManager.hideNotification();
+        NotificationManager.hideNotification();
       } catch (err) {
-        UIManager.showError(err, steam_id);
+        NotificationManager.showError(err, steam_id);
         return;
       } finally {
         if (updateBtn) {
           updateBtn.disabled = false;
           updateBtn.textContent = t("index.updateFriendsButton");
         }
-      }
-      if (!allFriendIds.length) {
-        UIManager.showError(t("errors.noFriendsFound"), steam_id);
-        return;
       }
 
       // Update state
@@ -266,11 +311,6 @@ class AppFriendsManager {
       const joinStates = joinManager.getJoinStates();
       this.renderLists(supportedFriends, joinStates);
 
-      // Setup friend listeners after rendering
-      if (this.eventManager) {
-        this.eventManager.setupFriendListeners();
-      }
-
       // Friends are in: the account panel gives way to the bar
       AccountView.close();
       if (this.inputManager) this.inputManager.validateInputs();
@@ -286,7 +326,7 @@ class AppFriendsManager {
       }
     } catch (error) {
       ErrorHandler.logError("App.updateFriendsList", error);
-      UIManager.showError(error.message || error, steam_id);
+      NotificationManager.showError(error.message || error, steam_id);
     } finally {
       if (updateBtn) {
         updateBtn.disabled = false;
@@ -393,6 +433,26 @@ class AppFriendsManager {
   stopAutoRefresh() {
     appStateManager.clearRefreshInterval();
     logger.info("App", "Auto-refresh stopped");
+  }
+
+  /**
+   * Restore auto-refresh after the tutorial ends
+   */
+  restoreAutoRefresh() {
+    // Check if we have saved friends and valid settings before starting auto-refresh
+    const savedFriendsIds = appStateManager.getState("savedFriendsIds");
+    const savedSettings = appStateManager.getState("savedSettings");
+
+    if (savedFriendsIds && savedFriendsIds.length > 0 && savedSettings) {
+      // Small delay to ensure tutorial cleanup is complete
+      setTimeout(() => {
+        this.startAutoRefresh().catch((error) => {
+          logger.error("App", "Could not restart auto-refresh", {
+            error: error.message,
+          });
+        });
+      }, TUTORIAL_TIMING.AUTO_REFRESH_RESTORE_MS);
+    }
   }
 }
 

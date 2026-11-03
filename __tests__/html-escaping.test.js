@@ -3,10 +3,8 @@
  */
 
 import DOMUtils from "../src/utils/dom-utils.js";
-import {
-  FRIENDS_TEMPLATES,
-  NOTIFICATION_TEMPLATES,
-} from "../src/ui/html-templates.js";
+import { FRIENDS_TEMPLATES } from "../src/ui/friend-row-template.js";
+import { NOTIFICATION_TEMPLATES } from "../src/ui/notification-templates.js";
 import FriendsRenderer from "../src/ui/friends-renderer.js";
 
 const STEAM_ID = "76561198000000001";

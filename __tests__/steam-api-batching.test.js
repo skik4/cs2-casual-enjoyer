@@ -42,8 +42,7 @@ const within = (promise, ms) =>
 
 beforeEach(() => {
   jest.clearAllMocks();
-  SteamAPIClient._cache.clear();
-  SteamAPIClient._inFlight.clear();
+  SteamAPIClient.reset();
   global.fetch = jest.fn();
 });
 
@@ -127,7 +126,7 @@ describe("Steam saying stop", () => {
     expect(credentialState.isRejected(AUTH)).toBe(true);
 
     // A reload the user asks for is answered: polling may go on
-    SteamAPIClient._cache.clear();
+    SteamAPIClient.reset();
     global.fetch.mockImplementation(async (url) => okResponse(requestedIds(url).map(account)));
     await SteamAPIClient.getPresence([USER], AUTH);
 

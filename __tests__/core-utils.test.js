@@ -37,11 +37,11 @@ describe("ErrorHandler", () => {
 describe("AppStateManager", () => {
   test("stores single and batched values", () => {
     appStateManager.setState("usingSavedFriends", true);
-    appStateManager.batchUpdate({ savedFriendsIds: ["1"], initialLoadAttempted: true });
+    appStateManager.batchUpdate({ savedFriendsIds: ["1"], savedSettings: { steam_id: "1" } });
 
     expect(appStateManager.getState("usingSavedFriends")).toBe(true);
     expect(appStateManager.getState("savedFriendsIds")).toEqual(["1"]);
-    expect(appStateManager.getState("initialLoadAttempted")).toBe(true);
+    expect(appStateManager.getState("savedSettings")).toEqual({ steam_id: "1" });
   });
 
   test("clearRefreshInterval stops the friends refresh", () => {

@@ -12,7 +12,6 @@ jest.mock("../src/utils/logger.js", () => ({
 }));
 
 import mapFinder, {
-  mapLabel,
   compareServers,
   buildServers,
 } from "../src/game/map-finder.js";
@@ -78,12 +77,6 @@ afterEach(() => {
 });
 
 describe("helpers", () => {
-  test("mapLabel names known maps and tidies unknown ones", () => {
-    expect(mapLabel("de_dust2")).toBe("Dust II");
-    expect(mapLabel("cs_office")).toBe("Office");
-    expect(mapLabel("de_newmap")).toBe("Newmap");
-  });
-
   test("compareServers puts a free slot first, then the freshest match", () => {
     const servers = [
       { serverId: "full-fresh", freeSlot: false, rounds: 1 },
@@ -650,7 +643,7 @@ describe("store", () => {
 
     await mapFinder.refresh();
     await mapFinder.refresh();
-    jest.advanceTimersByTime(2000);
+    jest.advanceTimersByTime(MAP_FINDER_CONFIG.SAVE_DEBOUNCE_MS);
 
     expect(save).toHaveBeenCalledTimes(1);
     expect(save.mock.calls[0][0].pool[A]).toMatchObject({ map: "de_dust2" });
@@ -777,7 +770,7 @@ describe("friends of pool players", () => {
       global.window.electronAPI = { mapFinder: { save } };
       mapFinder.poolFriends = { ids: [X], crawled: { [A]: 123 } };
       mapFinder._scheduleSave();
-      jest.advanceTimersByTime(2000);
+      jest.advanceTimersByTime(MAP_FINDER_CONFIG.SAVE_DEBOUNCE_MS);
       expect(save.mock.calls[0][0].poolFriends).toEqual({ ids: [X], crawled: { [A]: 123 } });
     } finally {
       jest.useRealTimers();

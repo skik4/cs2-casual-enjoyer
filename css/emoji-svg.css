@@ -12,22 +12,6 @@
   flex-shrink: 0;
 }
 
-/* Size variants */
-.emoji-svg.emoji-sm {
-  width: var(--emoji-size-sm);
-  height: var(--emoji-size-sm);
-}
-
-.emoji-svg.emoji-lg {
-  width: var(--emoji-size-lg);
-  height: var(--emoji-size-lg);
-}
-
-.emoji-svg.emoji-xl {
-  width: var(--emoji-size-xl);
-  height: var(--emoji-size-xl);
-}
-
 /* Specific emoji styles */
 
 /* Notification emoji */
@@ -42,64 +26,6 @@
   margin-right: var(--space-xs);
   width: var(--emoji-size-lg);
   height: var(--emoji-size-lg);
-}
-
-/* Status indicators - preserve original colors */
-.emoji-svg[data-emoji="🟡"],
-.emoji-svg[data-emoji="🔴"],
-.emoji-svg[data-emoji="🟢"] {
-  fill: none;
-  /* Let SVG use its original colors */
-}
-
-/* Animation support */
-.emoji-svg.spin {
-  animation: emoji-spin var(--anim-spin-duration) linear infinite;
-}
-
-.emoji-svg.pulse {
-  animation: emoji-pulse var(--anim-pulse-duration) ease-in-out infinite;
-}
-
-@keyframes emoji-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes emoji-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.7;
-    transform: scale(1.05);
-  }
-}
-
-/* Hover effects */
-.emoji-svg.interactive {
-  cursor: pointer;
-  transition: transform var(--anim-duration) ease;
-}
-
-.emoji-svg.interactive:hover {
-  transform: scale(1.1);
-}
-
-/* Context-specific styles */
-
-/* Button emoji */
-.action-btn .emoji-svg,
-.btn .emoji-svg {
-  margin-right: var(--space-xs);
 }
 
 /* Copy to clipboard animation */
@@ -127,13 +53,6 @@
   .emoji-svg {
     filter: brightness(0.9);
   }
-
-  /* Specific emojis that should maintain brightness */
-  .emoji-svg[data-emoji="🎉"],
-  .emoji-svg[data-emoji="🚀"],
-  .emoji-svg[data-emoji="🎮"] {
-    filter: none;
-  }
 }
 
 /* Responsive adjustments */
@@ -141,11 +60,6 @@
   .emoji-svg {
     width: var(--emoji-size-sm);
     height: var(--emoji-size-sm);
-  }
-
-  .emoji-svg.emoji-lg {
-    width: var(--emoji-size-md);
-    height: var(--emoji-size-md);
   }
 
   .notification-emoji .emoji-svg,

@@ -4,11 +4,11 @@ import {
   PINNED_MAPS_JOIN_ID,
   STATUS_TYPES,
 } from "../shared/constants.js";
+import { mapLabel } from "../shared/map-labels.js";
 
 // Game singletons
 import joinManager from "../game/join-manager.js";
 import mapKeeper from "../game/map-keeper.js";
-import { mapLabel } from "../game/map-finder.js";
 
 // UI and utilities
 import DOMUtils from "../utils/dom-utils.js";

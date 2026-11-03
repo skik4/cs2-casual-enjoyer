@@ -1,5 +1,6 @@
 // Shared constants
 import { GAME_MODES, MAP_FINDER_CONFIG } from "../shared/constants.js";
+import { mapLabel } from "../shared/map-labels.js";
 
 // Game singletons
 import gsiManager from "./gsi-manager.js";
@@ -13,37 +14,10 @@ import credentialState from "../steam/credential-state.js";
 import Validators from "../utils/validators.js";
 import logger from "../utils/logger.js";
 
-const MAP_LABELS = {
-  de_dust2: "Dust II",
-  de_mirage: "Mirage",
-  de_inferno: "Inferno",
-  de_nuke: "Nuke",
-  de_overpass: "Overpass",
-  de_vertigo: "Vertigo",
-  de_ancient: "Ancient",
-  de_anubis: "Anubis",
-  de_train: "Train",
-  de_cache: "Cache",
-  cs_office: "Office",
-  cs_italy: "Italy",
-  cs_agency: "Agency",
-};
-
 // One-shot ids waiting for their first look
 const MAX_SEEDS = 3000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Human-readable name of a map
- * @param {string} map - Map code, e.g. de_dust2
- * @returns {string}
- */
-export function mapLabel(map) {
-  if (MAP_LABELS[map]) return MAP_LABELS[map];
-  const bare = String(map || "").replace(/^[a-z]{2}_/, "");
-  return bare ? bare.charAt(0).toUpperCase() + bare.slice(1) : String(map || "");
-}
 
 /**
  * Order servers for joining: a running match before a finished one, a free
@@ -906,7 +880,7 @@ class MapFinder {
         poolFriends: this.poolFriends,
         fof: this.fof,
       });
-    }, 2000);
+    }, MAP_FINDER_CONFIG.SAVE_DEBOUNCE_MS);
   }
 
   /**

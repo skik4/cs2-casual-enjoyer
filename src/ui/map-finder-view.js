@@ -1,11 +1,12 @@
 // Shared constants
 import { JOIN_TARGET_PREFIXES, PINNED_MAPS_JOIN_ID } from "../shared/constants.js";
+import { mapLabel } from "../shared/map-labels.js";
 
 // Core singletons
 import appStateManager from "../core/app-state-manager.js";
 
 // Game singletons
-import mapFinder, { mapLabel } from "../game/map-finder.js";
+import mapFinder from "../game/map-finder.js";
 import joinManager, {
   getMapJoinId,
   getServerJoinId,
@@ -16,6 +17,7 @@ import mapKeeper from "../game/map-keeper.js";
 // UI and utilities
 import ViewTabs from "./view-tabs.js";
 import {
+  formatScore,
   joinButtonLook,
   slotAttributes,
   statusLabel,
@@ -31,13 +33,6 @@ const escapeHtml = DOMUtils.escapeHtml;
 // A clear button waits this long for its second click, as a fake friend's
 // remove button does
 const CLEAR_CONFIRM_MS = 3000;
-
-/**
- * "[ 3 : 1 ]" as "3 : 1"
- * @param {string|null} score - Rich presence score
- * @returns {string}
- */
-const formatScore = (score) => String(score ?? "").replace(/[[\]]/g, "").trim();
 
 /**
  * Map finder view module

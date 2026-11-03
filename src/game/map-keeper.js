@@ -1,10 +1,11 @@
 // Shared constants
 import { GAME_MODES, PINNED_MAPS_JOIN_ID } from "../shared/constants.js";
+import { mapLabel } from "../shared/map-labels.js";
 
 // Game singletons
 import gsiManager from "./gsi-manager.js";
 import joinManager from "./join-manager.js";
-import mapFinder, { mapLabel } from "./map-finder.js";
+import mapFinder from "./map-finder.js";
 import userLocation from "./user-location.js";
 
 // UI and utilities

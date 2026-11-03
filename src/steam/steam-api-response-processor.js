@@ -155,6 +155,13 @@ class SteamAPIResponseProcessor {
   static _reportedInvalidConnects = new Set();
 
   /**
+   * Forget which malformed connects were reported (used by tests)
+   */
+  static reset() {
+    this._reportedInvalidConnects.clear();
+  }
+
+  /**
    * Process one player's link details into the facts the join loop acts on
    * @param {Object|null} rawData - Raw-like response for one player, null when Steam returned no account
    * @returns {import('../shared/types.js').PlayerJoinInfo} - Join-relevant player info

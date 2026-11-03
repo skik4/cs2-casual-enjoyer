@@ -17,7 +17,6 @@ class AppStateManager {
       usingSavedFriends: false,
       savedFriendsIds: [],
       autoRefreshIntervalMs: API_CONFIG.AUTO_REFRESH_INTERVAL_MS,
-      initialLoadAttempted: false,
     };
   }
 

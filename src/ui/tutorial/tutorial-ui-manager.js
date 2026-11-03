@@ -1,5 +1,5 @@
 // Shared constants
-import { TUTORIAL_TEMPLATES } from "../html-templates.js";
+import { TUTORIAL_TEMPLATES } from "./tutorial-templates.js";
 
 /**
  * Tutorial UI Manager
@@ -58,14 +58,14 @@ export class TutorialUIManager {
   }
 
   /**
-   * Update modal content with SVG emoji support
+   * Update modal content
    * @param {Object} step - Current step data
    * @param {number} currentStepNumber - Current step number (1-based)
    * @param {number} totalSteps - Total number of steps
    * @param {boolean} isFirstStep - Whether this is the first step
    * @param {boolean} isLastStep - Whether this is the last step
    * @param {Object} callbacks - Event callbacks {nextStep, previousStep, stop}
-   */ async updateModal(
+   */ updateModal(
     step,
     currentStepNumber,
     totalSteps,
@@ -75,7 +75,7 @@ export class TutorialUIManager {
   ) {
     if (!this.modal) return;
 
-    const modalContent = await TUTORIAL_TEMPLATES.MODAL_CONTENT_SVG(
+    const modalContent = TUTORIAL_TEMPLATES.MODAL_CONTENT(
       step.icon,
       step.title,
       currentStepNumber,
@@ -466,7 +466,7 @@ export class TutorialUIManager {
   }
 }
 
-// // Singleton instance
+// Singleton instance
 const tutorialUIManager = new TutorialUIManager();
 
 export default tutorialUIManager;

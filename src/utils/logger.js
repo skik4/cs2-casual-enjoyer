@@ -17,15 +17,6 @@ class Logger {
   }
 
   /**
-   * Set logging level
-   * @param {string} level - Logging level (error, warn, info, debug, trace)
-   */
-  setLevel(level) {
-    this.currentLevel = level;
-    LOGGING_CONFIG.CURRENT_LEVEL = level;
-  }
-
-  /**
    * Check if message should be logged based on current level
    * @param {string} level - Message level
    * @returns {boolean} - True if should log

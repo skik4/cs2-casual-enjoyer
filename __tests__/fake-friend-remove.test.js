@@ -15,21 +15,21 @@ jest.mock("../src/core/app-state-manager.js", () => ({
   __esModule: true,
   default: { getState: jest.fn(() => []), setState: jest.fn() },
 }));
-jest.mock("../src/ui/ui-manager.js", () => ({
+jest.mock("../src/ui/friends-renderer.js", () => ({
   __esModule: true,
-  default: {
-    renderFakeFriendsList: jest.fn(),
-    lastRenderedFakeFriends: [],
-    showError: jest.fn(),
-  },
+  default: { renderFakeFriendsList: jest.fn(), lastRenderedFakeFriends: [] },
+}));
+jest.mock("../src/ui/notification-manager.js", () => ({
+  __esModule: true,
+  default: { showError: jest.fn() },
+}));
+jest.mock("../src/game/map-keeper.js", () => ({
+  __esModule: true,
+  default: { userJoined: jest.fn() },
 }));
 jest.mock("../src/ui/fake-friends-manager.js", () => ({
   __esModule: true,
   default: { removeId: jest.fn() },
-}));
-jest.mock("../src/ui/view-tabs.js", () => ({
-  __esModule: true,
-  default: { show: jest.fn() },
 }));
 jest.mock("../src/utils/dom-utils.js", () => ({
   __esModule: true,
@@ -41,18 +41,18 @@ jest.mock("../src/utils/error-handler.js", () => ({
 }));
 jest.mock("../src/ui/tutorial/tutorial-manager.js", () => ({
   __esModule: true,
-  default: { stateManager: { getIsActive: () => false } },
+  default: { isActive: false },
 }));
 jest.mock("../src/i18n/i18n-manager.js", () => ({
   __esModule: true,
   t: jest.fn((key) => key),
 }));
-jest.mock("../src/ui/html-templates.js", () => ({
+jest.mock("../src/ui/friend-row-template.js", () => ({
   __esModule: true,
   FRIENDS_TEMPLATES: { REMOVE_FAKE_ICON: () => "<img>" },
 }));
 
-import appEventManager from "../src/core/app-event-manager.js";
+import FakeFriendsView from "../src/ui/fake-friends-view.js";
 import FakeFriendsManager from "../src/ui/fake-friends-manager.js";
 import DOMUtils from "../src/utils/dom-utils.js";
 import joinManager from "../src/game/join-manager.js";
@@ -89,7 +89,7 @@ describe("removing a fake friend", () => {
         ? { addEventListener: (type, fn) => (handler = fn) }
         : null
     );
-    appEventManager.setupFakeFriendListeners();
+    FakeFriendsView.initialize({ getOwnSteamId: () => "", onAdded: () => {} });
 
     button = makeButton(`remove-fake-btn-${FAKE}`);
     click = () =>

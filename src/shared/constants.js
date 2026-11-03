@@ -5,11 +5,18 @@
 export const API_CONFIG = {
   STEAM_API_BASE: "https://api.steampowered.com",
   AUTO_REFRESH_INTERVAL_MS: 3000,
+  // The first refresh of a run starts this long after the saved credentials
+  // check out at startup. No reason for the wait is recorded.
+  AUTO_REFRESH_START_MS: 500,
   JOIN_LOOP_INTERVAL_MS: 200,
   JOIN_RETRY_INTERVAL_MS: 400,
   MISSING_TIMEOUT_MS: 60000,
   JOIN_SUCCESS_DISPLAY_MS: 1500,
   CS2_LAUNCH_TIMEOUT_MS: 180000,
+  // After a launch, Steam is asked this often whether CS2 reached the lobby.
+  // CS2 posts reaching the menu the moment it happens, so this is only the
+  // fallback while GSI is not delivering
+  CS2_LOBBY_POLL_MS: 3000,
   // How long a map load reported by GSI after a connect holds off further
   // connects while Steam catches up with the user's new server
   JOIN_GSI_CONFIRM_MS: 15000,
@@ -81,6 +88,9 @@ export const MAP_FINDER_CONFIG = {
   // oldest. At 100 ids a request, one pass over them is 200 requests,
   // spread over the refreshes.
   POOL_FRIENDS_MAX_IDS: 20000,
+  // The store is written this long after the last change, not on every
+  // refresh
+  SAVE_DEBOUNCE_MS: 2000,
 };
 
 /**
@@ -146,14 +156,10 @@ export const LOG_LEVEL_PRIORITY = {
 };
 
 export const LOGGING_CONFIG = {
-  // Default mode (production)
-  DEFAULT_LEVEL: LOG_LEVELS.INFO, // Maximum number of logs in memory
-  MAX_LOG_ENTRIES: 1000,
-
   // Settings for different types of logs
   ENABLE_STATE_CHANGE_LOGGING: false, // Enabled only in DEBUG/TRACE
 
-  // Global variable for switching level through console
+  // The one knob: raised by hand for a debug build
   CURRENT_LEVEL: LOG_LEVELS.INFO,
 };
 

@@ -4,8 +4,16 @@ import { TUTORIAL_MOCK_FRIEND } from "../../shared/constants.js";
 // Core singletons
 import appStateManager from "../../core/app-state-manager.js";
 
+// Game singletons
+import joinManager from "../../game/join-manager.js";
+
 // UI and utilities
+import FriendsRenderer from "../friends-renderer.js";
+import FakeFriendsManager from "../fake-friends-manager.js";
 import NotificationManager from "../notification-manager.js";
+import StatusManager from "../status-manager.js";
+import { TUTORIAL_TIMING } from "./tutorial-timing.js";
+import { TUTORIAL_STEPS } from "./tutorial-steps.js";
 import { t } from "../../i18n/i18n-manager.js";
 
 /**
@@ -35,11 +43,11 @@ export class TutorialMockDataManager {
       // Use NotificationManager directly instead of simulating click
       NotificationManager.showApiKeyHelp();
 
-      // If we're on step 2, wait for the notification to fully load
-      if (currentStep === 2 && onNotificationReady) {
+      // If we're on the token page step, wait for the notification to fully load
+      if (currentStep === TUTORIAL_STEPS.TOKEN_PAGE && onNotificationReady) {
         onNotificationReady();
       }
-    } else if (currentStep === 2 && onNotificationReady) {
+    } else if (currentStep === TUTORIAL_STEPS.TOKEN_PAGE && onNotificationReady) {
       // Notification is already open, call callback immediately
       onNotificationReady();
     }
@@ -80,20 +88,10 @@ export class TutorialMockDataManager {
     // Get current friends data from app state
     const friendsData = appStateManager.getState("friendsData");
     if (friendsData && Array.isArray(friendsData)) {
-      // Dynamically import to avoid circular dependencies
-      import("../../game/join-manager.js").then(({ default: joinManager }) => {
-        const joinStates = joinManager.getJoinStates();
-        Promise.all([
-          import("../friends-renderer.js"),
-          import("../fake-friends-manager.js"),
-        ]).then(
-          ([{ default: FriendsRenderer }, { default: FakeFriendsManager }]) => {
-            // Manually tracked IDs have their own tab
-            const { friends } = FakeFriendsManager.splitFakeFriends(friendsData);
-            FriendsRenderer.renderFriendsList(friends, joinStates);
-          }
-        );
-      });
+      const joinStates = joinManager.getJoinStates();
+      // Manually tracked IDs have their own tab
+      const { friends } = FakeFriendsManager.splitFakeFriends(friendsData);
+      FriendsRenderer.renderFriendsList(friends, joinStates);
     }
   }
 
@@ -103,54 +101,60 @@ export class TutorialMockDataManager {
    * @param {number|null} previousStepIndex - Previous step index
    */
   handleStepMockData(stepIndex, previousStepIndex = null) {
+    const { TOKEN_PAGE, FRIENDS_LIST, CONNECTION } = TUTORIAL_STEPS;
+
     // Handle API notification based on step transitions
-    if (previousStepIndex === 2 && stepIndex !== 2) {
-      // Leaving step 2 (Get Steam Web API Token) - close notification
+    if (previousStepIndex === TOKEN_PAGE && stepIndex !== TOKEN_PAGE) {
+      // Leaving the token page step - close notification
       this.closeAPITokenNotification();
-    } else if (stepIndex === 2 && previousStepIndex !== 2) {
-      // Entering step 2 (Get Steam Web API Token) - open notification
+    } else if (stepIndex === TOKEN_PAGE && previousStepIndex !== TOKEN_PAGE) {
+      // Entering the token page step - open notification
       this.openAPITokenNotification(stepIndex);
     }
 
     // Handle mock friend based on step transitions
-    if (previousStepIndex !== null && previousStepIndex >= 6 && stepIndex < 6) {
-      // Moving back from Friends List Display step (6) or later - remove mock friend
+    if (
+      previousStepIndex !== null &&
+      previousStepIndex >= FRIENDS_LIST &&
+      stepIndex < FRIENDS_LIST
+    ) {
+      // Moving back from the friends list step or later - remove mock friend
       this.removeTutorialMockFriend();
     } else if (
-      stepIndex >= 6 &&
-      (previousStepIndex === null || previousStepIndex < 6)
+      stepIndex >= FRIENDS_LIST &&
+      (previousStepIndex === null || previousStepIndex < FRIENDS_LIST)
     ) {
-      // Entering Friends List Display step (6) or later - add mock friend
+      // Entering the friends list step or later - add mock friend
       this.addTutorialMockFriend();
     }
 
     // Handle join button appearance for tutorial steps
-    if (stepIndex === 8 && previousStepIndex !== 8) {
-      // Entering step 8 - make button look like "Cancel"
+    if (stepIndex === CONNECTION && previousStepIndex !== CONNECTION) {
+      // Entering the connection step - make button look like "Cancel"
       this.setTutorialButtonToCancel();
-    } else if (previousStepIndex === 8 && stepIndex !== 8) {
-      // Leaving step 8 - make button look like "Join"
+    } else if (previousStepIndex === CONNECTION && stepIndex !== CONNECTION) {
+      // Leaving the connection step - make button look like "Join"
       this.setTutorialButtonToJoin();
     }
 
-    // Handle mock connection process for step 8 (Connection Process)
-    if (stepIndex === 8 && previousStepIndex !== 8) {
+    // Handle mock connection process for the connection step
+    if (stepIndex === CONNECTION && previousStepIndex !== CONNECTION) {
       // Entering Connection Process step - start mock connection
       // Add small delay to ensure previous process is fully stopped
       setTimeout(() => {
-        if (stepIndex === 8) {
-          // Double-check we're still on step 8
+        if (stepIndex === CONNECTION) {
+          // Double-check we're still on the connection step
           this.startMockConnectionProcess();
         }
-      }, 50);
-    } else if (previousStepIndex === 8 && stepIndex !== 8) {
+      }, TUTORIAL_TIMING.MOCK_CONNECTION_START_MS);
+    } else if (previousStepIndex === CONNECTION && stepIndex !== CONNECTION) {
       // Leaving Connection Process step - stop mock connection
       this.stopMockConnectionProcess();
     }
   }
 
   /**
-   * Start mock connection process for tutorial step 8 (Connection Process)
+   * Start mock connection process for the connection step
    * Simulates the join process with red -> yellow -> green cycle
    */
   startMockConnectionProcess() {
@@ -159,43 +163,40 @@ export class TutorialMockDataManager {
 
     const mockFriendId = TUTORIAL_MOCK_FRIEND.steamid;
 
-    // Import StatusManager dynamically to avoid circular dependency
-    import("../status-manager.js").then(({ default: StatusManager }) => {
-      let currentStep = 0;
-      const steps = [
-        { status: "waiting", duration: 1200 }, // Red - checking for available slots
-        { status: "connecting", duration: 1200 }, // Yellow - attempting to connect (longer)
-        { status: "joined", duration: 1200 }, // Green - successfully connected
-      ];
+    let currentStep = 0;
+    const steps = [
+      { status: "waiting", duration: 1200 }, // Red - checking for available slots
+      { status: "connecting", duration: 1200 }, // Yellow - attempting to connect (longer)
+      { status: "joined", duration: 1200 }, // Green - successfully connected
+    ];
 
-      const runStep = () => {
-        // Check if process was stopped
-        if (!this.mockConnectionInterval) return;
+    const runStep = () => {
+      // Check if process was stopped
+      if (!this.mockConnectionInterval) return;
 
-        const step = steps[currentStep % steps.length];
+      const step = steps[currentStep % steps.length];
 
-        // Update the status label
-        StatusManager.updateLabel(mockFriendId, step.status);
+      // Update the status label
+      StatusManager.updateLabel(mockFriendId, step.status);
 
-        // Schedule next step
-        const timeoutId = setTimeout(() => {
-          // Remove this timeout from tracking set
-          this.activeTimeouts.delete(timeoutId);
+      // Schedule next step
+      const timeoutId = setTimeout(() => {
+        // Remove this timeout from tracking set
+        this.activeTimeouts.delete(timeoutId);
 
-          currentStep++;
-          if (this.mockConnectionInterval) {
-            runStep();
-          }
-        }, step.duration);
+        currentStep++;
+        if (this.mockConnectionInterval) {
+          runStep();
+        }
+      }, step.duration);
 
-        // Track this timeout for cleanup
-        this.activeTimeouts.add(timeoutId);
-      };
+      // Track this timeout for cleanup
+      this.activeTimeouts.add(timeoutId);
+    };
 
-      // Start the process
-      this.mockConnectionInterval = true;
-      runStep();
-    });
+    // Start the process
+    this.mockConnectionInterval = true;
+    runStep();
   }
 
   /**
@@ -212,10 +213,7 @@ export class TutorialMockDataManager {
     this.activeTimeouts.clear();
 
     // Reset to default state if mock friend exists
-    const mockFriendId = TUTORIAL_MOCK_FRIEND.steamid;
-    import("../status-manager.js").then(({ default: StatusManager }) => {
-      StatusManager.updateLabel(mockFriendId, "cancelled");
-    });
+    StatusManager.updateLabel(TUTORIAL_MOCK_FRIEND.steamid, "cancelled");
   }
 
   /**

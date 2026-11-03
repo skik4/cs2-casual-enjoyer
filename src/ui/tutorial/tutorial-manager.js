@@ -1,12 +1,8 @@
 // Shared constants
-import { TUTORIAL_TEMPLATES } from "../html-templates.js";
+import { TUTORIAL_TEMPLATES } from "./tutorial-templates.js";
 
 // UI
 import AccountView from "../account-view.js";
-
-// Core singletons
-import appStateManager from "../../core/app-state-manager.js";
-import appFriendsManager from "../../core/app-friends-manager.js";
 
 // Tutorial singletons
 import tutorialStateManager from "./tutorial-state-manager.js";
@@ -14,6 +10,8 @@ import tutorialUIManager from "./tutorial-ui-manager.js";
 import tutorialHighlightManager from "./tutorial-highlight-manager.js";
 import tutorialMockDataManager from "./tutorial-mock-data-manager.js";
 import tutorialEventManager from "./tutorial-event-manager.js";
+import { TUTORIAL_TIMING } from "./tutorial-timing.js";
+import { TUTORIAL_STEPS } from "./tutorial-steps.js";
 import i18n from "../../i18n/i18n-manager.js";
 import logger from "../../utils/logger.js";
 
@@ -28,6 +26,7 @@ class TutorialManager {
     this.highlightManager = tutorialHighlightManager;
     this.mockDataManager = tutorialMockDataManager;
     this.eventManager = tutorialEventManager;
+    this.listeners = new Set();
     try {
       i18n.onLanguageChange(() => {
         this.refreshTextsAfterLanguageChange();
@@ -38,21 +37,20 @@ class TutorialManager {
   /**
    * Start the tutorial
    */
-  async start() {
+  start() {
     if (this.stateManager.getIsActive()) return;
 
-    // Load SVG steps
-    const svgSteps = await TUTORIAL_TEMPLATES.getStepsWithSVG();
-    this.stateManager.steps = svgSteps;
+    // The steps carry the texts of the current language
+    this.stateManager.steps = TUTORIAL_TEMPLATES.getSteps();
 
-    // Stop auto-refresh before starting tutorial
-    this.stopAutoRefresh();
+    // The app pauses its friends refresh while the tutorial runs
+    this._notify(true);
 
     // Clean up any existing elements first to prevent conflicts
     this.cleanup();
 
     this.stateManager.setActive(true);
-    this.stateManager.setCurrentStep(0);
+    this.stateManager.setCurrentStep(TUTORIAL_STEPS.WELCOME);
 
     // The first steps point at the credential fields
     AccountView.open();
@@ -67,7 +65,7 @@ class TutorialManager {
         () => this.previousStep(),
         () => this.stop()
       );
-    }, 0);
+    }, TUTORIAL_TIMING.DEFER_MS);
   }
 
   /**
@@ -80,17 +78,17 @@ class TutorialManager {
     this.cleanup();
     AccountView.close();
 
-    // Restart auto-refresh after tutorial ends
-    this.restoreAutoRefresh();
+    // The app resumes its friends refresh
+    this._notify(false);
   }
 
   /**
    * Go to next step
    */
-  async nextStep() {
+  nextStep() {
     const result = this.stateManager.nextStep();
     if (result) {
-      await this.showStep(result.currentStep, result.previousStep);
+      this.showStep(result.currentStep, result.previousStep);
     } else {
       this.stop();
     }
@@ -99,10 +97,10 @@ class TutorialManager {
   /**
    * Go to previous step
    */
-  async previousStep() {
+  previousStep() {
     const result = this.stateManager.previousStep();
     if (result) {
-      await this.showStep(result.currentStep, result.previousStep);
+      this.showStep(result.currentStep, result.previousStep);
     }
   }
 
@@ -111,7 +109,7 @@ class TutorialManager {
    * @param {number} stepIndex - Index of the step to show
    * @param {number|null} previousStepIndex - Index of the previous step (for transition handling)
    */
-  async showStep(stepIndex, previousStepIndex = null) {
+  showStep(stepIndex, previousStepIndex = null) {
     const step = this.stateManager.getCurrentStepData();
     if (!step) return;
 
@@ -121,12 +119,12 @@ class TutorialManager {
     // Remove all existing highlights
     this.highlightManager.removeHighlight();
 
-    // Update modal content (async for SVG support)
-    await this.uiManager.updateModal(
+    // Update modal content
+    this.uiManager.updateModal(
       step,
       stepIndex + 1, // 1-based step number
       this.stateManager.getTotalSteps(),
-      stepIndex === 0,
+      stepIndex === TUTORIAL_STEPS.WELCOME,
       stepIndex === this.stateManager.getTotalSteps() - 1,
       {
         nextStep: () => this.nextStep(),
@@ -153,13 +151,22 @@ class TutorialManager {
    * @param {Object} step - Current step data
    */
   handleStepHighlighting(stepIndex, step) {
-    // Special handling for step 2 (Get Steam Web API Token) - use immediate method
-    if (stepIndex === 2 && step.target === "#steam-token-help-link") {
+    // The token link is inside a notification that is still opening
+    if (
+      stepIndex === TUTORIAL_STEPS.TOKEN_PAGE &&
+      step.target === "#steam-token-help-link"
+    ) {
       this.waitForElementAndHighlightImmediate(step.target);
-    } else if (stepIndex === 6 && step.target === "#friends") {
+    } else if (
+      stepIndex === TUTORIAL_STEPS.FRIENDS_LIST &&
+      step.target === "#friends"
+    ) {
       // Special handling for Friends List Display step - force position above
       this.highlightTarget(step.target, "top");
-    } else if (stepIndex === 8 && step.target === ".friend .status-label") {
+    } else if (
+      stepIndex === TUTORIAL_STEPS.CONNECTION &&
+      step.target === ".friend .status-label"
+    ) {
       // Special handling for Connection Process step - force position above
       this.highlightTarget(step.target, null, true);
     } else {
@@ -230,20 +237,20 @@ class TutorialManager {
    * Wait for UI to be ready and start tutorial automatically
    * Uses MutationObserver for efficient DOM monitoring
    */
-  async waitForUIAndStartTutorial() {
+  waitForUIAndStartTutorial() {
     const tutorialBtn = document.getElementById("tutorial-btn");
 
     if (tutorialBtn) {
       // UI is already ready, start tutorial immediately
-      await this.start();
+      this.start();
     } else {
       // Use MutationObserver to watch for UI changes
-      const observer = new MutationObserver(async () => {
+      const observer = new MutationObserver(() => {
         const btn = document.getElementById("tutorial-btn");
         if (btn) {
           observer.disconnect();
           // UI is ready, start tutorial
-          await this.start();
+          this.start();
         }
       });
 
@@ -256,7 +263,7 @@ class TutorialManager {
       setTimeout(() => {
         observer.disconnect();
         console.warn("Tutorial button not found within timeout period");
-      }, 10000); // 10 second timeout
+      }, TUTORIAL_TIMING.ELEMENT_WAIT_MS);
     }
   }
 
@@ -275,51 +282,40 @@ class TutorialManager {
     return this.stateManager.getIsActive();
   }
 
-  get currentStep() {
-    return this.stateManager.getCurrentStep();
-  }
-
-  get steps() {
-    return this.stateManager.steps;
+  /**
+   * Subscribe to the tutorial starting and stopping
+   * @param {Function} listener - Called with true on start, false on stop
+   * @returns {Function} - Unsubscribe
+   */
+  onChange(listener) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 
   /**
-   * Stop auto-refresh before starting tutorial
+   * @private
    */
-  stopAutoRefresh() {
-    appFriendsManager.stopAutoRefresh();
-  }
-
-  /**
-   * Restore auto-refresh after tutorial ends
-   */
-  restoreAutoRefresh() {
-    // Check if we have saved friends and valid settings before starting auto-refresh
-    const savedFriendsIds = appStateManager.getState("savedFriendsIds");
-    const savedSettings = appStateManager.getState("savedSettings");
-
-    if (savedFriendsIds && savedFriendsIds.length > 0 && savedSettings) {
-      // Small delay to ensure tutorial cleanup is complete
-      setTimeout(() => {
-        appFriendsManager.startAutoRefresh().catch((error) => {
-          logger.error("TutorialManager", "Could not restart auto-refresh", {
-            error: error.message,
-          });
+  _notify(active) {
+    for (const listener of [...this.listeners]) {
+      try {
+        listener(active);
+      } catch (error) {
+        logger.error("TutorialManager", "Tutorial listener failed", {
+          error: error.message,
         });
-      }, 500);
+      }
     }
   }
 
   /**
    * Rebuild tutorial steps and refresh current modal after language change
    */
-  async refreshTextsAfterLanguageChange() {
+  refreshTextsAfterLanguageChange() {
     try {
       if (!this.stateManager.getIsActive()) return;
       const idx = this.stateManager.getCurrentStep();
-      const svgSteps = await TUTORIAL_TEMPLATES.getStepsWithSVG();
-      this.stateManager.steps = svgSteps;
-      await this.showStep(idx, idx);
+      this.stateManager.steps = TUTORIAL_TEMPLATES.getSteps();
+      this.showStep(idx, idx);
     } catch {}
   }
 }
