@@ -103,7 +103,7 @@ export class TutorialEventManager {
         );
 
         // Update visual feedback
-        link.style.color = "#4caf50";
+        link.style.color = "var(--green-primary)";
         link.style.textDecoration = "none";
 
         // Create and insert SVG emoji for clipboard
@@ -113,17 +113,17 @@ export class TutorialEventManager {
 
         // Reset after 2 seconds
         setTimeout(() => {
-          link.style.color = "#2d8cf0";
+          link.style.color = "var(--blue-primary)";
           link.style.textDecoration = "underline";
           link.textContent = originalText;
         }, 2000);
       } catch (err) {
         console.error("Failed to copy to clipboard:", err);
         // Fallback visual feedback even if clipboard fails
-        link.style.color = "#ff4444";
+        link.style.color = "var(--red-light)";
         link.textContent = "Copy failed";
         setTimeout(() => {
-          link.style.color = "#2d8cf0";
+          link.style.color = "var(--blue-primary)";
           link.textContent = originalText;
         }, 2000);
       }

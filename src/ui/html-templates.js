@@ -53,7 +53,7 @@ export const NOTIFICATION_TEMPLATES = {
    * @param {string} errorMessage - Error message
    * @returns {string} Error message HTML
    */ ERROR_MESSAGE: (errorMessage) => `
-        <div class="notification-main-text" style="color:#ff4444;font-weight:500;">${errorMessage}</div>
+        <div class="notification-main-text" style="color:var(--red-light);font-weight:500;">${errorMessage}</div>
     `,
 
   /**
@@ -71,13 +71,13 @@ export const NOTIFICATION_TEMPLATES = {
    * @returns {string} Privacy warning HTML
    */
   PRIVACY_WARNING: (linkHtml) => `
-        <div class="notification-main-text" style="color:#ff4444;font-weight:500;">
+        <div class="notification-main-text" style="color:var(--red-light);font-weight:500;">
             ${t("notifications.privacy.warningMain")}
         </div>            
         <div style="margin:8px 0 8px 0;">
             ${linkHtml}
         </div>            
-        <div class="note" style="color:#aaa;font-size:0.95em;margin-bottom:2px;margin-top:15px;border-top:1px solid #353a40;padding-top:10px;">
+        <div class="note" style="color:var(--text-secondary);font-size:0.95em;margin-bottom:2px;margin-top:15px;border-top:1px solid var(--border-color);padding-top:10px;">
             ${t("notifications.privacy.note")}
         </div>
     `,
@@ -151,21 +151,21 @@ export const HELP_TEMPLATES = {
   STEAM_ID_HELP: async () => {
     const keyEmoji = await createNotificationEmoji("🆔");
     return `
-            <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
+            <div class="notification-main-text" style="color:var(--blue-primary);font-weight:500;">
                 ${keyEmoji} ${t("help.steamId.title")}
             </div>
             <div style="margin:10px 0;text-align:left;">
                 <div style="margin-bottom:15px;">
-                    <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
+                    <div style="color:var(--blue-primary);font-weight:600;margin-bottom:6px;">
                         ${t("help.steamId.option1Title")}
                     </div>                  
                     <div style="margin-bottom:8px;">
                         <a href="steam://url/SteamIDMyProfile" class="steam-profile-link" target="_self" title="${t("help.steamId.openProfileLinkTitle")}">${t("help.steamId.openProfileLinkText")}</a>
                     </div>
-                    <div style="margin-bottom:8px;color:#f3f6fa;">
+                    <div style="margin-bottom:8px;color:var(--text-primary);">
                         ${t("help.steamId.option1Body")}
                     </div>                
-                    <ul style="color:#bfc9d8;font-size:0.95em;margin-left:10px;padding-left:20px;">
+                    <ul style="color:var(--text-secondary);font-size:0.95em;margin-left:10px;padding-left:20px;">
                         <li>${t("help.steamId.option1Bullet1")}</li>
                         <li>${t("help.steamId.option1Bullet2")}</li>
                         <li>${t("help.steamId.option1Bullet3")}</li>
@@ -173,15 +173,15 @@ export const HELP_TEMPLATES = {
                 </div>
                 
                 <div>
-                    <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
+                    <div style="color:var(--blue-primary);font-weight:600;margin-bottom:6px;">
                         ${t("help.steamId.option2Title")}
                     </div>
-                    <div style="margin-bottom:8px;color:#f3f6fa;">
+                    <div style="margin-bottom:8px;color:var(--text-primary);">
                         ${t("help.steamId.option2Body")}
                     </div>
                 </div>
             </div>            
-            <div class="note" style="color:#aaa;font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid #353a40;padding-top:10px;">
+            <div class="note" style="color:var(--text-secondary);font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid var(--border-color);padding-top:10px;">
                 ${t("help.steamId.note")}
             </div>
         `;
@@ -193,21 +193,21 @@ export const HELP_TEMPLATES = {
   API_KEY_HELP: async () => {
     const keyEmoji = await createNotificationEmoji("🔑");
     return `
-        <div class="notification-main-text" style="color:#2d8cf0;font-weight:500;">
+        <div class="notification-main-text" style="color:var(--blue-primary);font-weight:500;">
             ${keyEmoji} ${t("help.apiKey.title")}
         </div>
                 <div style="margin:10px 0;text-align:left;">
             <div style="margin-bottom:15px;">                
-            <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
+            <div style="color:var(--blue-primary);font-weight:600;margin-bottom:6px;">
                     ${t("help.apiKey.option1Title")}
                 </div>                  
                 <div style="margin-bottom:8px;">
                     <a id="steam-token-help-link" href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="${t("help.apiKey.getTokenLinkTitle")}">${t("help.apiKey.getTokenLinkText")}</a>
                 </div>
-                <div style="margin-bottom:8px;color:#f3f6fa;">
+                <div style="margin-bottom:8px;color:var(--text-primary);">
                     ${t("help.apiKey.option1Body")}
                 </div>                
-                <ul style="color:#bfc9d8;font-size:0.95em;margin-left:10px;padding-left:20px;">
+                <ul style="color:var(--text-secondary);font-size:0.95em;margin-left:10px;padding-left:20px;">
                     <li>${t("help.apiKey.option1Bullet1")}</li>
                     <li>${t("help.apiKey.option1Bullet2")}</li>
                     <li>${t("help.apiKey.option1Bullet3")}</li>
@@ -215,26 +215,26 @@ export const HELP_TEMPLATES = {
             </div>
             
             <div>
-                <div style="color:#2d8cf0;font-weight:600;margin-bottom:6px;">
+                <div style="color:var(--blue-primary);font-weight:600;margin-bottom:6px;">
                     ${t("help.apiKey.option2Title")}
                 </div>                  
                 <div style="margin-bottom:8px;">
                     <a href="steam://openurl/https://steamcommunity.com/dev/apikey" class="steam-apikey-link" target="_self" title="${t("help.apiKey.getApiKeyLinkTitle")}">${t("help.apiKey.getApiKeyLinkText")}</a>
                 </div>
-                <div style="margin-bottom:8px;color:#f3f6fa;">
+                <div style="margin-bottom:8px;color:var(--text-primary);">
                     ${t("help.apiKey.option2Body1")}
                 </div>
-                <div style="margin-bottom:8px;color:#f3f6fa;">
+                <div style="margin-bottom:8px;color:var(--text-primary);">
                     ${t("help.apiKey.option2Body2")}
                 </div>                
-                <ul style="color:#bfc9d8;font-size:0.95em;margin-left:10px;padding-left:20px;">
+                <ul style="color:var(--text-secondary);font-size:0.95em;margin-left:10px;padding-left:20px;">
                     <li>${t("help.apiKey.option2Bullet1")}</li>
                     <li>${t("help.apiKey.option2Bullet2")}</li>
                     <li>${t("help.apiKey.option2Bullet3")}</li>
                 </ul>
             </div>
         </div>            
-        <div class="note" style="color:#aaa;font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid #353a40;padding-top:10px;">
+        <div class="note" style="color:var(--text-secondary);font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid var(--border-color);padding-top:10px;">
             ${t("help.apiKey.note1")}<br>
             ${t("help.apiKey.note2")}
         </div>
@@ -307,7 +307,7 @@ export const TUTORIAL_TEMPLATES = {
         title: t("tutorial.step1Title"),
         content: `
                     ${t("tutorial.step1Content")}               
-                    <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                    <div style='color:var(--text-secondary);font-size:0.95em;text-align:center;margin-top:15px;'>
                         ${t("tutorial.keyHint")}
                     </div>
                 `,
@@ -366,7 +366,7 @@ export const TUTORIAL_TEMPLATES = {
         title: t("tutorial.step9Title"),
         content: `
                     ${t("tutorial.step9ContentTop")}
-                    <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                    <div style='color:var(--text-secondary);font-size:0.95em;text-align:center;margin-top:15px;'>
                         ${t("tutorial.step9ContentNote1")}<br>
                         ${t("tutorial.step9ContentNote2")}<br>
                         ${t("tutorial.step9ContentNote3")}
@@ -379,12 +379,12 @@ export const TUTORIAL_TEMPLATES = {
         title: t("tutorial.step10Title"),
         content: `
                     ${t("tutorial.step10ContentTop")}
-                    <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
+                    <div style='color:var(--text-secondary);font-size:0.95em;text-align:center;margin-top:15px;'>
                         ${t("tutorial.step10ContentNote1")}<br>
                         ${t("tutorial.step10ContentNote2")}
                     </div>
-                    <div style='color:#aaa;font-size:0.95em;text-align:center;margin-top:15px;'>
-                        <span id='github-releases-link' style='color:#2d8cf0;cursor:pointer;text-decoration:underline;'>
+                    <div style='color:var(--text-secondary);font-size:0.95em;text-align:center;margin-top:15px;'>
+                        <span id='github-releases-link' style='color:var(--blue-primary);cursor:pointer;text-decoration:underline;'>
                             ${t("tutorial.githubReleases")}
                         </span>
                     </div>

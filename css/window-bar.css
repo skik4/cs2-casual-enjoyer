@@ -4,7 +4,9 @@
   width: 100vw;
   min-width: 0;
   height: var(--height-window-bar);
-  background: var(--bg-panel);
+  /* Part of the dialog, as Steam's title area is */
+  background: var(--bg-dialog);
+  background-attachment: fixed;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -16,10 +18,7 @@
   left: 0;
   right: 0;
   z-index: var(--z-window-bar);
-  border-bottom: var(--border-width) solid var(--panel-outline);
   border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-  box-shadow: 0 2px 12px
-    color-mix(in srgb, var(--black) var(--opacity-40), transparent);
 }
 
 .window-bar-title-container {
@@ -43,17 +42,21 @@
 .window-bar-left {
   position: absolute;
   left: var(--position-lg);
-  top: var(--position-sm);
+  top: 0;
+  bottom: 0;
   display: flex;
+  align-items: center;
   gap: var(--space-xs);
   -webkit-app-region: no-drag;
 }
 
 .window-bar-btns {
   display: flex;
+  align-items: center;
   gap: var(--space-xs);
   -webkit-app-region: no-drag;
   position: absolute;
   right: var(--position-lg);
-  top: var(--position-sm);
+  top: 0;
+  bottom: 0;
 }

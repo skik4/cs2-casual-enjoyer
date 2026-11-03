@@ -43,43 +43,44 @@
   margin-top: var(--space-sm);
 }
 
+/* A square grey button like the pin; Steam's red once it means removal */
 .remove-fake-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
   padding: 0;
-  background: transparent;
-  border: var(--border-width) solid var(--border-color-strong);
+  background: var(--button-secondary);
+  border: none;
   border-radius: var(--border-radius-md);
   cursor: pointer;
-  transition:
-    background var(--anim-duration),
-    border-color var(--anim-duration);
+  transition: background var(--anim-duration);
 }
 
 .remove-fake-btn img {
-  filter: brightness(0) saturate(100%) invert(75%);
+  filter: brightness(0) saturate(100%) invert(88%);
   pointer-events: none;
 }
 
 .remove-fake-btn:hover {
   background: var(--red-primary);
-  border-color: var(--red-primary);
 }
 
 .remove-fake-btn:hover img {
   filter: brightness(0) saturate(100%) invert(100%);
 }
 
-/* First click: ask for a second one before removing */
+/* First click: ask for a second one before removing. With a word on it, it
+   takes the size of the other long buttons */
 .remove-fake-btn.confirm-remove {
-  width: auto;
-  padding: 0 var(--space-sm);
+  width: var(--button-width);
+  height: var(--button-height);
   background: var(--red-primary);
-  border-color: var(--red-primary);
   color: var(--white);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-family: inherit;
+  font-size: var(--button-font-size);
+  font-weight: var(--font-weight-medium);
 }

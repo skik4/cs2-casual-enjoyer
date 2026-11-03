@@ -19,7 +19,7 @@
   color: var(--text-secondary);
   font-family: inherit;
   font-size: 15px;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition:
     color var(--anim-duration),
@@ -37,21 +37,16 @@
 
 /* How many entries a tab holds */
 .tab-count {
-  padding: 1px 7px;
-  border-radius: 99px;
-  background: #2a3037;
-  color: var(--text-secondary);
+  padding: 1px 6px;
+  border-radius: var(--border-radius-sm);
+  background: var(--button-secondary);
+  color: var(--text-primary);
   font-size: 12px;
   font-weight: var(--font-weight-semibold);
 }
 
 .tab-count:empty {
   display: none;
-}
-
-.view-tab.active .tab-count {
-  background: color-mix(in srgb, var(--blue-primary) 25%, transparent);
-  color: #cfe3ff;
 }
 
 /* The filter or search status next to the tabs */
@@ -78,7 +73,7 @@
 /* Map cards: a map row that expands into its servers */
 
 .map-card:not(:last-child) {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .map-card .map-row {
@@ -86,8 +81,9 @@
   cursor: pointer;
 }
 
+/* A blue line on the left marks the open map and the pinned row */
 .map-card.expanded .map-row {
-  border-color: color-mix(in srgb, var(--blue-primary) 60%, transparent);
+  box-shadow: inset 3px 0 0 var(--blue-primary);
 }
 
 .map-expander {
@@ -99,7 +95,7 @@
 /* The pinned maps, above the list, joined as one */
 .pinned-row {
   margin-bottom: 8px;
-  border-color: color-mix(in srgb, var(--blue-primary) 45%, transparent);
+  box-shadow: inset 3px 0 0 var(--blue-primary);
 }
 
 .link-btn.unpin-all-btn {
@@ -113,9 +109,13 @@
   flex-shrink: 0;
 }
 
-.keep-btn.active {
-  border-color: var(--blue-primary);
-  background: color-mix(in srgb, var(--blue-primary) 18%, transparent);
+.keep-btn.active,
+.keep-btn.active:hover:not(:disabled) {
+  background: color-mix(
+    in srgb,
+    var(--blue-primary) 30%,
+    var(--button-secondary)
+  );
 }
 
 .keep-btn.active img {
@@ -126,18 +126,18 @@
 .map-servers {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin: 5px 0 0 26px;
+  gap: 4px;
+  margin: 4px 0 0 26px;
 }
 
 .map-servers .server-row {
-  min-height: 48px;
-  padding: 7px 12px;
+  min-height: 46px;
+  padding: 6px 12px;
   margin-bottom: 0;
 }
 
 .server-row .personaname {
-  font-size: 15px;
+  font-size: 14px;
 }
 
 /* Where the map finder's players come from, and the friends-of-friends key */
@@ -150,9 +150,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  border: 1px dashed var(--border-color);
-  border-radius: 10px;
+  padding: 9px 12px;
+  background: var(--bg-item);
+  border-radius: var(--border-radius-lg);
   font-size: 13px;
   color: var(--text-secondary);
 }
@@ -180,11 +180,11 @@
 }
 
 .link-btn.clear-btn:hover:not(:disabled) {
-  color: #ff8a80;
+  color: color-mix(in srgb, var(--red-primary) 60%, var(--white));
 }
 
 .link-btn.clear-btn.armed {
-  color: #ff6b6b;
+  color: color-mix(in srgb, var(--red-primary) 80%, var(--white));
   font-weight: var(--font-weight-semibold);
 }
 
@@ -203,15 +203,9 @@
   text-align: left;
 }
 
-.fof-key-row .action-btn {
-  height: 38px;
-  padding: 0 16px;
-  min-width: 0;
-  font-size: 14px;
-}
-
 .map-finder-hint {
   margin-top: var(--space-xs);
-  font-size: var(--font-size-sm);
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--text-secondary);
 }

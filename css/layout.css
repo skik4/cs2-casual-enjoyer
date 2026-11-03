@@ -10,12 +10,10 @@
   padding-top: var(--height-window-bar);
   padding-bottom: var(--height-footer);
   box-sizing: border-box;
-  background: linear-gradient(
-    135deg,
-    var(--bg-dark-gradient-light) 0%,
-    var(--bg-panel) 30%,
-    var(--bg-dark) 100%
-  );
+  /* Fixed to the window, so the window bar and the footer, which carry the
+     same background, meet the page without a seam */
+  background: var(--bg-dialog);
+  background-attachment: fixed;
 }
 
 .app-viewport {
@@ -52,8 +50,8 @@
   width: 100vw;
   min-width: 0;
   height: var(--height-footer);
-  background: var(--bg-panel);
-  border-top: var(--border-width) solid var(--panel-outline);
+  background: var(--bg-dialog);
+  background-attachment: fixed;
   display: flex;
   align-items: center;
   justify-content: flex-end;

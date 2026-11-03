@@ -1,52 +1,46 @@
-/* Status labels: free slot, full, a join in progress, joined */
+/* Status labels: free slot, full, a join in progress, joined. Plain
+   coloured words, as Steam's friends list writes a friend's state */
 
 .status-label {
   flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 99px;
-  font-size: 11.5px;
-  font-weight: var(--font-weight-semibold);
+  font-size: 12.5px;
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
 }
 
-.status-free {
-  background: color-mix(in srgb, var(--green-primary) 16%, transparent);
-  color: #7fe08c;
+.status-free,
+.status-done {
+  color: var(--steam-in-game);
 }
 
 .status-full {
-  background: #2a3037;
-  color: #9aa4b1;
+  color: var(--text-secondary);
 }
 
-.status-busy {
-  background: color-mix(in srgb, var(--yellow-primary) 16%, transparent);
-  color: #f5d561;
+/* A join in progress, and the user already there: their server, their map,
+   a friend beside them */
+.status-busy,
+.status-here {
+  color: var(--steam-online);
 }
 
 .status-missing {
-  background: color-mix(in srgb, var(--purple-primary) 18%, transparent);
   color: #c9a3ff;
-}
-
-.status-done {
-  background: color-mix(in srgb, var(--green-primary) 24%, transparent);
-  color: #8ff09c;
-}
-
-/* The user is already there: their server, their map, a friend beside them */
-.status-here {
-  background: color-mix(in srgb, var(--blue-primary) 18%, transparent);
-  color: #8cc4ff;
 }
 
 /* The match has ended; the server is about to load another map */
 .status-over {
-  background: #262b31;
-  color: #7d8792;
+  color: color-mix(in srgb, var(--text-secondary) 70%, transparent);
 }
 
 .status-none {
+  display: none;
+}
+
+/* In a friend's row the avatar frame and the green game line already say
+   whether a slot is free, so the bare word goes; a note of its own stays */
+.friend-avatar ~ .friend-info .status-free:not([data-idle-text]),
+.friend-avatar ~ .friend-info .status-full:not([data-idle-text]) {
   display: none;
 }
 

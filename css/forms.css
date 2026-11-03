@@ -1,13 +1,15 @@
 /* Form Components */
 
+/* As tall as a button, so a field and its button line up */
 input {
   background: var(--input-bg);
   color: var(--text-primary);
   border: var(--border-width) solid var(--input-border);
   border-radius: var(--border-radius-md);
-  padding: 0.6em 1.1em;
+  height: var(--button-height);
+  padding: 0 10px;
   margin: 0;
-  font-size: var(--font-size-md);
+  font-size: var(--button-font-size);
   font-family: inherit;
   outline: none;
   transition: border var(--anim-duration);
@@ -19,7 +21,6 @@ input {
 
 input:focus {
   border: var(--border-width) solid var(--input-border-focus);
-  background: var(--bg-panel);
 }
 
 input[type="password"] {
@@ -34,12 +35,20 @@ input[type="password"]::placeholder {
 /* Input States */
 .valid-input {
   border: var(--border-width) solid var(--green-primary) !important;
-  background-color: rgba(46, 204, 64, 0.05) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--green-primary) 5%,
+    var(--input-bg)
+  ) !important;
 }
 
 .valid-input:focus {
   border: var(--border-width) solid var(--green-dark) !important;
-  background-color: rgba(30, 142, 46, 0.08) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--green-primary) 8%,
+    var(--input-bg)
+  ) !important;
 }
 
 .valid-input:placeholder-shown {
@@ -49,12 +58,20 @@ input[type="password"]::placeholder {
 
 .invalid-input {
   border: var(--border-width) solid var(--red-primary) !important;
-  background-color: rgba(231, 76, 60, 0.05) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--red-primary) 5%,
+    var(--input-bg)
+  ) !important;
 }
 
 .invalid-input:focus {
   border: var(--border-width) solid var(--red-dark) !important;
-  background-color: rgba(192, 57, 43, 0.08) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--red-primary) 8%,
+    var(--input-bg)
+  ) !important;
 }
 
 .expired-token-input {
@@ -108,9 +125,5 @@ input[type="password"]::placeholder {
 #friend-filter-input {
   width: 210px;
   max-width: 100%;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: 8px;
-  font-size: 13.5px;
   text-align: left;
 }

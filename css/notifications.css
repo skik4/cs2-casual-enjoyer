@@ -2,15 +2,13 @@
 
 #notifications {
   display: none;
-  background: var(--bg-panel);
+  background: var(--bg-item);
   color: var(--text-primary);
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-lg);
   padding: 1em 1.5em 1em 1.2em;
   padding-top: 0.5em;
   margin-bottom: 0.7em;
   font-size: var(--font-size-sm);
-  box-shadow: 0 2px 8px
-    color-mix(in srgb, var(--black) var(--opacity-20), transparent);
   position: relative;
 }
 
@@ -42,7 +40,7 @@
 }
 
 .cs2-launch-content {
-  background: var(--panel-bg-gradient);
+  background: var(--bg-dialog);
   border: var(--border-width) solid var(--panel-outline);
   border-radius: var(--border-radius-xl);
   padding: var(--space-xl);
@@ -62,13 +60,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(
-    90deg,
-    var(--blue-primary) 0%,
-    var(--purple-primary) 100%
-  );
-  box-shadow: 0 0 8px
-    color-mix(in srgb, var(--blue-primary) var(--opacity-40), transparent);
+  background: var(--button-primary-gradient);
 }
 
 .cs2-launch-title {

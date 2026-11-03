@@ -23,12 +23,13 @@
   /* Darkest */
 
   /* ===== BRAND COLORS ===== */
-  --blue-primary: #2d8cf0;
-  --blue-dark: #1a6ed8;
-  --red-primary: #e74c3c;
+  /* Steam's own palette, read from the Steam client's steamui/css/sp.css */
+  --blue-primary: #1a9fff;
+  --blue-dark: #1a44c2;
+  --red-primary: #de3618;
   --red-dark: #c0392b;
   --red-light: #ff4444;
-  --green-primary: #2ecc40;
+  --green-primary: #59bf40;
   --green-dark: #1e8e2e;
   --yellow-primary: #f1c40f;
   --purple-primary: #a259f7;
@@ -94,14 +95,15 @@
   /* 1.5px */
 
   /* ===== BORDER RADIUS ===== */
-  --border-radius-sm: 0.188rem;
+  /* Steam keeps its corners nearly square */
+  --border-radius-sm: 0.125rem;
+  /* 2px */
+  --border-radius-md: 0.125rem;
+  /* 2px */
+  --border-radius-lg: 0.188rem;
   /* 3px */
-  --border-radius-md: 0.25rem;
+  --border-radius-xl: 0.25rem;
   /* 4px */
-  --border-radius-lg: 0.375rem;
-  /* 6px */
-  --border-radius-xl: 0.5rem;
-  /* 8px */
 
   /* ============================================= */
   /* TYPOGRAPHY TOKENS                           */
@@ -141,19 +143,55 @@
   /* ============================================= */
 
   /* ===== BACKGROUND COLORS ===== */
-  --bg-dark: #181c20;
-  --bg-panel: #23272b;
-  --bg-item: #202328;
-  --bg-dark-gradient-light: #232b32;
+  /* Steam's dialog: a dim glow from the top left over #25282e */
+  --bg-dark: #25282e;
+  --bg-panel: #23262e;
+  /* List rows, a step darker than the dialog so a long list stays apart */
+  --bg-item: #1d1f24;
+  --bg-dark-gradient-light: #2c3036;
+  --bg-dialog:
+    radial-gradient(
+      circle at top left,
+      rgba(74, 81, 92, 0.4) 0%,
+      rgba(75, 81, 92, 0) 60%
+    ),
+    #25282e;
 
   /* ===== TEXT COLORS ===== */
-  --text-primary: var(--gray-100);
-  --text-secondary: var(--gray-400);
+  --text-primary: #dcdedf;
+  --text-secondary: #8b929a;
+
+  /* ===== STEAM ACCENTS ===== */
+  /* In game and online, as Steam's friends list colours them */
+  --steam-in-game: #59bf40;
+  --steam-online: #6dcff6;
+  --steam-gold: #d2b76a;
+
+  /* ===== BUTTONS ===== */
+  /* Steam's primary button slides along this gradient; the others are grey */
+  --button-primary-gradient: linear-gradient(to right, #47bfff 0%, #1a44c2 60%);
+  --button-secondary: #3d4450;
+  --button-secondary-hover: #464d58;
+  --button-text: #dfe3e6;
+  /* A button that cannot be pressed, as Steam's unavailable Play button */
+  --button-disabled: #2e3136;
+  --button-disabled-text: rgba(255, 255, 255, 0.5);
+  --button-font-size: 0.844rem;
+  /* 13.5px */
+  /* Every long button has one size, every square one another; the width
+     fits the longest label, "Открыть в Steam ↗" */
+  --button-width: 9rem;
+  /* 144px */
+  --button-height: 2rem;
+  /* 32px */
+  --icon-button-size: 2rem;
+  /* 32px */
 
   /* ===== BORDER COLORS ===== */
-  --border-color: var(--gray-800);
-  --border-color-strong: #23272e;
-  --panel-outline: #23272e;
+  --border-color: #32353c;
+  --border-color-strong: #3d4450;
+  /* Rows and panels are flat, as in Steam */
+  --panel-outline: transparent;
 
   /* ===== WARNING COLORS ===== */
   --warning-bg: #fffbe6;
@@ -171,8 +209,9 @@
   /* 36px */
 
   /* ===== FORMS MODULE (forms.css) ===== */
-  --input-bg: #181b20;
-  --input-border: #23272e;
+  /* Steam's text field: a shade over whatever is behind it, no border */
+  --input-bg: rgba(0, 0, 0, 0.25);
+  --input-border: transparent;
   --input-border-focus: var(--blue-primary);
   --input-border-invalid: var(--red-primary);
 

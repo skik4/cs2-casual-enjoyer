@@ -16,13 +16,15 @@
 
 .tutorial-modal {
   position: fixed;
-  background: var(--panel-bg-gradient);
+  background: var(--bg-dialog);
   border: var(--border-width) solid var(--panel-outline);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--panel-shadow);
   z-index: var(--z-tutorial-modal);
-  max-width: 420px;
-  min-width: 380px;
+  /* Wide enough for its three buttons at their one size */
+  width: calc(
+    3 * var(--button-width) + 2 * var(--space-sm) + 2 * var(--space-lg)
+  );
   padding: 0;
   overflow: hidden;
   font-family:
@@ -45,12 +47,7 @@
 
 .tutorial-header {
   padding: var(--space-lg) var(--space-lg) var(--space-md);
-  border-bottom: var(--border-width) solid var(--border-color-strong);
-  background: linear-gradient(
-    135deg,
-    var(--bg-panel) 0%,
-    var(--bg-dark-gradient-light) 100%
-  );
+  border-bottom: var(--border-width) solid var(--border-color);
 }
 
 .tutorial-title {
@@ -115,28 +112,21 @@
 
 .tutorial-progress-fill {
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--blue-primary) 0%,
-    var(--purple-primary) 100%
-  );
+  background: var(--blue-primary);
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 8px rgba(45, 140, 240, 0.4);
 }
 
 .tutorial-content {
   padding: var(--space-lg);
-  background: var(--bg-panel);
   text-align: center;
 }
 
 .tutorial-controls {
   padding: var(--space-md) var(--space-lg) var(--space-lg);
-  border-top: var(--border-width) solid var(--border-color-strong);
+  border-top: var(--border-width) solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--bg-panel);
   gap: var(--space-sm);
 }
 
@@ -170,16 +160,16 @@ span.tutorial-highlight {
   0%,
   100% {
     box-shadow:
-      0 0 0 2px rgba(45, 140, 240, 0.4),
-      0 2px 16px rgba(45, 140, 240, 0.25),
+      0 0 0 2px color-mix(in srgb, var(--blue-primary) 40%, transparent),
+      0 2px 16px color-mix(in srgb, var(--blue-primary) 25%, transparent),
       var(--shadow-light);
     transform: scale(1);
   }
 
   50% {
     box-shadow:
-      0 0 0 2px rgba(45, 140, 240, 0.6),
-      0 4px 24px rgba(45, 140, 240, 0.35),
+      0 0 0 2px color-mix(in srgb, var(--blue-primary) 60%, transparent),
+      0 4px 24px color-mix(in srgb, var(--blue-primary) 35%, transparent),
       var(--shadow-medium);
     transform: scale(1.05);
   }
