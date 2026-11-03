@@ -1,0 +1,605 @@
+[
+  {
+    "name": "2026-10-30 20:20 Dust II, one connect",
+    "start": "2026-10-30T20:20:14.109Z",
+    "attempts": [
+      {
+        "target": {
+          "kind": "map",
+          "map": "de_dust2"
+        },
+        "startAt": 0,
+        "candidates": ["76561198000000101"],
+        "endedAt": 5727,
+        "outcome": "joined"
+      }
+    ],
+    "steps": [
+      {
+        "at": 0,
+        "gsi": {
+          "activity": "menu"
+        }
+      },
+      {
+        "at": 0,
+        "user": {
+          "server": null,
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000101": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A1\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 2 : 4 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 2 : 4 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14193\"",
+            "server": "90296145700000001"
+          }
+        }
+      },
+      {
+        "at": 5727,
+        "user": {
+          "server": "90296145700000001",
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000101": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A2\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 2 : 4 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 2 : 4 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14193\"",
+            "server": "90296145700000001"
+          }
+        }
+      }
+    ],
+    "connects": [
+      {
+        "at": 1000,
+        "player": "76561198000000101",
+        "connect": "+gcconnectA0A0A0A0A0A0A0A0A0A0A0A1"
+      }
+    ]
+  },
+  {
+    "name": "2026-10-31 00:20 Dust II from a Mirage match, no free slot for 3.5 minutes",
+    "start": "2026-10-31T00:20:18.468Z",
+    "attempts": [
+      {
+        "target": {
+          "kind": "map",
+          "map": "de_dust2"
+        },
+        "startAt": 0,
+        "candidates": ["76561198000000102"],
+        "endedAt": 225438,
+        "outcome": "joined"
+      }
+    ],
+    "steps": [
+      {
+        "at": 0,
+        "gsi": {
+          "map": {
+            "name": "de_mirage",
+            "mode": "casual",
+            "phase": "live",
+            "round": 3
+          },
+          "activity": "playing"
+        }
+      },
+      {
+        "at": 0,
+        "user": {
+          "server": "90296186700000002",
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000102": {
+            "kv": "\"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 2 : 6 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"18\" \"status\" \"Casual Dust II [ 2 : 6 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296187000000003"
+          }
+        }
+      },
+      {
+        "at": 27389,
+        "gsi": {
+          "map": {
+            "name": "de_mirage",
+            "mode": "casual",
+            "phase": "live",
+            "round": 3
+          },
+          "activity": null
+        }
+      },
+      {
+        "at": 32437,
+        "gsi": {
+          "map": {
+            "name": "de_mirage",
+            "mode": "casual",
+            "phase": "live",
+            "round": 3
+          },
+          "activity": "playing"
+        }
+      },
+      {
+        "at": 37688,
+        "gsi": {
+          "map": {
+            "name": "de_mirage",
+            "mode": "casual",
+            "phase": "live",
+            "round": 4
+          },
+          "activity": "playing"
+        }
+      },
+      {
+        "at": 148289,
+        "gsi": {
+          "map": {
+            "name": "de_mirage",
+            "mode": "casual",
+            "phase": "live",
+            "round": 5
+          },
+          "activity": "playing"
+        }
+      },
+      {
+        "at": 211575,
+        "gsi": {
+          "map": {
+            "name": "de_mirage",
+            "mode": "casual",
+            "phase": "live",
+            "round": 6
+          },
+          "activity": "playing"
+        }
+      },
+      {
+        "at": 219446,
+        "players": {
+          "76561198000000102": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A3\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 2 : 6 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"18\" \"status\" \"Casual Dust II [ 2 : 6 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296187000000003"
+          }
+        }
+      },
+      {
+        "at": 220120,
+        "gsi": {
+          "activity": "menu"
+        }
+      },
+      {
+        "at": 221454,
+        "players": {
+          "76561198000000102": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A4\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 2 : 6 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"18\" \"status\" \"Casual Dust II [ 2 : 6 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296187000000003"
+          }
+        }
+      },
+      {
+        "at": 223087,
+        "gsi": {
+          "map": {
+            "name": "de_dust2",
+            "mode": "casual",
+            "phase": "live",
+            "round": 8
+          },
+          "activity": null
+        }
+      }
+    ],
+    "connects": [
+      {
+        "at": 219446,
+        "player": "76561198000000102",
+        "connect": "+gcconnectA0A0A0A0A0A0A0A0A0A0A0A3"
+      }
+    ]
+  },
+  {
+    "name": "2026-11-01 16:55 three servers at once",
+    "start": "2026-11-01T16:55:42.190Z",
+    "attempts": [
+      {
+        "target": {
+          "kind": "server",
+          "serverId": "90296287300000004",
+          "map": "de_dust2"
+        },
+        "startAt": 0,
+        "candidates": ["76561198000000103"],
+        "endedAt": 3792,
+        "outcome": "joined"
+      },
+      {
+        "target": {
+          "kind": "server",
+          "serverId": "90296288900000005",
+          "map": null
+        },
+        "startAt": 2363,
+        "candidates": [],
+        "endedAt": 3792,
+        "outcome": "other-joined"
+      },
+      {
+        "target": {
+          "kind": "server",
+          "serverId": "90296308400000006",
+          "map": null
+        },
+        "startAt": 2785,
+        "candidates": [],
+        "endedAt": 3792,
+        "outcome": "other-joined"
+      }
+    ],
+    "steps": [
+      {
+        "at": 0,
+        "gsi": {
+          "activity": "menu"
+        }
+      },
+      {
+        "at": 0,
+        "user": {
+          "server": null,
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000103": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A5\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 0 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296287300000004"
+          }
+        }
+      },
+      {
+        "at": 2362,
+        "players": {
+          "76561198000000103": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A6\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 0 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296287300000004"
+          }
+        }
+      },
+      {
+        "at": 2363,
+        "user": {
+          "server": null,
+          "inCS2": true
+        }
+      },
+      {
+        "at": 2785,
+        "user": {
+          "server": null,
+          "inCS2": true
+        }
+      },
+      {
+        "at": 3792,
+        "user": {
+          "server": "90296287300000004",
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000103": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A6\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 0 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296287300000004"
+          }
+        }
+      }
+    ],
+    "connects": [
+      {
+        "at": 276,
+        "player": "76561198000000103",
+        "connect": "+gcconnectA0A0A0A0A0A0A0A0A0A0A0A5"
+      }
+    ]
+  },
+  {
+    "name": "2026-11-02 20:47 a friend on Cache, full for 2 minutes",
+    "start": "2026-11-02T20:47:32.984Z",
+    "attempts": [
+      {
+        "target": {
+          "kind": "friend",
+          "friend": "76561198000000104"
+        },
+        "startAt": 0,
+        "candidates": [],
+        "endedAt": 147802,
+        "outcome": "joined"
+      }
+    ],
+    "steps": [
+      {
+        "at": 0,
+        "gsi": {
+          "activity": "menu"
+        }
+      },
+      {
+        "at": 0,
+        "user": {
+          "server": null,
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000104": {
+            "kv": "\"game:map\" \"de_cache\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 3 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Cache [ 0 : 3 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296379900000007"
+          }
+        }
+      },
+      {
+        "at": 68747,
+        "players": {
+          "76561198000000104": {
+            "kv": "\"game:map\" \"de_cache\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 4 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Cache [ 0 : 4 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296379900000007"
+          }
+        }
+      },
+      {
+        "at": 143755,
+        "players": {
+          "76561198000000104": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A7\" \"game:map\" \"de_cache\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 4 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Cache [ 0 : 4 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296379900000007"
+          }
+        }
+      },
+      {
+        "at": 147788,
+        "gsi": {
+          "map": {
+            "name": "de_cache",
+            "mode": "casual",
+            "phase": "live",
+            "round": 4
+          },
+          "activity": null
+        }
+      },
+      {
+        "at": 147802,
+        "user": {
+          "server": "90296379900000007",
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000104": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A7\" \"game:map\" \"de_cache\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 4 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Cache [ 0 : 4 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296379900000007"
+          }
+        }
+      }
+    ],
+    "connects": [
+      {
+        "at": 143755,
+        "player": "76561198000000104",
+        "connect": "+gcconnectA0A0A0A0A0A0A0A0A0A0A0A7"
+      }
+    ]
+  },
+  {
+    "name": "2026-11-02 21:05 Dust II from a Mirage match, token renewed",
+    "start": "2026-11-02T21:05:12.592Z",
+    "attempts": [
+      {
+        "target": {
+          "kind": "map",
+          "map": "de_dust2"
+        },
+        "startAt": 0,
+        "candidates": ["76561198000000105"],
+        "endedAt": 10300,
+        "outcome": "joined"
+      }
+    ],
+    "steps": [
+      {
+        "at": 0,
+        "gsi": {
+          "map": {
+            "name": "de_mirage",
+            "mode": "casual",
+            "phase": "live",
+            "round": 1
+          },
+          "activity": "playing"
+        }
+      },
+      {
+        "at": 0,
+        "user": {
+          "server": "90296392200000008",
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000105": {
+            "kv": "\"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 0 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296389400000009"
+          }
+        }
+      },
+      {
+        "at": 5578,
+        "players": {
+          "76561198000000105": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A8\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 0 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296389400000009"
+          }
+        }
+      },
+      {
+        "at": 6063,
+        "gsi": {
+          "activity": "menu"
+        }
+      },
+      {
+        "at": 9178,
+        "gsi": {
+          "map": {
+            "name": "de_dust2",
+            "mode": "casual",
+            "phase": "live",
+            "round": 1
+          },
+          "activity": null
+        }
+      },
+      {
+        "at": 9380,
+        "players": {
+          "76561198000000105": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A9\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 0 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296389400000009"
+          }
+        }
+      },
+      {
+        "at": 10300,
+        "user": {
+          "server": "90296389400000009",
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000105": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0A9\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 0 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 0 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296389400000009"
+          }
+        }
+      }
+    ],
+    "connects": [
+      {
+        "at": 5578,
+        "player": "76561198000000105",
+        "connect": "+gcconnectA0A0A0A0A0A0A0A0A0A0A0A8"
+      }
+    ]
+  },
+  {
+    "name": "2026-11-02 21:39 a friend on Dust II from an Inferno warmup",
+    "start": "2026-11-02T21:39:31.681Z",
+    "attempts": [
+      {
+        "target": {
+          "kind": "friend",
+          "friend": "76561198000000106"
+        },
+        "startAt": 0,
+        "candidates": [],
+        "endedAt": 25036,
+        "outcome": "joined"
+      }
+    ],
+    "steps": [
+      {
+        "at": 0,
+        "gsi": {
+          "map": {
+            "name": "de_inferno",
+            "mode": "casual",
+            "phase": "warmup",
+            "round": 0
+          },
+          "activity": "playing"
+        }
+      },
+      {
+        "at": 0,
+        "user": {
+          "server": "90296395300000010",
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000106": {
+            "kv": "\"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 1 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 1 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296391600000011"
+          }
+        }
+      },
+      {
+        "at": 19028,
+        "players": {
+          "76561198000000106": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0AA\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 1 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 1 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296391600000011"
+          }
+        }
+      },
+      {
+        "at": 19718,
+        "gsi": {
+          "activity": "menu"
+        }
+      },
+      {
+        "at": 22711,
+        "gsi": {
+          "map": {
+            "name": "de_dust2",
+            "mode": "casual",
+            "phase": "live",
+            "round": 2
+          },
+          "activity": null
+        }
+      },
+      {
+        "at": 23062,
+        "players": {
+          "76561198000000106": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0AB\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 1 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 1 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296391600000011"
+          }
+        }
+      },
+      {
+        "at": 24144,
+        "gsi": {
+          "map": {
+            "name": "de_dust2",
+            "mode": "casual",
+            "phase": "live",
+            "round": 3
+          },
+          "activity": null
+        }
+      },
+      {
+        "at": 25036,
+        "user": {
+          "server": "90296391600000011",
+          "inCS2": true
+        },
+        "players": {
+          "76561198000000106": {
+            "kv": "\"connect\" \"+gcconnectA0A0A0A0A0A0A0A0A0A0A0AB\" \"game:map\" \"de_dust2\" \"game:mode\" \"casual\" \"game:score\" \"[ 1 : 1 ]\" \"game:server\" \"kv\" \"game:state\" \"game\" \"game:xptrail\" \"0\" \"status\" \"Casual Dust II [ 1 : 1 ]\" \"steam_display\" \"#display_GameKnownMapScore\" \"version\" \"14194\"",
+            "server": "90296391600000011"
+          }
+        }
+      }
+    ],
+    "connects": [
+      {
+        "at": 19028,
+        "player": "76561198000000106",
+        "connect": "+gcconnectA0A0A0A0A0A0A0A0A0A0A0AA"
+      }
+    ]
+  }
+]
