@@ -30,7 +30,6 @@ class AppEventManager {
   constructor() {
     this.inputManager = null;
     this.friendsManager = null;
-    this.friendsClickHandler = null;
     // Pending confirmations of remove buttons
     this.removeTimers = new WeakMap();
   }
@@ -311,19 +310,14 @@ class AppEventManager {
   }
 
   /**
-   * Setup event listeners for friend join buttons using event delegation
+   * Join and cancel buttons of the friends list. The container stays in
+   * place, so one delegated listener serves every render.
    */
   setupFriendListeners() {
     const friendsContainer = DOMUtils.getElementById("friends");
     if (!friendsContainer) return;
 
-    // Remove existing listener if it exists
-    if (this.friendsClickHandler) {
-      friendsContainer.removeEventListener("click", this.friendsClickHandler);
-    }
-
-    // Create new click handler
-    this.friendsClickHandler = (event) => {
+    friendsContainer.addEventListener("click", (event) => {
       const button = event.target.closest('[id^="join-btn-"]');
       if (!button) return;
 
@@ -357,10 +351,7 @@ class AppEventManager {
         mapKeeper.userJoined(null);
         joinManager.startJoin(steamId);
       }
-    };
-
-    // Add event listener using delegation
-    friendsContainer.addEventListener("click", this.friendsClickHandler);
+    });
   }
 }
 

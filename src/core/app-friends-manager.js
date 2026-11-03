@@ -82,11 +82,6 @@ class AppFriendsManager {
       appStateManager.setState("friendsData", supportedFriends);
       this.renderLists(supportedFriends, joinStates);
 
-      // Setup friend listeners after rendering
-      if (this.eventManager) {
-        this.eventManager.setupFriendListeners();
-      }
-
       logger.info(
         "App",
         `Friends update completed: ${supportedFriends.length} supported friends found, ${supportedFriends.filter((f) => f.join_available).length} joinable`
@@ -261,11 +256,6 @@ class AppFriendsManager {
       appStateManager.setState("friendsData", supportedFriends);
       const joinStates = joinManager.getJoinStates();
       this.renderLists(supportedFriends, joinStates);
-
-      // Setup friend listeners after rendering
-      if (this.eventManager) {
-        this.eventManager.setupFriendListeners();
-      }
 
       // Friends are in: the account panel gives way to the bar
       AccountView.close();
