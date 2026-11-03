@@ -53,7 +53,7 @@ export const NOTIFICATION_TEMPLATES = {
    * @param {string} errorMessage - Error message
    * @returns {string} Error message HTML
    */ ERROR_MESSAGE: (errorMessage) => `
-        <div class="notification-main-text" style="color:var(--red-light);font-weight:500;">${errorMessage}</div>
+        <div class="notification-main-text" style="color:var(--red-light);font-weight:500;">${DOMUtils.escapeHtml(errorMessage)}</div>
     `,
 
   /**
@@ -62,7 +62,7 @@ export const NOTIFICATION_TEMPLATES = {
    * @returns {string} Privacy link HTML
    */
   PRIVACY_LINK: (privacyUrl) => `
-        <a href="${privacyUrl}" class="privacy-link" target="_self" title="${t("notifications.privacy.linkTitle")}">${t("notifications.privacy.linkText")}</a>
+        <a href="${DOMUtils.escapeHtml(privacyUrl)}" class="privacy-link" target="_self" title="${t("notifications.privacy.linkTitle")}">${t("notifications.privacy.linkText")}</a>
     `,
 
   /**
@@ -270,19 +270,23 @@ export const FRIENDS_TEMPLATES = {
     label,
     button,
     removable = false,
-  }) => `
-        <div class="friend" id="friend-${steamid}">
+  }) => {
+    // Steam hands out the id, but it lands in attributes like any other text
+    const id = DOMUtils.escapeHtml(steamid);
+    return `
+        <div class="friend" id="friend-${id}">
             <img src="${DOMUtils.escapeHtml(avatarUrl)}" alt="" class="friend-avatar">
             <div class="friend-info">
                 <span class="personaname">${DOMUtils.escapeHtml(personaname)}</span>
-                <span class="game-line"><span class="game-where">${whereHtml}</span><span id="status-${steamid}" class="status-label status-${label.kind}" ${slotAttributes(slot)}>${DOMUtils.escapeHtml(label.text)}</span></span>
+                <span class="game-line"><span class="game-where">${whereHtml}</span><span id="status-${id}" class="status-label status-${label.kind}" ${slotAttributes(slot)}>${DOMUtils.escapeHtml(label.text)}</span></span>
             </div>
             <div class="join-section">
-                <button id="join-btn-${steamid}" class="${button.className}" ${slotAttributes(slot)}${button.disabled ? " disabled" : ""}>${DOMUtils.escapeHtml(button.text)}</button>
-                ${removable ? `<button id="remove-fake-btn-${steamid}" class="remove-fake-btn" data-i18n="friends.removeFakeFriend" data-i18n-attr="title" title="${t("friends.removeFakeFriend")}">${FRIENDS_TEMPLATES.REMOVE_FAKE_ICON()}</button>` : ""}
+                <button id="join-btn-${id}" class="${button.className}" ${slotAttributes(slot)}${button.disabled ? " disabled" : ""}>${DOMUtils.escapeHtml(button.text)}</button>
+                ${removable ? `<button id="remove-fake-btn-${id}" class="remove-fake-btn" data-i18n="friends.removeFakeFriend" data-i18n-attr="title" title="${t("friends.removeFakeFriend")}">${FRIENDS_TEMPLATES.REMOVE_FAKE_ICON()}</button>` : ""}
             </div>
         </div>
-    `,
+    `;
+  },
 
   /**
    * Icon of the remove button, also restored when a removal is not confirmed

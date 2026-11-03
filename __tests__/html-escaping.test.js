@@ -3,7 +3,10 @@
  */
 
 import DOMUtils from "../src/utils/dom-utils.js";
-import { FRIENDS_TEMPLATES } from "../src/ui/html-templates.js";
+import {
+  FRIENDS_TEMPLATES,
+  NOTIFICATION_TEMPLATES,
+} from "../src/ui/html-templates.js";
 import FriendsRenderer from "../src/ui/friends-renderer.js";
 
 const STEAM_ID = "76561198000000001";
@@ -58,10 +61,44 @@ describe("FRIEND_ITEM", () => {
     expect(html).toContain('src="x.jpg&quot; onerror=&quot;alert(1)"');
   });
 
+  test("keeps the id inside the attributes that name the row", () => {
+    const html = FRIENDS_TEMPLATES.FRIEND_ITEM(
+      row({ steamid: '1" onmouseover="alert(1)', removable: true })
+    );
+
+    expect(html).not.toContain('onmouseover="alert');
+    expect(html).toContain('id="friend-1&quot; onmouseover=&quot;alert(1)"');
+    expect(html).toContain('id="remove-fake-btn-1&quot; onmouseover=&quot;alert(1)"');
+  });
+
   test("adds the remove button only for manually added IDs", () => {
     expect(FRIENDS_TEMPLATES.FRIEND_ITEM(row())).not.toContain("remove-fake-btn");
     expect(FRIENDS_TEMPLATES.FRIEND_ITEM(row({ removable: true }))).toContain(
       `id="remove-fake-btn-${STEAM_ID}"`
+    );
+  });
+});
+
+describe("notification templates", () => {
+  test("shows an error message as text", () => {
+    const html = NOTIFICATION_TEMPLATES.ERROR_MESSAGE(
+      'HTTP 500: <img src=x onerror="alert(1)">'
+    );
+
+    expect(html).not.toContain("<img");
+    expect(html).toContain(
+      "HTTP 500: &lt;img src=x onerror=&quot;alert(1)&quot;&gt;"
+    );
+  });
+
+  test("keeps the privacy link inside its href", () => {
+    const html = NOTIFICATION_TEMPLATES.PRIVACY_LINK(
+      'steam://openurl/x" onclick="alert(1)'
+    );
+
+    expect(html).not.toContain('onclick="alert');
+    expect(html).toContain(
+      'href="steam://openurl/x&quot; onclick=&quot;alert(1)"'
     );
   });
 });
