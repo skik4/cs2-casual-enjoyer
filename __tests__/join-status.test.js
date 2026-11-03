@@ -80,7 +80,7 @@ describe("slot facts on elements", () => {
   };
 
   test("survive the trip through attributes, quotes and markup included", () => {
-    const facts = { free: true, casual: false, idleText: 'say "hi" <b>&' };
+    const facts = { free: true, casual: false, idleText: `say "hi", it's <b>&` };
     expect(readSlotFacts(element(facts))).toEqual({ ...facts, here: false, over: false });
   });
 

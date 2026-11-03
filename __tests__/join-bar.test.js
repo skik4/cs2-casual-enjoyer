@@ -16,10 +16,10 @@ jest.mock("../src/game/join-manager.js", () => {
     },
   };
 });
+// The map keeper pulls the finder in; the bar reads nothing from it
 jest.mock("../src/game/map-finder.js", () => ({
   __esModule: true,
   default: {},
-  mapLabel: (map) => (map === "de_dust2" ? "Dust II" : map),
 }));
 
 import JoinBar from "../src/ui/join-bar.js";

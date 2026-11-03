@@ -1,26 +1,19 @@
 // Shared constants
 import { FRIENDS_TEMPLATES } from "./html-templates.js";
 import { TUTORIAL_MOCK_FRIEND } from "../shared/constants.js";
+import { mapLabel } from "../shared/map-labels.js";
 import { t } from "../i18n/i18n-manager.js";
 
 // Core singletons
 import appStateManager from "../core/app-state-manager.js";
 
 // Game singletons
-import { mapLabel } from "../game/map-finder.js";
 import userLocation from "../game/user-location.js";
 
 // UI and utilities
 import DOMUtils from "../utils/dom-utils.js";
 import ViewTabs from "./view-tabs.js";
-import { joinButtonLook, statusLabel } from "./join-status.js";
-
-/**
- * "[ 3 : 1 ]" as "3 : 1"
- * @param {string|null} score - Rich presence score
- * @returns {string}
- */
-const formatScore = (score) => String(score ?? "").replace(/[[\]]/g, "").trim();
+import { formatScore, joinButtonLook, statusLabel } from "./join-status.js";
 
 /**
  * Sort by name, ignoring case

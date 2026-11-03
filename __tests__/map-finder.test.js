@@ -12,7 +12,6 @@ jest.mock("../src/utils/logger.js", () => ({
 }));
 
 import mapFinder, {
-  mapLabel,
   compareServers,
   buildServers,
 } from "../src/game/map-finder.js";
@@ -78,12 +77,6 @@ afterEach(() => {
 });
 
 describe("helpers", () => {
-  test("mapLabel names known maps and tidies unknown ones", () => {
-    expect(mapLabel("de_dust2")).toBe("Dust II");
-    expect(mapLabel("cs_office")).toBe("Office");
-    expect(mapLabel("de_newmap")).toBe("Newmap");
-  });
-
   test("compareServers puts a free slot first, then the freshest match", () => {
     const servers = [
       { serverId: "full-fresh", freeSlot: false, rounds: 1 },

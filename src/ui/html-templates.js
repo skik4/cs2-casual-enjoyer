@@ -293,7 +293,7 @@ export const FRIENDS_TEMPLATES = {
    * @returns {string} Icon HTML
    */
   REMOVE_FAKE_ICON: () =>
-    '<img src="assets/icons-svg/close_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg" alt="×" class="icon-16" />',
+    `<img src="${ICON_PATHS.CLOSE}" alt="×" class="icon-16" />`,
 };
 
 // =============================================================================

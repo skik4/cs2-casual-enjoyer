@@ -2,6 +2,7 @@
 import { STATUS_TYPES } from "../shared/constants.js";
 
 // UI and utilities
+import DOMUtils from "../utils/dom-utils.js";
 import { t } from "../i18n/i18n-manager.js";
 
 /**
@@ -12,6 +13,14 @@ const RUNNING = [
   STATUS_TYPES.CONNECTING,
   STATUS_TYPES.MISSING,
 ];
+
+/**
+ * "[ 3 : 1 ]" as "3 : 1"
+ * @param {string|null} score - Rich presence score
+ * @returns {string}
+ */
+export const formatScore = (score) =>
+  String(score ?? "").replace(/[[\]]/g, "").trim();
 
 /**
  * What a row knows about its target while no attempt runs. Rows keep it in
@@ -54,7 +63,7 @@ export function slotAttributes({ free, casual = true, here, over, idleText }) {
   if (here) attributes.push('data-here="1"');
   if (over) attributes.push('data-over="1"');
   if (idleText !== undefined) {
-    attributes.push(`data-idle-text="${escapeAttribute(idleText)}"`);
+    attributes.push(`data-idle-text="${DOMUtils.escapeHtml(idleText)}"`);
   }
   return attributes.join(" ");
 }
@@ -112,16 +121,4 @@ export function joinButtonLook(status, { free, casual = true, here, over }) {
     className: waits ? "action-btn wait-btn" : "action-btn",
     disabled: status === STATUS_TYPES.JOINED,
   };
-}
-
-/**
- * @param {string} value
- * @returns {string}
- */
-function escapeAttribute(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
