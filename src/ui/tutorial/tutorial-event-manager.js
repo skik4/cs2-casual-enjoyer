@@ -1,4 +1,5 @@
 import { TUTORIAL_TIMING } from "./tutorial-timing.js";
+import { TUTORIAL_STEPS } from "./tutorial-steps.js";
 
 /**
  * Tutorial Event Manager
@@ -75,9 +76,9 @@ export class TutorialEventManager {
     // Add global keyboard listener
     document.addEventListener("keydown", this.handleKeyDown, true);
     this.handleAPIKeyClick = (event) => {
-      // If on step 1 (Steam Web API Token) and user clicks the help link
-      if (currentStep === 1) {
-        // Auto-advance to step 2 (Get Steam Web API Token)
+      // On the credential step the help link is the way on
+      if (currentStep === TUTORIAL_STEPS.CREDENTIAL) {
+        // Auto-advance to the token page step
         // Use setTimeout for smooth transition without blocking the render cycle
         setTimeout(() => {
           if (this.nextStepCallback) {

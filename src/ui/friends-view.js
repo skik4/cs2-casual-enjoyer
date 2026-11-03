@@ -6,6 +6,7 @@ import mapKeeper from "../game/map-keeper.js";
 import FriendsRenderer from "./friends-renderer.js";
 import DOMUtils from "../utils/dom-utils.js";
 import tutorialManager from "./tutorial/tutorial-manager.js";
+import { TUTORIAL_STEPS } from "./tutorial/tutorial-steps.js";
 
 /**
  * Friends view
@@ -51,19 +52,24 @@ class FriendsView {
       if (!steamId) return;
 
       // Check if tutorial is active
-      if (tutorialManager.stateManager.getIsActive()) {
+      if (tutorialManager.isActive) {
         const currentStep = tutorialManager.stateManager.getCurrentStep();
+        const { FRIENDS_LIST, JOIN, CONNECTION, DONE } = TUTORIAL_STEPS;
 
-        // Step 8 (Connection Process) - move to next step
-        if (currentStep === 7) {
+        // On the join step the click is the way on
+        if (currentStep === JOIN) {
           event.preventDefault();
           event.stopPropagation();
           tutorialManager.nextStep();
           return;
         }
 
-        // Steps 6, 8, 9 - do nothing but prevent default action
-        if (currentStep === 6 || currentStep === 8 || currentStep === 9) {
+        // The other list steps - do nothing but prevent default action
+        if (
+          currentStep === FRIENDS_LIST ||
+          currentStep === CONNECTION ||
+          currentStep === DONE
+        ) {
           event.preventDefault();
           event.stopPropagation();
           return;

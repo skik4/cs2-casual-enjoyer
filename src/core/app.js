@@ -51,6 +51,11 @@ class App {
     // Set up cross-references
     this.inputManager.setFriendsManager(this.friendsManager);
     this.friendsManager.setInputManager(this.inputManager);
+    // The tutorial shows a mock friend; the refresh pauses while it runs
+    tutorialManager.onChange((active) => {
+      if (active) this.friendsManager.stopAutoRefresh();
+      else this.friendsManager.restoreAutoRefresh();
+    });
     logger.info("App", "App instance created successfully");
   }
 

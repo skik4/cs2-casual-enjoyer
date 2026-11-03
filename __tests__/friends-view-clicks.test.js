@@ -62,6 +62,7 @@ import userLocation from "../src/game/user-location.js";
 import tutorialManager from "../src/ui/tutorial/tutorial-manager.js";
 import SteamAPI from "../src/steam/steam-api.js";
 import { STATUS_TYPES } from "../src/shared/constants.js";
+import { TUTORIAL_STEPS } from "../src/ui/tutorial/tutorial-steps.js";
 import { setLanguage } from "../src/i18n/i18n-manager.js";
 
 const USER = "76561198000000001";
@@ -166,9 +167,9 @@ test("the Fake Friends tab joins and cancels the same way", () => {
   expect(joinManager.startJoin).toHaveBeenCalledTimes(1);
 });
 
-test("on the tutorial's connection step a click moves it on and joins nothing", () => {
+test("on the tutorial's join step a click moves it on and joins nothing", () => {
   mockTutorial.active = true;
-  mockTutorial.step = 7;
+  mockTutorial.step = TUTORIAL_STEPS.JOIN;
   FriendsRenderer.renderFriendsList([friend(FRIEND)]);
 
   button(FRIEND).click();
@@ -178,7 +179,11 @@ test("on the tutorial's connection step a click moves it on and joins nothing", 
   expect(mapKeeper.userJoined).not.toHaveBeenCalled();
 });
 
-test.each([6, 8, 9])("on tutorial step index %i a click does nothing", (step) => {
+test.each([
+  TUTORIAL_STEPS.FRIENDS_LIST,
+  TUTORIAL_STEPS.CONNECTION,
+  TUTORIAL_STEPS.DONE,
+])("on tutorial step index %i a click does nothing", (step) => {
   mockTutorial.active = true;
   mockTutorial.step = step;
   FriendsRenderer.renderFriendsList([friend(FRIEND)]);

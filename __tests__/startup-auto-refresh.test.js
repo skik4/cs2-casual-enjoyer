@@ -56,6 +56,7 @@ import appInputManager from "../src/core/app-input-manager.js";
 import appFriendsManager from "../src/core/app-friends-manager.js";
 import appStateManager from "../src/core/app-state-manager.js";
 import DOMUtils from "../src/utils/dom-utils.js";
+import { TUTORIAL_TIMING } from "../src/ui/tutorial/tutorial-timing.js";
 
 const USER = "76561198000000001";
 const FRIEND = "76561198000000002";
@@ -164,4 +165,27 @@ test("does not start on a first run, with nothing saved", () => {
   jest.runOnlyPendingTimers();
 
   expect(start).not.toHaveBeenCalled();
+});
+
+describe("around the tutorial", () => {
+  test("the refresh stops with the tutorial and resumes after its wait", () => {
+    appStateManager.setState("friendsRefreshInterval", setInterval(() => {}, 1000));
+
+    appFriendsManager.stopAutoRefresh();
+    expect(appStateManager.getState("friendsRefreshInterval")).toBeNull();
+
+    appFriendsManager.restoreAutoRefresh();
+    expect(start).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(TUTORIAL_TIMING.AUTO_REFRESH_RESTORE_MS);
+    expect(start).toHaveBeenCalledTimes(1);
+  });
+
+  test("nothing resumes without saved friends", () => {
+    appStateManager.setState("savedFriendsIds", []);
+
+    appFriendsManager.restoreAutoRefresh();
+    jest.runOnlyPendingTimers();
+
+    expect(start).not.toHaveBeenCalled();
+  });
 });

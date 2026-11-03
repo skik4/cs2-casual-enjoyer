@@ -19,6 +19,7 @@ import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
+import { TUTORIAL_TIMING } from "../ui/tutorial/tutorial-timing.js";
 import logger from "../utils/logger.js";
 import { t } from "../i18n/i18n-manager.js";
 
@@ -432,6 +433,26 @@ class AppFriendsManager {
   stopAutoRefresh() {
     appStateManager.clearRefreshInterval();
     logger.info("App", "Auto-refresh stopped");
+  }
+
+  /**
+   * Restore auto-refresh after the tutorial ends
+   */
+  restoreAutoRefresh() {
+    // Check if we have saved friends and valid settings before starting auto-refresh
+    const savedFriendsIds = appStateManager.getState("savedFriendsIds");
+    const savedSettings = appStateManager.getState("savedSettings");
+
+    if (savedFriendsIds && savedFriendsIds.length > 0 && savedSettings) {
+      // Small delay to ensure tutorial cleanup is complete
+      setTimeout(() => {
+        this.startAutoRefresh().catch((error) => {
+          logger.error("App", "Could not restart auto-refresh", {
+            error: error.message,
+          });
+        });
+      }, TUTORIAL_TIMING.AUTO_REFRESH_RESTORE_MS);
+    }
   }
 }
 

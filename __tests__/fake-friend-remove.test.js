@@ -41,7 +41,7 @@ jest.mock("../src/utils/error-handler.js", () => ({
 }));
 jest.mock("../src/ui/tutorial/tutorial-manager.js", () => ({
   __esModule: true,
-  default: { stateManager: { getIsActive: () => false } },
+  default: { isActive: false },
 }));
 jest.mock("../src/i18n/i18n-manager.js", () => ({
   __esModule: true,

@@ -125,7 +125,7 @@ class FakeFriendsView {
    * @param {string} steamId - SteamID64 to remove
    */
   static async removeFakeFriend(steamId) {
-    if (tutorialManager.stateManager.getIsActive()) return;
+    if (tutorialManager.isActive) return;
 
     let removed;
     try {
@@ -169,7 +169,7 @@ class FakeFriendsView {
    * @param {HTMLInputElement} input - Steam ID input
    */
   static async addFakeFriend(input) {
-    if (tutorialManager.stateManager.getIsActive()) return;
+    if (tutorialManager.isActive) return;
 
     const steamId = input.value.trim();
 
