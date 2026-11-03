@@ -1,3 +1,4 @@
+import { emojiImg } from "../emoji.js";
 import { TUTORIAL_TIMING } from "./tutorial-timing.js";
 import { TUTORIAL_STEPS } from "./tutorial-steps.js";
 
@@ -108,10 +109,8 @@ export class TutorialEventManager {
         link.style.color = "var(--green-primary)";
         link.style.textDecoration = "none";
 
-        // Create and insert SVG emoji for clipboard
-        const { getEmojiSVG } = await import("../../utils/emoji-svg.js");
-        const clipboardSVG = await getEmojiSVG("📋", "emoji-svg copy-success");
-        link.innerHTML = `${clipboardSVG} Copied to clipboard!`;
+        const clipboard = emojiImg("📋", "emoji-svg copy-success");
+        link.innerHTML = `${clipboard} Copied to clipboard!`;
 
         setTimeout(() => {
           link.style.color = "var(--blue-primary)";

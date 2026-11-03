@@ -2,7 +2,7 @@
 import {
   NOTIFICATION_TEMPLATES,
   HELP_TEMPLATES,
-} from "./html-templates.js";
+} from "./notification-templates.js";
 
 // UI and utilities
 import ErrorHandler from "../utils/error-handler.js";
@@ -20,11 +20,11 @@ class NotificationManager {
   static _lastMain = null; // { kind: 'help-steamid'|'help-apikey'|'privacy'|'error', payload?: any }
 
   /**
-   * Show a notification with close button (with SVG emoji support)
+   * Show a notification with close button
    * @param {string} html - HTML content of the notification
    * @param {string} type - Type of notification ('info', 'error')
    */
-  static async showNotification(html, type = "info") {
+  static showNotification(html, type = "info") {
     const notificationElement = DOMUtils.getElementById("notifications");
     if (!notificationElement) return;
 
@@ -104,20 +104,18 @@ class NotificationManager {
   }
 
   /**
-   * Show help notification for Steam ID (with SVG emoji support)
+   * Show help notification for Steam ID
    */
-  static async showSteamIdHelp() {
-    const content = await HELP_TEMPLATES.STEAM_ID_HELP();
-    await this.showNotification(content, "info");
+  static showSteamIdHelp() {
+    this.showNotification(HELP_TEMPLATES.STEAM_ID_HELP(), "info");
     NotificationManager._lastMain = { kind: "help-steamid" };
   }
 
   /**
-   * Show help notification for API Key (with SVG emoji support)
+   * Show help notification for API Key
    */
-  static async showApiKeyHelp() {
-    const content = await HELP_TEMPLATES.API_KEY_HELP();
-    await this.showNotification(content, "info");
+  static showApiKeyHelp() {
+    this.showNotification(HELP_TEMPLATES.API_KEY_HELP(), "info");
     NotificationManager._lastMain = { kind: "help-apikey" };
   }
 
@@ -378,7 +376,7 @@ class NotificationManager {
   /**
    * Re-render texts for currently visible notifications after language change
    */
-  static async refreshTextsAfterLanguageChange() {
+  static refreshTextsAfterLanguageChange() {
     try {
       // Refresh CS2 launch overlay texts if visible
       const overlay = DOMUtils.getElementById("cs2-launch-notification");
@@ -405,13 +403,13 @@ class NotificationManager {
 
       switch (main.kind) {
         case "help-steamid": {
-          const content = await HELP_TEMPLATES.STEAM_ID_HELP();
+          const content = HELP_TEMPLATES.STEAM_ID_HELP();
           contentDiv.className = "notification-content info";
           contentDiv.innerHTML = content;
           break;
         }
         case "help-apikey": {
-          const content = await HELP_TEMPLATES.API_KEY_HELP();
+          const content = HELP_TEMPLATES.API_KEY_HELP();
           contentDiv.className = "notification-content info";
           contentDiv.innerHTML = content;
           break;
@@ -438,11 +436,7 @@ class NotificationManager {
 
 // Subscribe to language changes for automatic refresh
 try {
-  i18n.onLanguageChange(async () => {
-    try {
-      await NotificationManager.refreshTextsAfterLanguageChange();
-    } catch { }
-  });
-} catch { }
+  i18n.onLanguageChange(() => NotificationManager.refreshTextsAfterLanguageChange());
+} catch {}
 
 export default NotificationManager;

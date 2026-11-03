@@ -1,5 +1,5 @@
 // Shared constants
-import { FRIENDS_TEMPLATES } from "./html-templates.js";
+import { FRIENDS_TEMPLATES } from "./friend-row-template.js";
 import { TUTORIAL_MOCK_FRIEND } from "../shared/constants.js";
 import { mapLabel } from "../shared/map-labels.js";
 import { t } from "../i18n/i18n-manager.js";

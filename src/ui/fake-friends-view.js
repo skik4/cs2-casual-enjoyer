@@ -9,7 +9,7 @@ import appStateManager from "../core/app-state-manager.js";
 import FriendsRenderer from "./friends-renderer.js";
 import NotificationManager from "./notification-manager.js";
 import FakeFriendsManager from "./fake-friends-manager.js";
-import { FRIENDS_TEMPLATES } from "./html-templates.js";
+import { FRIENDS_TEMPLATES } from "./friend-row-template.js";
 import DOMUtils from "../utils/dom-utils.js";
 import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";

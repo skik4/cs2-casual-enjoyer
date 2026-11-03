@@ -47,7 +47,7 @@ jest.mock("../src/i18n/i18n-manager.js", () => ({
   __esModule: true,
   t: jest.fn((key) => key),
 }));
-jest.mock("../src/ui/html-templates.js", () => ({
+jest.mock("../src/ui/friend-row-template.js", () => ({
   __esModule: true,
   FRIENDS_TEMPLATES: { REMOVE_FAKE_ICON: () => "<img>" },
 }));

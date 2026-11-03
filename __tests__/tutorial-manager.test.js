@@ -4,21 +4,18 @@
  * Jest tests for what the tutorial tells the app: when it starts and stops
  */
 
-jest.mock("../src/ui/html-templates.js", () => ({
+jest.mock("../src/ui/tutorial/tutorial-templates.js", () => ({
   __esModule: true,
   TUTORIAL_TEMPLATES: {
-    getStepsWithSVG: async () =>
+    getSteps: () =>
       Array.from({ length: 10 }, (_, i) => ({
         title: `step ${i}`,
         content: "",
         target: null,
         icon: "",
       })),
-    MODAL_CONTENT_SVG: async () => "",
+    MODAL_CONTENT: () => "",
   },
-  FRIENDS_TEMPLATES: {},
-  NOTIFICATION_TEMPLATES: {},
-  HELP_TEMPLATES: {},
 }));
 jest.mock("../src/ui/account-view.js", () => ({
   __esModule: true,

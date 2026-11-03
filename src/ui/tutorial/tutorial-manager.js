@@ -1,5 +1,5 @@
 // Shared constants
-import { TUTORIAL_TEMPLATES } from "../html-templates.js";
+import { TUTORIAL_TEMPLATES } from "./tutorial-templates.js";
 
 // UI
 import AccountView from "../account-view.js";
@@ -37,12 +37,11 @@ class TutorialManager {
   /**
    * Start the tutorial
    */
-  async start() {
+  start() {
     if (this.stateManager.getIsActive()) return;
 
-    // Load SVG steps
-    const svgSteps = await TUTORIAL_TEMPLATES.getStepsWithSVG();
-    this.stateManager.steps = svgSteps;
+    // The steps carry the texts of the current language
+    this.stateManager.steps = TUTORIAL_TEMPLATES.getSteps();
 
     // The app pauses its friends refresh while the tutorial runs
     this._notify(true);
@@ -86,10 +85,10 @@ class TutorialManager {
   /**
    * Go to next step
    */
-  async nextStep() {
+  nextStep() {
     const result = this.stateManager.nextStep();
     if (result) {
-      await this.showStep(result.currentStep, result.previousStep);
+      this.showStep(result.currentStep, result.previousStep);
     } else {
       this.stop();
     }
@@ -98,10 +97,10 @@ class TutorialManager {
   /**
    * Go to previous step
    */
-  async previousStep() {
+  previousStep() {
     const result = this.stateManager.previousStep();
     if (result) {
-      await this.showStep(result.currentStep, result.previousStep);
+      this.showStep(result.currentStep, result.previousStep);
     }
   }
 
@@ -110,7 +109,7 @@ class TutorialManager {
    * @param {number} stepIndex - Index of the step to show
    * @param {number|null} previousStepIndex - Index of the previous step (for transition handling)
    */
-  async showStep(stepIndex, previousStepIndex = null) {
+  showStep(stepIndex, previousStepIndex = null) {
     const step = this.stateManager.getCurrentStepData();
     if (!step) return;
 
@@ -120,8 +119,8 @@ class TutorialManager {
     // Remove all existing highlights
     this.highlightManager.removeHighlight();
 
-    // Update modal content (async for SVG support)
-    await this.uiManager.updateModal(
+    // Update modal content
+    this.uiManager.updateModal(
       step,
       stepIndex + 1, // 1-based step number
       this.stateManager.getTotalSteps(),
@@ -238,20 +237,20 @@ class TutorialManager {
    * Wait for UI to be ready and start tutorial automatically
    * Uses MutationObserver for efficient DOM monitoring
    */
-  async waitForUIAndStartTutorial() {
+  waitForUIAndStartTutorial() {
     const tutorialBtn = document.getElementById("tutorial-btn");
 
     if (tutorialBtn) {
       // UI is already ready, start tutorial immediately
-      await this.start();
+      this.start();
     } else {
       // Use MutationObserver to watch for UI changes
-      const observer = new MutationObserver(async () => {
+      const observer = new MutationObserver(() => {
         const btn = document.getElementById("tutorial-btn");
         if (btn) {
           observer.disconnect();
           // UI is ready, start tutorial
-          await this.start();
+          this.start();
         }
       });
 
@@ -311,13 +310,12 @@ class TutorialManager {
   /**
    * Rebuild tutorial steps and refresh current modal after language change
    */
-  async refreshTextsAfterLanguageChange() {
+  refreshTextsAfterLanguageChange() {
     try {
       if (!this.stateManager.getIsActive()) return;
       const idx = this.stateManager.getCurrentStep();
-      const svgSteps = await TUTORIAL_TEMPLATES.getStepsWithSVG();
-      this.stateManager.steps = svgSteps;
-      await this.showStep(idx, idx);
+      this.stateManager.steps = TUTORIAL_TEMPLATES.getSteps();
+      this.showStep(idx, idx);
     } catch {}
   }
 }
