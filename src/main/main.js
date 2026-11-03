@@ -91,6 +91,10 @@ class WindowManager {
         nodeIntegration: false,
         contextIsolation: true,
         preload: fileURLToPath(new URL("preload.cjs", import.meta.url)),
+        // CS2 covers the window while the user plays, and a covered window
+        // counts as hidden: Electron then ran the join loop's 200 ms pauses
+        // at 1000 ms (measured). Joining happens exactly then.
+        backgroundThrottling: false,
       },
     });
 
