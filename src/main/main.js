@@ -65,7 +65,12 @@ function openExternalSafely(url) {
     MainLogger.warn("Refused to open URL", { url });
     return false;
   }
-  shell.openExternal(url);
+  shell.openExternal(url).catch((error) => {
+    MainLogger.error("Failed to open external URL", {
+      url,
+      error: error.message,
+    });
+  });
   return true;
 }
 
