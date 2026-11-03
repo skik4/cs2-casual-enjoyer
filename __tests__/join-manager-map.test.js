@@ -202,6 +202,51 @@ describe("resolveMapTarget", () => {
     }
   });
 
+  test("a map join does not count a match on the map in another mode", async () => {
+    // GSI cannot tell a deathmatch on Dust II from a casual match there by
+    // the map alone; only a casual match is what the attempt joins
+    let gsi = null;
+    joinManager.setCS2Manager({ getGsiUserState: () => gsi });
+    try {
+      SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A)));
+      const { target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+      const inMatch = (mode) => ({ inMatch: true, mode, mapName: "de_dust2", phase: "live" });
+
+      gsi = inMatch("deathmatch");
+      expect(target.isJoined(user())).toBe(false);
+      gsi = inMatch("casual");
+      expect(target.isJoined(user())).toBe(true);
+    } finally {
+      joinManager.setCS2Manager(null);
+    }
+  });
+
+  test("without CS2's state, a finished match on the user's own server is not a join", async () => {
+    // GSI is off until CS2 is restarted after the first run. Steam alone
+    // then shows the user on a Dust II server whose match is over - the one
+    // they are about to be moved off, not one the attempt joined
+    const DUST_3 = "90071992547409923";
+    const over = user({
+      serverId: DUST_1,
+      official: true,
+      inSupportedMode: true,
+      mode: "casual",
+      map: "de_dust2",
+      score: "[ 8 : 2 ]",
+    });
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(over, presence(A, { score: "[ 8 : 2 ]" }), presence(C, { serverId: DUST_3, connect: CONNECT_C }))
+    );
+
+    const { user: userInfo, target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+
+    expect(target).toMatchObject({ inSupportedMode: true, connect: CONNECT_C, joinAs: C });
+    expect(target.isJoined(userInfo)).toBe(false);
+    // Landing on the other server counts, as does any running Dust II match
+    expect(target.isJoined(user({ serverId: DUST_3 }))).toBe(true);
+    expect(target.isJoined({ ...over, serverId: DUST_3, score: "[ 0 : 0 ]" })).toBe(true);
+  });
+
   test("a join of several maps takes a server of any of them", async () => {
     SteamAPI.getPresence.mockResolvedValue(
       presenceMap(
@@ -326,6 +371,33 @@ describe("startMapJoin", () => {
     expect(openExternal).not.toHaveBeenCalled();
   });
 
+  test("without CS2's state the user's finished match does not end the attempt", async () => {
+    const DUST_3 = "90071992547409923";
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        user({
+          serverId: DUST_1,
+          official: true,
+          inSupportedMode: true,
+          mode: "casual",
+          map: "de_dust2",
+          score: "[ 8 : 2 ]",
+        }),
+        presence(C, { serverId: DUST_3, connect: CONNECT_C })
+      )
+    );
+
+    joinManager.startMapJoin(dustTarget());
+    await jest.advanceTimersByTimeAsync(1000);
+
+    expect(updateDot).not.toHaveBeenCalledWith(getMapJoinId("de_dust2"), STATUS_TYPES.JOINED);
+    expect(openExternal).toHaveBeenCalledTimes(1);
+    expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${C}/${CONNECT_C}`);
+    expect(joinManager.getJoinStates()[getMapJoinId("de_dust2")].status).toBe(
+      STATUS_TYPES.CONNECTING
+    );
+  });
+
   test("a server and its map joined at once through one player send one connect", async () => {
     // As seen live on 2026-11-03: both attempts sent the same connect in the
     // same second, and the second could only be turned away
@@ -351,6 +423,19 @@ describe("startMapJoin", () => {
     expect(joinManager.getJoinStates()[getMapJoinId("de_dust2")].status).toBe(
       STATUS_TYPES.WAITING
     );
+  });
+
+  test("an attempt is named after its label before Steam answers", async () => {
+    // The join bar shows the attempt from its first moment; a server join
+    // would otherwise read "srv-9007..." until the first snapshot is in
+    SteamAPI.getPresence.mockReturnValue(new Promise(() => {}));
+
+    joinManager.startMapJoin(dustTarget({ serverId: DUST_2, label: "Dust II 3 : 1" }));
+    await jest.advanceTimersByTimeAsync(0);
+
+    const state = joinManager.getJoinStates()[getServerJoinId(DUST_2)];
+    expect(state.status).toBe(STATUS_TYPES.WAITING);
+    expect(state.personaname).toBe("Dust II 3 : 1");
   });
 
   test("a server join is tracked under its own id", async () => {

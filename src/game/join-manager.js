@@ -1,6 +1,7 @@
 // UI and utilities
 import {
   API_CONFIG,
+  GAME_MODES,
   JOIN_TARGET_PREFIXES,
   STATUS_TYPES,
 } from "../shared/constants.js";
@@ -140,8 +141,14 @@ class JoinManager {
       (target.serverId
         ? getServerJoinId(target.serverId)
         : getMapJoinId(target.map));
-    return this._startAttempt(join_id, (user_steam_id, auth) =>
-      this.resolveMapTarget(target, user_steam_id, auth)
+    // Named from the start: the join bar shows the attempt before Steam answers
+    const label =
+      typeof target.label === "function" ? target.label() : target.label;
+    return this._startAttempt(
+      join_id,
+      (user_steam_id, auth) =>
+        this.resolveMapTarget(target, user_steam_id, auth),
+      label || null
     );
   }
 
@@ -207,17 +214,19 @@ class JoinManager {
           maps.includes(player.map) &&
           (!target.serverId || player.serverId === target.serverId)
       );
-    const servers = new Set(onMap.map((player) => player.serverId));
     // A finished match is about to load another map, and the user's own
     // server is nowhere new. Back in the menu the user is on no server,
     // whatever Steam still shows.
     const gsi = this.cs2Manager?.getGsiUserState?.() ?? null;
     const ownServerId = gsi && !gsi.inMatch ? null : user.serverId;
-    const joinable = onMap.filter(
-      (player) =>
-        !SteamAPIUtils.isMatchOver(player.score) &&
-        (!ownServerId || player.serverId !== ownServerId)
+    const running = onMap.filter(
+      (player) => !SteamAPIUtils.isMatchOver(player.score)
     );
+    const joinable = running.filter(
+      (player) => !ownServerId || player.serverId !== ownServerId
+    );
+    // Servers the user could have landed on through a candidate
+    const servers = new Set(running.map((player) => player.serverId));
     // Candidates come best server first, so the first offer is the one to take
     const pick = joinable.find((player) => player.connect) ?? null;
 
@@ -237,13 +246,23 @@ class JoinManager {
           if (target.serverId) {
             return Boolean(userInfo.serverId) && userInfo.serverId === target.serverId;
           }
-          // CS2 knows its map at once; Steam keeps showing the old one for a
-          // while after the match ends and the server moves on
+          // CS2 knows its map and mode at once; Steam keeps showing the old
+          // ones for a while after the match ends and the server moves on.
+          // The map alone is not enough: a deathmatch on it is not a casual
+          // match there.
           const gsiNow = this.cs2Manager?.getGsiUserState?.() ?? null;
           if (gsiNow?.inMatch) {
-            return maps.includes(gsiNow.mapName) && gsiNow.phase !== "gameover";
+            return (
+              gsiNow.mode === GAME_MODES.CASUAL &&
+              maps.includes(gsiNow.mapName) &&
+              gsiNow.phase !== "gameover"
+            );
           }
           if (!userInfo.serverId) return false;
+          // Without CS2's state Steam's final score tells the same: the
+          // user is on a server about to load another map, most likely the
+          // one they were on when the attempt started
+          if (SteamAPIUtils.isMatchOver(userInfo.score)) return false;
           // Any server of the map will do - even one whose known players
           // left as the user arrived
           return (
@@ -259,9 +278,10 @@ class JoinManager {
    * Run one join attempt: make sure CS2 is up, then loop until it joins or ends
    * @param {string} join_id - Friend's Steam ID, or a map or server join id
    * @param {Function} resolveTarget - (user_steam_id, auth) => {user, target}
+   * @param {string|null} [personaname] - Name shown until the first answer names it
    * @private
    */
-  async _startAttempt(join_id, resolveTarget) {
+  async _startAttempt(join_id, resolveTarget, personaname = null) {
     let state = null;
 
     try {
@@ -326,6 +346,7 @@ class JoinManager {
         cancelled: false,
         interval: null,
       };
+      if (personaname) state.personaname = personaname;
       this.joinStates[join_id] = state;
       this.journal.attemptStarted(join_id);
 

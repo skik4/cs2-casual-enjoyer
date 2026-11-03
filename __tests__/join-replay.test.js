@@ -74,8 +74,11 @@ const account = (steamid, kv, server) => ({
  * @param {number} start - Epoch ms of the attempt's start
  * @param {Array<Object>} steps - The recording
  * @param {number} until - ms to run for
+ * @param {Object} [options]
+ * @param {boolean} [options.withGsi] - False replays without CS2's states,
+ *   as before CS2 has read the cfg: Steam alone decides
  */
-async function replay(start, steps, until) {
+async function replay(start, steps, until, { withGsi = true } = {}) {
   jest.useFakeTimers({ now: start });
   const elapsed = () => Date.now() - start;
   let mapLoadedAt = 0;
@@ -96,6 +99,7 @@ async function replay(start, steps, until) {
   joinManager.setCS2Manager({
     checkUserInCS2: jest.fn().mockResolvedValue(true),
     getGsiUserState: () => {
+      if (!withGsi) return null;
       const { gsi } = stateAt(steps, elapsed());
       const state = interpretGsiPayload({
         provider: { steamid: USER },
@@ -165,7 +169,7 @@ test("2026-10-25 20:53: the user's own arrival renews the join token, and no sec
   expect(updateDot).toHaveBeenCalledWith(getMapJoinId("de_dust2"), STATUS_TYPES.JOINED);
 });
 
-test("2026-10-30 20:26: after the match ends at 8:2... the map is not taken as joined, and another server is", async () => {
+describe("2026-10-30 20:26: the match ends at 8:2 while another Dust II server has a slot", () => {
   // The user's Dust II match was over (CS2 showed gameover) and Steam still
   // showed them on Dust II, so the loop of that day ended as joined at once
   const offer = "+gcconnect30317BC60300000046CBA681";
@@ -187,9 +191,21 @@ test("2026-10-30 20:26: after the match ends at 8:2... the map is not taken as j
     },
   ];
 
-  await replay(Date.parse("2026-10-30T20:26:10.001Z"), steps, 1000);
+  test("the map is not taken as joined, and another server is", async () => {
+    await replay(Date.parse("2026-10-30T20:26:10.001Z"), steps, 1000);
 
-  expect(updateDot).not.toHaveBeenCalledWith(getMapJoinId("de_dust2"), STATUS_TYPES.JOINED);
-  expect(openExternal).toHaveBeenCalledTimes(1);
-  expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${PICK}/${offer}`);
+    expect(updateDot).not.toHaveBeenCalledWith(getMapJoinId("de_dust2"), STATUS_TYPES.JOINED);
+    expect(openExternal).toHaveBeenCalledTimes(1);
+    expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${PICK}/${offer}`);
+  });
+
+  test("the same without CS2's states: Steam's final score says the match is over", async () => {
+    // Before CS2 has read the cfg there is no GSI, and Steam shows the user
+    // on Dust II with the final score
+    await replay(Date.parse("2026-10-30T20:26:10.001Z"), steps, 1000, { withGsi: false });
+
+    expect(updateDot).not.toHaveBeenCalledWith(getMapJoinId("de_dust2"), STATUS_TYPES.JOINED);
+    expect(openExternal).toHaveBeenCalledTimes(1);
+    expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${PICK}/${offer}`);
+  });
 });
