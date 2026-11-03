@@ -13,6 +13,7 @@ jest.mock("../src/game/join-manager.js", () => ({
 import appStateManager from "../src/core/app-state-manager.js";
 import FriendsRenderer from "../src/ui/friends-renderer.js";
 import StatusManager from "../src/ui/status-manager.js";
+import userLocation from "../src/game/user-location.js";
 import { STATUS_TYPES } from "../src/shared/constants.js";
 import { setLanguage } from "../src/i18n/i18n-manager.js";
 
@@ -129,4 +130,50 @@ test("tabs count their rows; with no friend in casual the empty message shows", 
   FriendsRenderer.renderFriendsList([friend(FREE), friend(FULL)]);
   expect(element("friends").children).toHaveLength(1);
   expect(element("tab-count-friends").textContent).toBe("2");
+});
+
+describe("a friend on the user's own server", () => {
+  const SERVER = "90071992547409921";
+
+  afterEach(() => {
+    userLocation.reset();
+  });
+
+  test("is shown together with the user and cannot be joined", () => {
+    userLocation.setSteamPresence({ inCS2: true, serverId: SERVER });
+
+    FriendsRenderer.renderFriendsList([
+      friend(FREE, { game_server_id: SERVER }),
+      friend(FULL, { game_server_id: "90071992547409922" }),
+    ]);
+
+    expect(label(FREE).textContent).toBe("you're together");
+    expect(label(FREE).classList.contains("status-here")).toBe(true);
+    expect(button(FREE).disabled).toBe(true);
+    expect(label(FULL).textContent).toBe("free slot");
+    expect(button(FULL).disabled).toBe(false);
+  });
+
+  test("can be joined again once the user leaves the server", () => {
+    userLocation.setSteamPresence({ inCS2: true, serverId: SERVER });
+    FriendsRenderer.renderFriendsList([friend(FREE, { game_server_id: SERVER })]);
+
+    userLocation.setSteamPresence({ inCS2: true, serverId: null });
+    FriendsRenderer.renderFriendsList([friend(FREE, { game_server_id: SERVER })]);
+
+    expect(label(FREE).textContent).toBe("free slot");
+    expect(button(FREE).disabled).toBe(false);
+  });
+
+  test("after an attempt the row goes back to showing the user beside the friend", () => {
+    userLocation.setSteamPresence({ inCS2: true, serverId: SERVER });
+    FriendsRenderer.renderFriendsList([friend(FREE, { game_server_id: SERVER })]);
+
+    StatusManager.updateLabel(FREE, STATUS_TYPES.JOINED);
+    StatusManager.updateLabel(FREE, STATUS_TYPES.CANCELLED);
+    StatusManager.updateJoinButton(FREE, STATUS_TYPES.CANCELLED);
+
+    expect(label(FREE).textContent).toBe("you're together");
+    expect(button(FREE).disabled).toBe(true);
+  });
 });

@@ -145,6 +145,13 @@ export const GAME_MODES = {
 };
 
 /**
+ * Rounds a side needs to win a casual match. The join journal saw matches
+ * end at 8:2 and after round 15; the server then loads its next map under
+ * the same server id.
+ */
+export const CASUAL_ROUNDS_TO_WIN = 8;
+
+/**
  * Tutorial mock friend data for demonstration purposes
  * Based on real Steam API response data
  */

@@ -10,6 +10,7 @@ import joinManager, {
   getMapJoinId,
   getServerJoinId,
 } from "../game/join-manager.js";
+import userLocation from "../game/user-location.js";
 
 // UI and utilities
 import ViewTabs from "./view-tabs.js";
@@ -77,6 +78,8 @@ class MapFinderView {
     });
 
     mapFinder.onChange(() => this.render());
+    // Where the user is decides which rows to block
+    userLocation.onChange(() => this.render());
     onLanguageChange(() => this.render());
   }
 
@@ -235,15 +238,14 @@ class MapFinderView {
     const expanded = this.expanded.has(entry.map);
     const joinId = getMapJoinId(entry.map);
     const free = entry.freeServers > 0;
-    const slot = {
-      free,
-      casual: true,
-      // With several servers, say how many of them have room
-      idleText:
-        free && entry.servers > 1
-          ? t("mapFinder.freeServers", { count: entry.freeServers })
-          : undefined,
-    };
+    const here = entry.map === userLocation.getMap();
+    let idleText;
+    if (here) idleText = t("join.onThisMap");
+    // With several servers, say how many of them have room
+    else if (free && entry.servers > 1) {
+      idleText = t("mapFinder.freeServers", { count: entry.freeServers });
+    }
+    const slot = { free, casual: true, here, idleText };
     const servers = expanded
       ? `<div class="map-servers">${mapFinder
           .getServers(entry.map)
@@ -272,13 +274,19 @@ class MapFinderView {
    */
   static renderServerRow(server, joinStates) {
     const joinId = getServerJoinId(server.serverId);
-    const slot = { free: server.freeSlot, casual: true };
+    const slot = {
+      free: server.freeSlot,
+      casual: true,
+      here: server.serverId === userLocation.getServerId(),
+      over: server.over,
+    };
     const score = formatScore(server.score);
+    let title = t("mapFinder.noScore");
+    if (score && server.over) title = t("mapFinder.finalScore", { score });
     // The round in progress is the one after those already played
-    const title =
-      score && server.rounds !== null
-        ? t("mapFinder.round", { round: server.rounds + 1, score })
-        : t("mapFinder.noScore");
+    else if (score && server.rounds !== null) {
+      title = t("mapFinder.round", { round: server.rounds + 1, score });
+    }
 
     return `
       <div class="friend server-row">

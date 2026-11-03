@@ -199,6 +199,15 @@ describe("parseRoundsPlayed", () => {
     expect(SteamAPIUtils.parseRoundsPlayed(null)).toBeNull();
     expect(SteamAPIUtils.parseRoundsPlayed("")).toBeNull();
   });
+
+  test("isMatchOver sees a side with the rounds a casual match needs", () => {
+    // As the journal saw a match end
+    expect(SteamAPIUtils.isMatchOver("[ 8 : 2 ]")).toBe(true);
+    expect(SteamAPIUtils.isMatchOver("[ 7 : 8 ]")).toBe(true);
+    expect(SteamAPIUtils.isMatchOver("[ 7 : 7 ]")).toBe(false);
+    expect(SteamAPIUtils.isMatchOver(null)).toBe(false);
+    expect(SteamAPIUtils.isMatchOver("")).toBe(false);
+  });
 });
 
 describe("getPresence", () => {

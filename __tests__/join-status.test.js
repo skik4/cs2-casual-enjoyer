@@ -81,14 +81,53 @@ describe("slot facts on elements", () => {
 
   test("survive the trip through attributes, quotes and markup included", () => {
     const facts = { free: true, casual: false, idleText: 'say "hi" <b>&' };
-    expect(readSlotFacts(element(facts))).toEqual(facts);
+    expect(readSlotFacts(element(facts))).toEqual({ ...facts, here: false, over: false });
   });
 
   test("leave the idle text out when there is none", () => {
     expect(readSlotFacts(element({ free: false, casual: true }))).toEqual({
       free: false,
       casual: true,
+      here: false,
+      over: false,
       idleText: undefined,
+    });
+  });
+
+  test("keep where the user already is and a finished match", () => {
+    expect(readSlotFacts(element({ free: true, casual: true, here: true, over: true }))).toMatchObject({
+      here: true,
+      over: true,
+    });
+  });
+});
+
+describe("where the user already is, and finished matches", () => {
+  test("a row where the user already is says so and cannot be joined", () => {
+    const facts = { free: true, casual: true, here: true };
+
+    expect(statusLabel(undefined, facts)).toEqual({ kind: "here", text: "you're here" });
+    expect(statusLabel(undefined, { ...facts, idleText: "you're together" })).toEqual({
+      kind: "here",
+      text: "you're together",
+    });
+    expect(joinButtonLook(undefined, facts)).toMatchObject({ text: "Join", disabled: true });
+  });
+
+  test("a finished match cannot be joined, even with a slot", () => {
+    const facts = { free: true, casual: true, over: true, here: true };
+
+    expect(statusLabel(undefined, facts)).toEqual({ kind: "over", text: "match over" });
+    expect(joinButtonLook(undefined, facts)).toMatchObject({ text: "Join", disabled: true });
+  });
+
+  test("a running attempt still shows itself and can be cancelled", () => {
+    const facts = { free: true, casual: true, here: true };
+
+    expect(statusLabel(STATUS_TYPES.CONNECTING, facts).kind).toBe("busy");
+    expect(joinButtonLook(STATUS_TYPES.CONNECTING, facts)).toMatchObject({
+      className: "action-btn cancel-btn",
+      disabled: false,
     });
   });
 });

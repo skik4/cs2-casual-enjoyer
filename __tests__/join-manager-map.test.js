@@ -164,6 +164,44 @@ describe("resolveMapTarget", () => {
     expect(target.isJoined(user())).toBe(false);
   });
 
+  test("skips a finished match and the user's own server", async () => {
+    const DUST_3 = "90071992547409923";
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        user({ serverId: DUST_1, official: true, mode: "casual", map: "de_dust2" }),
+        presence(A, { connect: CONNECT_B }),
+        presence(B, { serverId: DUST_2, score: "[ 8 : 2 ]", connect: CONNECT_B }),
+        presence(C, { serverId: DUST_3, connect: CONNECT_C })
+      )
+    );
+
+    const { target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+
+    expect(target).toMatchObject({ inSupportedMode: true, connect: CONNECT_C, joinAs: C });
+  });
+
+  test("a map join goes by the map CS2 shows, not the one Steam still shows", async () => {
+    let gsi = null;
+    joinManager.setCS2Manager({ getGsiUserState: () => gsi });
+    try {
+      SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A)));
+      const { target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+      const onDust = user({ serverId: DUST_1, official: true, mode: "casual", map: "de_dust2" });
+      const inMatch = (mapName, phase) => ({ inMatch: true, mode: "casual", mapName, phase });
+
+      // As seen live: the match ended and the server loaded Inferno while
+      // Steam still showed Dust II
+      gsi = inMatch("de_inferno", "warmup");
+      expect(target.isJoined(onDust)).toBe(false);
+      gsi = inMatch("de_dust2", "gameover");
+      expect(target.isJoined(onDust)).toBe(false);
+      gsi = inMatch("de_dust2", "live");
+      expect(target.isJoined(user())).toBe(true);
+    } finally {
+      joinManager.setCS2Manager(null);
+    }
+  });
+
   test("a server join succeeds on that server only", async () => {
     SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A)));
     const { target } = await joinManager.resolveMapTarget(

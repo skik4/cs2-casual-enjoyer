@@ -21,7 +21,7 @@ jest.mock("../src/ui/ui-manager.js", () => ({
 }));
 jest.mock("../src/steam/steam-api.js", () => ({
   __esModule: true,
-  default: { getFriendsStatuses: jest.fn() },
+  default: { getFriendsStatuses: jest.fn(), getPresence: jest.fn() },
 }));
 jest.mock("../src/ui/tutorial/tutorial-manager.js", () => ({
   __esModule: true,
@@ -30,9 +30,11 @@ jest.mock("../src/ui/tutorial/tutorial-manager.js", () => ({
 
 import appFriendsManager from "../src/core/app-friends-manager.js";
 import appStateManager from "../src/core/app-state-manager.js";
+import userLocation from "../src/game/user-location.js";
 import SteamAPI from "../src/steam/steam-api.js";
 import { API_CONFIG } from "../src/shared/constants.js";
 
+const USER = "76561198000000001";
 const FRIEND = "76561198000000002";
 
 describe("startAutoRefresh", () => {
@@ -49,9 +51,11 @@ describe("startAutoRefresh", () => {
       savedSettings: { fake_friend_ids: [] },
     });
     SteamAPI.getFriendsStatuses.mockResolvedValue([]);
+    SteamAPI.getPresence.mockResolvedValue(new Map());
   });
 
   afterEach(() => {
+    userLocation.reset();
     appStateManager.clearRefreshInterval();
     jest.useRealTimers();
   });
@@ -80,5 +84,18 @@ describe("startAutoRefresh", () => {
     finish([]);
     await jest.advanceTimersByTimeAsync(API_CONFIG.AUTO_REFRESH_INTERVAL_MS);
     expect(SteamAPI.getFriendsStatuses).toHaveBeenCalledTimes(3);
+  });
+
+  test("asks where the user is in the same round, to spot friends beside them", async () => {
+    const SERVER = "90071992547409921";
+    appStateManager.setState("savedSettings", { fake_friend_ids: [], steam_id: USER });
+    SteamAPI.getPresence.mockResolvedValue(
+      new Map([[USER, { steamid: USER, inCS2: true, serverId: SERVER }]])
+    );
+
+    await appFriendsManager.startAutoRefresh();
+
+    expect(SteamAPI.getPresence).toHaveBeenCalledWith([USER], "token-1");
+    expect(userLocation.getServerId()).toBe(SERVER);
   });
 });

@@ -181,22 +181,40 @@ class JoinManager {
           (!target.serverId || player.serverId === target.serverId)
       );
     const servers = new Set(onMap.map((player) => player.serverId));
+    // A finished match is about to load another map, and the user's own
+    // server is nowhere new. Back in the menu the user is on no server,
+    // whatever Steam still shows.
+    const gsi = this.cs2Manager?.getGsiUserState?.() ?? null;
+    const ownServerId = gsi && !gsi.inMatch ? null : user.serverId;
+    const joinable = onMap.filter(
+      (player) =>
+        !SteamAPIUtils.isMatchOver(player.score) &&
+        (!ownServerId || player.serverId !== ownServerId)
+    );
     // Candidates come best server first, so the first offer is the one to take
-    const pick = onMap.find((player) => player.connect) ?? null;
+    const pick = joinable.find((player) => player.connect) ?? null;
 
     return {
       user,
       target: {
         personaname: target.label || null,
-        inSupportedMode: onMap.length > 0,
+        inSupportedMode: joinable.length > 0,
         connect: pick?.connect ?? null,
         joinAs: pick?.steamid ?? null,
         statusKey: pick
           ? `${pick.steamid}\n${pick.statusKey ?? SteamAPIUtils.connectKind(pick.connect)}`
           : null,
         isJoined: (userInfo) => {
+          if (target.serverId) {
+            return Boolean(userInfo.serverId) && userInfo.serverId === target.serverId;
+          }
+          // CS2 knows its map at once; Steam keeps showing the old one for a
+          // while after the match ends and the server moves on
+          const gsiNow = this.cs2Manager?.getGsiUserState?.() ?? null;
+          if (gsiNow?.inMatch) {
+            return gsiNow.mapName === target.map && gsiNow.phase !== "gameover";
+          }
           if (!userInfo.serverId) return false;
-          if (target.serverId) return userInfo.serverId === target.serverId;
           // Any server of the map will do - even one whose known players
           // left as the user arrived
           return (

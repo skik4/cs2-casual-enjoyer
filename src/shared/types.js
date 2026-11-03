@@ -67,6 +67,8 @@
  * @property {string} map - Map code, e.g. de_dust2
  * @property {string|null} score - Score as rich presence shows it
  * @property {number|null} rounds - Rounds played, null when unknown
+ * @property {boolean} over - Whether the match on it has ended; the server
+ *   then loads its next map
  * @property {boolean} freeSlot - Whether a known player offers a connect
  * @property {Array<{steamid: string, personaname: string, connect: string|null}>} players - Known players on it
  */

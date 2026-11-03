@@ -8,6 +8,7 @@ import appStateManager from "../core/app-state-manager.js";
 
 // Game singletons
 import { mapLabel } from "../game/map-finder.js";
+import userLocation from "../game/user-location.js";
 
 // UI and utilities
 import DOMUtils from "../utils/dom-utils.js";
@@ -56,6 +57,7 @@ class FriendsRenderer {
 
     this.updateFriendsListIncremental(container, sorted, joinStates, {
       removable: true,
+      userServerId: userLocation.getServerId(),
     });
     DOMUtils.toggleClass("fake-friends-empty", "hidden", sorted.length > 0);
     ViewTabs.setCount("fake", sorted.length);
@@ -97,7 +99,8 @@ class FriendsRenderer {
     this.updateFriendsListIncremental(
       friendsContainer,
       filteredFriends,
-      joinStates
+      joinStates,
+      { userServerId: userLocation.getServerId() }
     );
     // "Nobody in casual" only means something once the friends list is in
     const listLoaded =
@@ -115,7 +118,8 @@ class FriendsRenderer {
    * @param {HTMLElement} container - Friends container element
    * @param {import('../shared/types.js').Friend[]} friends - Array of friend objects
    * @param {Object} joinStates - Map of join states by friend Steam ID
-   * @param {{removable?: boolean}} [options] - Show a remove button on new items
+   * @param {{removable?: boolean, userServerId?: string|null}} [options] -
+   *   Show a remove button on new items; the server the user is on
    */
   static updateFriendsListIncremental(
     container,
@@ -144,7 +148,8 @@ class FriendsRenderer {
       const model = this.rowModel(
         friend,
         joinStates[friend.steamid],
-        options.removable
+        options.removable,
+        options.userServerId
       );
       let element = existingElements.get(friend.steamid);
       if (element) {
@@ -166,15 +171,20 @@ class FriendsRenderer {
    * @param {import('../shared/types.js').Friend} friend - Friend object
    * @param {import('../shared/types.js').JoinState} [joinState] - Join state
    * @param {boolean} [removable] - Whether to show a remove button
+   * @param {string|null} [userServerId] - The server the user is on
    * @returns {Object} - Model for FRIENDS_TEMPLATES.FRIEND_ITEM
    */
-  static rowModel(friend, joinState, removable = false) {
+  static rowModel(friend, joinState, removable = false, userServerId = null) {
     const casual = Boolean(friend.in_casual_mode);
+    const together = Boolean(
+      casual && userServerId && friend.game_server_id === userServerId
+    );
     const slot = {
       free: Boolean(friend.join_available),
       casual,
+      here: together,
       // Out of casual there is no slot to speak of; the line says where they are
-      idleText: casual ? undefined : "",
+      idleText: !casual ? "" : together ? t("join.together") : undefined,
     };
 
     const score = formatScore(friend.game_score);
@@ -268,6 +278,10 @@ class FriendsRenderer {
   static writeSlotFacts(element, slot) {
     element.dataset.free = slot.free ? "1" : "0";
     element.dataset.casual = slot.casual ? "1" : "0";
+    if (slot.here) element.dataset.here = "1";
+    else delete element.dataset.here;
+    if (slot.over) element.dataset.over = "1";
+    else delete element.dataset.over;
     if (slot.idleText === undefined) delete element.dataset.idleText;
     else element.dataset.idleText = slot.idleText;
   }

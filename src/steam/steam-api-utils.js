@@ -1,6 +1,7 @@
 // Shared constants
 import {
   ANON_GAME_SERVER_ACCOUNT_TYPE,
+  CASUAL_ROUNDS_TO_WIN,
   ERROR_CODES,
   GAME_MODES,
   VALIDATION_PATTERNS,
@@ -134,6 +135,19 @@ class SteamAPIUtils {
   static parseRoundsPlayed(score) {
     const match = String(score ?? "").match(/(\d+)\s*:\s*(\d+)/);
     return match ? Number(match[1]) + Number(match[2]) : null;
+  }
+
+  /**
+   * Whether a rich presence score is the final one of a casual match
+   * @param {string|null} score - game:score value, such as "[ 8 : 2 ]"
+   * @returns {boolean}
+   */
+  static isMatchOver(score) {
+    const match = String(score ?? "").match(/(\d+)\s*:\s*(\d+)/);
+    return Boolean(
+      match &&
+        Math.max(Number(match[1]), Number(match[2])) >= CASUAL_ROUNDS_TO_WIN
+    );
   }
 
   /**

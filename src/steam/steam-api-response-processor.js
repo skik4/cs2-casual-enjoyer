@@ -488,7 +488,9 @@ class SteamAPIResponseProcessor {
         game_state: richPresence.game_state,
         game_map: richPresence.game_map || "",
         game_score: richPresence.game_score || "",
-        game_server_id: richPresence.game_server_steam_id || "",
+        // Rich presence seldom carries the server; the account does
+        game_server_id:
+          richPresence.game_server_steam_id || priv.game_server_steam_id || "",
 
         // App logic flags
         in_casual_mode: inSupportedMode,

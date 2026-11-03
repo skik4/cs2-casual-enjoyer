@@ -17,6 +17,7 @@ import mapFinder, {
   buildServers,
 } from "../src/game/map-finder.js";
 import gsiManager from "../src/game/gsi-manager.js";
+import userLocation from "../src/game/user-location.js";
 import SteamAPI from "../src/steam/steam-api.js";
 import { MAP_FINDER_CONFIG } from "../src/shared/constants.js";
 
@@ -115,6 +116,100 @@ describe("helpers", () => {
     });
     expect(servers[0].players.map((p) => p.steamid)).toEqual([A, B]);
     expect(servers[1]).toMatchObject({ map: "de_mirage", rounds: null, freeSlot: false });
+  });
+
+  test("buildServers marks a match that has ended", () => {
+    const [server] = buildServers([presence(A, { score: "[ 8 : 2 ]" })]);
+
+    expect(server).toMatchObject({ score: "[ 8 : 2 ]", rounds: 10, over: true });
+  });
+
+  test("after a match a server's next map wins over players still showing the last one", () => {
+    // As seen live: the server kept its id, loaded Inferno, and the final
+    // score of the Dust II match outweighed everything else
+    const since = { [A]: 1000, [B]: 2000 };
+    const players = [
+      presence(A, { score: "[ 8 : 2 ]", connect: CONNECT }),
+      presence(B, { map: "de_inferno", score: null }),
+    ];
+
+    const [server] = buildServers(players, (id) => since[id]);
+
+    expect(server).toMatchObject({
+      map: "de_inferno",
+      score: null,
+      rounds: null,
+      over: false,
+      freeSlot: false,
+    });
+    expect(server.players.map((p) => p.steamid)).toEqual([B]);
+  });
+
+  test("without a history a running match wins over a finished one", () => {
+    const [server] = buildServers([
+      presence(A, { score: "[ 8 : 2 ]" }),
+      presence(B, { map: "de_inferno", score: "[ 0 : 0 ]" }),
+    ]);
+
+    expect(server).toMatchObject({ map: "de_inferno", over: false });
+  });
+
+  test("compareServers puts finished matches last", () => {
+    const running = { freeSlot: false, rounds: 3, over: false };
+    const finished = { freeSlot: true, rounds: 10, over: true };
+
+    expect([finished, running].sort(compareServers)).toEqual([running, finished]);
+  });
+});
+
+describe("finished matches and the user's own server", () => {
+  const OTHER_DUST = "90071992547409923";
+
+  beforeEach(() => {
+    configure({ getFriendIds: () => [A, B, C] });
+  });
+
+  afterEach(() => {
+    userLocation.reset();
+  });
+
+  test("offer nothing to join", async () => {
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        presence(A, { score: "[ 8 : 2 ]", connect: CONNECT }),
+        presence(B, { serverId: OTHER_DUST, connect: CONNECT }),
+        presence(C, { serverId: MIRAGE_SERVER, map: "de_mirage", connect: CONNECT })
+      )
+    );
+    userLocation.setSteamPresence(presence(USER, { serverId: OTHER_DUST }));
+
+    await mapFinder.refresh();
+
+    expect(mapFinder.getCandidateIds("de_dust2")).toEqual([]);
+    expect(mapFinder.getCandidateIds("de_mirage")).toEqual([C]);
+    expect(mapFinder.getMaps().find((m) => m.map === "de_dust2")).toMatchObject({
+      servers: 2,
+      freeServers: 0,
+    });
+  });
+
+  test("the user's server follows CS2 when it moves on to its next map", async () => {
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(presence(A, { score: "[ 8 : 2 ]", connect: CONNECT }))
+    );
+    userLocation.setSteamPresence(presence(USER));
+    gsiManager.handlePayload({
+      provider: { steamid: USER },
+      map: { mode: "casual", name: "de_inferno", phase: "warmup" },
+      player: { steamid: USER, activity: "playing" },
+    });
+
+    await mapFinder.refresh();
+
+    expect(mapFinder.getServers("de_dust2")).toEqual([]);
+    expect(mapFinder.getServers("de_inferno")).toEqual([
+      expect.objectContaining({ serverId: DUST_SERVER, over: false, score: null, players: [] }),
+    ]);
   });
 });
 

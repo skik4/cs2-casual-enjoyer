@@ -163,6 +163,10 @@ export default {
     joined: "on the server ✓",
     waitButton: "Wait for a slot",
     notInCS2: "Not in CS2",
+    youAreHere: "you're here",
+    together: "you're together",
+    onThisMap: "you're on this map",
+    matchOver: "match over",
   },
 
   joinBar: {
@@ -177,6 +181,7 @@ export default {
     servers: { one: "{count} server", other: "{count} servers" },
     freeServers: "{count} with a free slot",
     round: "Round {round} · {score}",
+    finalScore: "Final score {score}",
     noScore: "No score yet",
     searchingAmong: {
       one: "searching {count} player",

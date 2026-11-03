@@ -34,6 +34,18 @@
   color: #8ff09c;
 }
 
+/* The user is already there: their server, their map, a friend beside them */
+.status-here {
+  background: color-mix(in srgb, var(--blue-primary) 18%, transparent);
+  color: #8cc4ff;
+}
+
+/* The match has ended; the server is about to load another map */
+.status-over {
+  background: #262b31;
+  color: #7d8792;
+}
+
 .status-none {
   display: none;
 }

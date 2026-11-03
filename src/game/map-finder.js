@@ -4,6 +4,7 @@ import { GAME_MODES, MAP_FINDER_CONFIG } from "../shared/constants.js";
 // Game singletons
 import gsiManager from "./gsi-manager.js";
 import joinJournal from "./join-journal.js";
+import userLocation from "./user-location.js";
 
 // UI and utilities
 import SteamAPI from "../steam/steam-api.js";
@@ -44,54 +45,73 @@ export function mapLabel(map) {
 }
 
 /**
- * Order servers for joining: a free slot first, then the freshest match
+ * Order servers for joining: a running match before a finished one, a free
+ * slot first, then the freshest match
  * @param {import('../shared/types.js').MapServer} a
  * @param {import('../shared/types.js').MapServer} b
  * @returns {number}
  */
 export function compareServers(a, b) {
+  if (a.over !== b.over) return a.over ? 1 : -1;
   if (a.freeSlot !== b.freeSlot) return a.freeSlot ? -1 : 1;
   return (a.rounds ?? 0) - (b.rounds ?? 0);
 }
 
 /**
- * Group players on official casual servers into servers
+ * Group players on official casual servers into servers. A server keeps its
+ * id when its match ends and it loads the next map, so its players can
+ * disagree for a while: the one whose status changed last speaks for the
+ * server, and a finished match gives way to one that is not.
  * @param {Iterable<import('../shared/types.js').PlayerPresence>} presences
+ * @param {(steamid: string) => number} [statusSince] - When a player's
+ *   status last changed, as far as the caller has seen
  * @returns {import('../shared/types.js').MapServer[]}
  */
-export function buildServers(presences) {
-  const servers = new Map();
+export function buildServers(presences, statusSince = () => 0) {
+  const byServer = new Map();
   for (const player of presences) {
     if (!player?.official || !player.serverId || !player.map) continue;
-
-    let server = servers.get(player.serverId);
-    if (!server) {
-      server = {
-        serverId: player.serverId,
-        map: player.map,
-        score: null,
-        rounds: null,
-        freeSlot: false,
-        players: [],
-      };
-      servers.set(player.serverId, server);
-    }
-
-    server.players.push({
-      steamid: player.steamid,
-      personaname: player.personaname,
-      connect: player.connect,
+    const entries = byServer.get(player.serverId) || [];
+    entries.push({
+      player,
+      since: statusSince(player.steamid) || 0,
+      over: SteamAPIUtils.isMatchOver(player.score),
+      rounds: SteamAPIUtils.parseRoundsPlayed(player.score),
     });
-    if (player.connect) server.freeSlot = true;
-
-    // Players can be a round apart; the furthest one is the latest
-    const rounds = SteamAPIUtils.parseRoundsPlayed(player.score);
-    if (rounds !== null && (server.rounds === null || rounds > server.rounds)) {
-      server.rounds = rounds;
-      server.score = player.score;
-    }
+    byServer.set(player.serverId, entries);
   }
-  return [...servers.values()];
+
+  const servers = [];
+  for (const [serverId, entries] of byServer) {
+    const [newest] = [...entries].sort(
+      (a, b) =>
+        b.since - a.since ||
+        Number(a.over) - Number(b.over) ||
+        (b.rounds ?? -1) - (a.rounds ?? -1)
+    );
+    const { map } = newest.player;
+    // Whoever still shows another map has not caught up with the server
+    const current = entries.filter((entry) => entry.player.map === map);
+    // Players can be a round apart; the furthest one is the latest
+    const furthest = current.reduce((best, entry) =>
+      (entry.rounds ?? -1) > (best.rounds ?? -1) ? entry : best
+    );
+
+    servers.push({
+      serverId,
+      map,
+      score: furthest.rounds === null ? null : furthest.player.score,
+      rounds: furthest.rounds,
+      over: furthest.over,
+      freeSlot: current.some((entry) => entry.player.connect),
+      players: current.map(({ player }) => ({
+        steamid: player.steamid,
+        personaname: player.personaname,
+        connect: player.connect,
+      })),
+    });
+  }
+  return servers;
 }
 
 /**
@@ -132,6 +152,9 @@ class MapFinder {
     this._checkedSeeds = new Set();
     this._checkingSeeds = false;
     this._checkSeedsAgain = false;
+    // Each polled player's status and when it last changed
+    /** @type {Map<string, {key: string, since: number}>} */
+    this._statusSince = new Map();
     this.journal = joinJournal;
   }
 
@@ -322,7 +345,11 @@ class MapFinder {
       }
       this._prunePool(now);
 
-      this.servers = buildServers(presence.values());
+      this._noteStatusChanges(presence, now);
+      this.servers = buildServers(
+        presence.values(),
+        (id) => this._statusSince.get(id)?.since ?? 0
+      );
       this.status.lastRefreshAt = now;
       this.status.polled = ids.size;
       this._scheduleSave();
@@ -345,7 +372,7 @@ class MapFinder {
    */
   getMaps() {
     const maps = new Map();
-    for (const server of this.servers) {
+    for (const server of this._currentServers()) {
       const entry = maps.get(server.map) || {
         map: server.map,
         label: mapLabel(server.map),
@@ -353,7 +380,7 @@ class MapFinder {
         freeServers: 0,
       };
       entry.servers++;
-      if (server.freeSlot) entry.freeServers++;
+      if (this._joinable(server) && server.freeSlot) entry.freeServers++;
       maps.set(server.map, entry);
     }
     return [...maps.values()].sort(
@@ -370,13 +397,71 @@ class MapFinder {
    * @returns {import('../shared/types.js').MapServer[]}
    */
   getServers(map) {
-    return this.servers
+    return this._currentServers()
       .filter((server) => server.map === map)
       .sort(compareServers);
   }
 
   /**
-   * Players to join through, best server first
+   * Whether joining a server can take the user anywhere new: not once its
+   * match is over, and not while the user is on it
+   * @param {import('../shared/types.js').MapServer} server
+   * @returns {boolean}
+   * @private
+   */
+  _joinable(server) {
+    return !server.over && server.serverId !== userLocation.getServerId();
+  }
+
+  /**
+   * The known servers, the user's own one checked against what CS2 itself
+   * reports. Steam's copy of its players lags when the match ends and the
+   * server moves on, under the same id, to its next map.
+   * @returns {import('../shared/types.js').MapServer[]}
+   * @private
+   */
+  _currentServers() {
+    const serverId = userLocation.getServerId();
+    const own = serverId ? userLocation.getOwnMatch() : null;
+    if (!own) return this.servers;
+    return this.servers.map((server) =>
+      server.serverId !== serverId ||
+      (server.map === own.map && server.over === own.over)
+        ? server
+        : {
+            ...server,
+            map: own.map,
+            score: null,
+            rounds: null,
+            over: own.over,
+            // Its known players still show the old match
+            freeSlot: false,
+            players: [],
+          }
+    );
+  }
+
+  /**
+   * Remember when each polled player's status last changed: buildServers
+   * tells a server's current players from those still showing its last match
+   * by it
+   * @param {Map<string, import('../shared/types.js').PlayerPresence>} presence
+   * @param {number} now - Time of this poll
+   * @private
+   */
+  _noteStatusChanges(presence, now) {
+    const next = new Map();
+    for (const [id, player] of presence) {
+      const before = this._statusSince.get(id);
+      const key = player.statusKey ?? "";
+      next.set(id, before?.key === key ? before : { key, since: now });
+    }
+    this._statusSince = next;
+  }
+
+  /**
+   * Players to join through, best server first. A finished match and the
+   * user's own server have nothing to offer.
    * @param {string} map - Map code
    * @param {string|null} [serverId] - Only this server
    * @returns {string[]} - SteamID64s
@@ -384,6 +469,7 @@ class MapFinder {
   getCandidateIds(map, serverId = null) {
     return this.getServers(map)
       .filter((server) => !serverId || server.serverId === serverId)
+      .filter((server) => this._joinable(server))
       .flatMap((server) => server.players.map((player) => player.steamid));
   }
 
@@ -444,6 +530,7 @@ class MapFinder {
     this._checkedSeeds = new Set();
     this._checkingSeeds = false;
     this._checkSeedsAgain = false;
+    this._statusSince = new Map();
   }
 
   /**

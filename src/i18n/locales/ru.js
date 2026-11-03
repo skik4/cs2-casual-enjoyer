@@ -169,6 +169,10 @@ export default {
     joined: "на сервере ✓",
     waitButton: "Ждать место",
     notInCS2: "Не в CS2",
+    youAreHere: "вы здесь",
+    together: "вы вместе",
+    onThisMap: "вы на этой карте",
+    matchOver: "матч закончился",
   },
 
   joinBar: {
@@ -188,6 +192,7 @@ export default {
     },
     freeServers: "{count} со свободным местом",
     round: "Раунд {round} · {score}",
+    finalScore: "Итог {score}",
     noScore: "Счёта пока нет",
     searchingAmong: {
       one: "ищем среди {count} игрока",

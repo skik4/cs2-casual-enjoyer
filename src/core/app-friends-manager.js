@@ -3,6 +3,7 @@ import appStateManager from "./app-state-manager.js";
 
 // Game singletons
 import joinManager from "../game/join-manager.js";
+import userLocation from "../game/user-location.js";
 
 // UI and utilities
 import UIManager from "../ui/ui-manager.js";
@@ -65,10 +66,11 @@ class AppFriendsManager {
     }
 
     try {
-      const allStatuses = await SteamAPI.getFriendsStatuses(
-        FakeFriendsManager.mergeIds(friendIds),
-        auth
-      );
+      // The user's own presence rides in the same Steam request
+      const [allStatuses] = await Promise.all([
+        SteamAPI.getFriendsStatuses(FakeFriendsManager.mergeIds(friendIds), auth),
+        this.updateUserLocation(auth),
+      ]);
 
       const joinStates = keepStates ? joinManager.getJoinStates() : {};
       const supportedFriends = FakeFriendsManager.withFakeFriends(
@@ -94,6 +96,28 @@ class AppFriendsManager {
       ErrorHandler.logError("App.fetchAndRenderFriendsByIds", error);
       if (!keepStates) UIManager.showError(error.message || error);
       throw error;
+    }
+  }
+
+  /**
+   * Ask Steam where the user is, so rows can tell a friend on the user's own
+   * server. Fetched in the same tick as the friends' statuses, it shares
+   * their request.
+   * @param {string} auth - API key or token
+   * @returns {Promise<void>} - Never rejects
+   */
+  async updateUserLocation(auth) {
+    const userId =
+      this.inputManager?.getSteamId?.() ||
+      appStateManager.getState("savedSettings")?.steam_id;
+    if (!userId) return;
+    try {
+      const presence = await SteamAPI.getPresence([userId], auth);
+      userLocation.setSteamPresence(presence.get(String(userId)) ?? null);
+    } catch (error) {
+      logger.warn("App", "Could not read the user's own presence", {
+        error: error.message,
+      });
     }
   }
 
