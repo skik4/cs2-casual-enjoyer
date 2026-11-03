@@ -1,7 +1,6 @@
 // Core singletons
 import appInputManager from "./app-input-manager.js";
 import appFriendsManager from "./app-friends-manager.js";
-import appEventManager from "./app-event-manager.js";
 import appStateManager from "./app-state-manager.js";
 
 // Game singletons
@@ -19,11 +18,18 @@ import JoinBar from "../ui/join-bar.js";
 import GsiStatusIndicator from "../ui/gsi-status-indicator.js";
 import ViewTabs from "../ui/view-tabs.js";
 import MapFinderView from "../ui/map-finder-view.js";
+import FriendsView from "../ui/friends-view.js";
+import FakeFriendsView from "../ui/fake-friends-view.js";
 import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import DOMUtils from "../utils/dom-utils.js";
+import ErrorHandler from "../utils/error-handler.js";
 import logger from "../utils/logger.js";
-import { applyI18nToDom, setupInitialLanguage } from "../i18n/dom-i18n.js";
+import {
+  applyI18nToDom,
+  setupInitialLanguage,
+  toggleLanguageAndApply,
+} from "../i18n/dom-i18n.js";
 import { onLanguageChange, t } from "../i18n/i18n-manager.js";
 
 /**
@@ -39,16 +45,90 @@ class App {
     // Initialize managers
     this.inputManager = appInputManager;
     this.friendsManager = appFriendsManager;
-    this.eventManager = appEventManager;
     this.cs2Manager = cs2Manager;
 
     logger.info("App", "Setting up cross-references between managers...");
     // Set up cross-references
     this.inputManager.setFriendsManager(this.friendsManager);
-    this.friendsManager.setManagers(this.inputManager, this.eventManager);
-    this.eventManager.setManagers(this.inputManager, this.friendsManager);
+    this.friendsManager.setInputManager(this.inputManager);
     logger.info("App", "App instance created successfully");
   }
+
+  /**
+   * The window bar, the credential fields and the help links
+   */
+  setupEventListeners() {
+    const updateFriendsBtn = DOMUtils.getElementById("update-friends-btn");
+    const tutorialBtn = DOMUtils.getElementById("tutorial-btn");
+    const languageBtn = DOMUtils.getElementById("language-btn");
+    const minimizeBtn = DOMUtils.getElementById("window-minimize");
+    const closeBtn = DOMUtils.getElementById("window-close");
+    const steamIdInput = DOMUtils.getElementById("steam-id");
+    const authInput = DOMUtils.getElementById("auth");
+
+    if (updateFriendsBtn) {
+      updateFriendsBtn.addEventListener("click", () =>
+        this.friendsManager.updateFriendsList()
+      );
+    }
+
+    if (tutorialBtn) {
+      tutorialBtn.addEventListener("click", () => {
+        // The tutorial walks through the friends view
+        ViewTabs.show("friends");
+        tutorialManager.start();
+      });
+    }
+
+    if (languageBtn) {
+      languageBtn.addEventListener("click", () => toggleLanguageAndApply());
+    }
+
+    if (minimizeBtn && window.electronAPI?.window?.minimize) {
+      minimizeBtn.addEventListener("click", () =>
+        window.electronAPI.window.minimize()
+      );
+    }
+
+    if (closeBtn && window.electronAPI?.window?.close) {
+      closeBtn.addEventListener("click", () => window.electronAPI.window.close());
+    }
+
+    if (steamIdInput) {
+      steamIdInput.addEventListener(
+        "input",
+        this.inputManager.validateInputs.bind(this.inputManager)
+      );
+      steamIdInput.addEventListener(
+        "paste",
+        this.inputManager.handleSteamIdPaste.bind(this.inputManager)
+      );
+    }
+    if (authInput) {
+      authInput.addEventListener(
+        "input",
+        this.inputManager.handleAuthInput.bind(this.inputManager)
+      );
+    }
+
+    // Help links
+    const steamIdHelp = DOMUtils.getElementById("steam-id-help");
+    if (steamIdHelp) {
+      steamIdHelp.addEventListener("click", (e) => {
+        e.preventDefault();
+        NotificationManager.showSteamIdHelp();
+      });
+    }
+
+    const apiKeyHelp = DOMUtils.getElementById("api-key-help");
+    if (apiKeyHelp) {
+      apiKeyHelp.addEventListener("click", (e) => {
+        e.preventDefault();
+        NotificationManager.showApiKeyHelp();
+      });
+    }
+  }
+
   /**
    * Initialize the application
    */ async initialize() {
@@ -80,7 +160,18 @@ class App {
       }
       logger.info("App", "Step 3: Setting up event listeners");
       // Setup event listeners
-      this.eventManager.setupEventListeners();
+      this.setupEventListeners();
+      FriendsView.initialize();
+      FakeFriendsView.initialize({
+        getOwnSteamId: () =>
+          this.inputManager.getSteamId() ||
+          appStateManager.getState("savedSettings")?.steam_id,
+        // Pick the new ID up on the next poll so its real Steam status shows
+        onAdded: () =>
+          this.friendsManager.startAutoRefresh().catch((error) => {
+            ErrorHandler.logError("App.addFakeFriend", error);
+          }),
+      });
       logger.info("App", "Event listeners configured successfully");
 
       logger.info("App", "Step 4: Configuring JoinManager UI callbacks");

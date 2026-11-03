@@ -51,7 +51,8 @@ jest.mock("../src/ui/tutorial/tutorial-manager.js", () => ({
   },
 }));
 
-import appEventManager from "../src/core/app-event-manager.js";
+import FriendsView from "../src/ui/friends-view.js";
+import FakeFriendsView from "../src/ui/fake-friends-view.js";
 import appFriendsManager from "../src/core/app-friends-manager.js";
 import appStateManager from "../src/core/app-state-manager.js";
 import FriendsRenderer from "../src/ui/friends-renderer.js";
@@ -109,12 +110,12 @@ beforeEach(() => {
   SteamAPI.getFriendsStatuses.mockResolvedValue([friend(FRIEND)]);
   SteamAPI.getPresence.mockResolvedValue(new Map());
 
-  // Wired as App's constructor wires them
+  // Wired as App wires them
   const inputManager = { getSteamId: () => USER, getAuth: () => AUTH };
-  appFriendsManager.setManagers(inputManager, appEventManager);
-  appEventManager.setManagers(inputManager, appFriendsManager);
+  appFriendsManager.setInputManager(inputManager);
 
-  appEventManager.setupEventListeners();
+  FriendsView.initialize();
+  FakeFriendsView.initialize({ getOwnSteamId: () => USER, onAdded: () => {} });
 
   // What the renders below do to the container's listeners
   const container = document.getElementById("friends");

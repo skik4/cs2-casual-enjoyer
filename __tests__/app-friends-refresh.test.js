@@ -45,7 +45,7 @@ describe("startAutoRefresh", () => {
     jest.useFakeTimers();
     jest.clearAllMocks();
     auth = "token-1";
-    appFriendsManager.setManagers({ getAuth: () => auth }, null);
+    appFriendsManager.setInputManager({ getAuth: () => auth });
     appStateManager.batchUpdate({
       savedFriendsIds: [FRIEND],
       usingSavedFriends: true,

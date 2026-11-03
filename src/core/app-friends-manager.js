@@ -29,19 +29,16 @@ import { t } from "../i18n/i18n-manager.js";
 class AppFriendsManager {
   constructor() {
     this.inputManager = null;
-    this.eventManager = null;
     // Set once the startup refresh has started; it never starts twice
     this.initialLoadAttempted = false;
   }
 
   /**
-   * Set manager references
+   * Set the input manager, which holds the credential fields
    * @param {Object} inputManager - Reference to input manager
-   * @param {Object} eventManager - Reference to event manager
    */
-  setManagers(inputManager, eventManager) {
+  setInputManager(inputManager) {
     this.inputManager = inputManager;
-    this.eventManager = eventManager;
   }
 
   /**
