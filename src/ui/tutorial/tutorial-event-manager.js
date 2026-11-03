@@ -1,3 +1,5 @@
+import { TUTORIAL_TIMING } from "./tutorial-timing.js";
+
 /**
  * Tutorial Event Manager
  * Handles event listeners for tutorial interactions
@@ -81,7 +83,7 @@ export class TutorialEventManager {
           if (this.nextStepCallback) {
             this.nextStepCallback();
           }
-        }, 0);
+        }, TUTORIAL_TIMING.DEFER_MS);
       }
     };
 
@@ -110,12 +112,11 @@ export class TutorialEventManager {
         const clipboardSVG = await getEmojiSVG("📋", "emoji-svg copy-success");
         link.innerHTML = `${clipboardSVG} Copied to clipboard!`;
 
-        // Reset after 2 seconds
         setTimeout(() => {
           link.style.color = "var(--blue-primary)";
           link.style.textDecoration = "underline";
           link.textContent = originalText;
-        }, 2000);
+        }, TUTORIAL_TIMING.COPY_FEEDBACK_MS);
       } catch (err) {
         console.error("Failed to copy to clipboard:", err);
         // Fallback visual feedback even if clipboard fails
@@ -124,7 +125,7 @@ export class TutorialEventManager {
         setTimeout(() => {
           link.style.color = "var(--blue-primary)";
           link.textContent = originalText;
-        }, 2000);
+        }, TUTORIAL_TIMING.COPY_FEEDBACK_MS);
       }
     };
 

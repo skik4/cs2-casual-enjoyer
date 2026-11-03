@@ -10,6 +10,10 @@ export const API_CONFIG = {
   MISSING_TIMEOUT_MS: 60000,
   JOIN_SUCCESS_DISPLAY_MS: 1500,
   CS2_LAUNCH_TIMEOUT_MS: 180000,
+  // After a launch, Steam is asked this often whether CS2 reached the lobby.
+  // CS2 posts reaching the menu the moment it happens, so this is only the
+  // fallback while GSI is not delivering
+  CS2_LOBBY_POLL_MS: 3000,
   // How long a map load reported by GSI after a connect holds off further
   // connects while Steam catches up with the user's new server
   JOIN_GSI_CONFIRM_MS: 15000,
@@ -81,6 +85,9 @@ export const MAP_FINDER_CONFIG = {
   // oldest. At 100 ids a request, one pass over them is 200 requests,
   // spread over the refreshes.
   POOL_FRIENDS_MAX_IDS: 20000,
+  // The store is written this long after the last change, not on every
+  // refresh
+  SAVE_DEBOUNCE_MS: 2000,
 };
 
 /**

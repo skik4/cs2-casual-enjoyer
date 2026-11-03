@@ -14,6 +14,7 @@ import tutorialUIManager from "./tutorial-ui-manager.js";
 import tutorialHighlightManager from "./tutorial-highlight-manager.js";
 import tutorialMockDataManager from "./tutorial-mock-data-manager.js";
 import tutorialEventManager from "./tutorial-event-manager.js";
+import { TUTORIAL_TIMING } from "./tutorial-timing.js";
 import i18n from "../../i18n/i18n-manager.js";
 import logger from "../../utils/logger.js";
 
@@ -67,7 +68,7 @@ class TutorialManager {
         () => this.previousStep(),
         () => this.stop()
       );
-    }, 0);
+    }, TUTORIAL_TIMING.DEFER_MS);
   }
 
   /**
@@ -256,7 +257,7 @@ class TutorialManager {
       setTimeout(() => {
         observer.disconnect();
         console.warn("Tutorial button not found within timeout period");
-      }, 10000); // 10 second timeout
+      }, TUTORIAL_TIMING.ELEMENT_WAIT_MS);
     }
   }
 
@@ -298,7 +299,7 @@ class TutorialManager {
             error: error.message,
           });
         });
-      }, 500);
+      }, TUTORIAL_TIMING.AUTO_REFRESH_RESTORE_MS);
     }
   }
 

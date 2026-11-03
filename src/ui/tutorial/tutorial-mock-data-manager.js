@@ -6,6 +6,7 @@ import appStateManager from "../../core/app-state-manager.js";
 
 // UI and utilities
 import NotificationManager from "../notification-manager.js";
+import { TUTORIAL_TIMING } from "./tutorial-timing.js";
 import { t } from "../../i18n/i18n-manager.js";
 
 /**
@@ -142,7 +143,7 @@ export class TutorialMockDataManager {
           // Double-check we're still on step 8
           this.startMockConnectionProcess();
         }
-      }, 50);
+      }, TUTORIAL_TIMING.MOCK_CONNECTION_START_MS);
     } else if (previousStepIndex === 8 && stepIndex !== 8) {
       // Leaving Connection Process step - stop mock connection
       this.stopMockConnectionProcess();

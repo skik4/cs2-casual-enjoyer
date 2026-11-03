@@ -27,11 +27,11 @@ jest.mock("../src/utils/logger.js", () => ({
 import cs2Manager from "../src/game/cs2-manager.js";
 import gsiManager from "../src/game/gsi-manager.js";
 import SteamAPI from "../src/steam/steam-api.js";
-import { GSI_CONFIG } from "../src/shared/constants.js";
+import { API_CONFIG, GSI_CONFIG } from "../src/shared/constants.js";
 
 const TEST_STEAM_ID = "76561198000000002";
 const TEST_AUTH = "test_api_key";
-const POLL_MS = 3000;
+const POLL_MS = API_CONFIG.CS2_LOBBY_POLL_MS;
 const TIMEOUT_MS = 10000;
 
 /**

@@ -172,10 +172,13 @@ class CS2Manager {
   /**
    * Start monitoring CS2 status with callback
    * @param {Function} onStatusChange - Callback function called when CS2 status changes
-   * @param {number} intervalMs - Check interval in milliseconds (default: 3000)
+   * @param {number} intervalMs - How often Steam is asked, API_CONFIG.CS2_LOBBY_POLL_MS by default
    * @returns {boolean} - Whether monitoring started successfully
    */
-  startStatusMonitoring(onStatusChange, intervalMs = 3000) {
+  startStatusMonitoring(
+    onStatusChange,
+    intervalMs = API_CONFIG.CS2_LOBBY_POLL_MS
+  ) {
     if (!this.isInitialized || !this.appInputManager) {
       logger.warn("CS2Manager", "Cannot start monitoring - not initialized", {
         isInitialized: this.isInitialized,
@@ -209,8 +212,8 @@ class CS2Manager {
       }
     }, intervalMs);
 
-    // CS2 posts reaching the menu the moment it happens; the interval above
-    // remains the fallback while GSI is not delivering
+    // CS2 posts reaching the menu the moment it happens; the poll above is
+    // the fallback (see CS2_LOBBY_POLL_MS)
     this._gsiUnsubscribe = gsiManager.onChange(() => {
       if (this.getGsiUserState()?.inMenu && onStatusChange) {
         logger.debug("CS2Manager", "GSI reports CS2 in the main menu");

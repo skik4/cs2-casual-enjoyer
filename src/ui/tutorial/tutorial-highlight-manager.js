@@ -1,3 +1,5 @@
+import { TUTORIAL_TIMING } from "./tutorial-timing.js";
+
 /**
  * Tutorial Highlight Manager
  * Handles element highlighting
@@ -64,7 +66,7 @@ export class TutorialHighlightManager {
       // Fallback timeout to prevent infinite waiting
       setTimeout(() => {
         observer.disconnect();
-      }, 10000); // 10 second timeout
+      }, TUTORIAL_TIMING.ELEMENT_WAIT_MS);
     }
   }
 

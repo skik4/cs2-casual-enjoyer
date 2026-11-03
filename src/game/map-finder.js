@@ -906,7 +906,7 @@ class MapFinder {
         poolFriends: this.poolFriends,
         fof: this.fof,
       });
-    }, 2000);
+    }, MAP_FINDER_CONFIG.SAVE_DEBOUNCE_MS);
   }
 
   /**

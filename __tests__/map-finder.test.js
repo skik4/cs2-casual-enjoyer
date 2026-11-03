@@ -650,7 +650,7 @@ describe("store", () => {
 
     await mapFinder.refresh();
     await mapFinder.refresh();
-    jest.advanceTimersByTime(2000);
+    jest.advanceTimersByTime(MAP_FINDER_CONFIG.SAVE_DEBOUNCE_MS);
 
     expect(save).toHaveBeenCalledTimes(1);
     expect(save.mock.calls[0][0].pool[A]).toMatchObject({ map: "de_dust2" });
@@ -777,7 +777,7 @@ describe("friends of pool players", () => {
       global.window.electronAPI = { mapFinder: { save } };
       mapFinder.poolFriends = { ids: [X], crawled: { [A]: 123 } };
       mapFinder._scheduleSave();
-      jest.advanceTimersByTime(2000);
+      jest.advanceTimersByTime(MAP_FINDER_CONFIG.SAVE_DEBOUNCE_MS);
       expect(save.mock.calls[0][0].poolFriends).toEqual({ ids: [X], crawled: { [A]: 123 } });
     } finally {
       jest.useRealTimers();
