@@ -96,7 +96,19 @@
   color: var(--text-secondary);
 }
 
-/* Pin that keeps a map; lit while the map is kept */
+/* The pinned maps, above the list, joined as one */
+.pinned-row {
+  margin-bottom: 8px;
+  border-color: color-mix(in srgb, var(--blue-primary) 45%, transparent);
+}
+
+.link-btn.unpin-all-btn {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* Pin that adds a map to the pinned ones; lit while it is pinned */
 .keep-btn {
   flex-shrink: 0;
 }
@@ -152,6 +164,33 @@
 
 .fof-key-details {
   padding: var(--space-sm) 2px 0;
+}
+
+/* Clearing the pool or friends of friends takes a second click */
+.pool-clear-row {
+  display: flex;
+  gap: 18px;
+  padding: 6px 14px 0;
+}
+
+/* Quieter than the other links: these throw data away */
+.link-btn.clear-btn {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.link-btn.clear-btn:hover:not(:disabled) {
+  color: #ff8a80;
+}
+
+.link-btn.clear-btn.armed {
+  color: #ff6b6b;
+  font-weight: var(--font-weight-semibold);
+}
+
+.clear-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .fof-key-row {

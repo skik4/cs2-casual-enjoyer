@@ -202,6 +202,37 @@ describe("resolveMapTarget", () => {
     }
   });
 
+  test("a join of several maps takes a server of any of them", async () => {
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        user(),
+        presence(A, { map: "de_inferno", connect: CONNECT_B }),
+        presence(B, { serverId: DUST_2, map: "de_mirage", connect: CONNECT_C })
+      )
+    );
+
+    const { target } = await joinManager.resolveMapTarget(
+      {
+        joinId: "maps-pinned",
+        maps: () => ["de_dust2", "de_mirage"],
+        label: () => "Dust II / Mirage",
+        getCandidateIds: () => [A, B],
+      },
+      USER,
+      AUTH
+    );
+
+    expect(target).toMatchObject({
+      personaname: "Dust II / Mirage",
+      inSupportedMode: true,
+      connect: CONNECT_C,
+      joinAs: B,
+    });
+    const onMap = (map) => user({ serverId: DUST_1, official: true, mode: "casual", map });
+    expect(target.isJoined(onMap("de_mirage"))).toBe(true);
+    expect(target.isJoined(onMap("de_inferno"))).toBe(false);
+  });
+
   test("a server join succeeds on that server only", async () => {
     SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A)));
     const { target } = await joinManager.resolveMapTarget(

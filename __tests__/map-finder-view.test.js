@@ -15,7 +15,7 @@ import mapFinder from "../src/game/map-finder.js";
 import mapKeeper from "../src/game/map-keeper.js";
 import userLocation from "../src/game/user-location.js";
 import joinManager, { getMapJoinId } from "../src/game/join-manager.js";
-import { STATUS_TYPES } from "../src/shared/constants.js";
+import { PINNED_MAPS_JOIN_ID, STATUS_TYPES } from "../src/shared/constants.js";
 import { setLanguage } from "../src/i18n/i18n-manager.js";
 
 const DUST_1 = "90071992547409921";
@@ -52,7 +52,9 @@ beforeAll(() => {
     <div id="maps-empty" class="hidden"></div>
     <span id="fof-summary"></span>
     <div id="fof-key-details" class="hidden"></div>
-    <button id="fof-key-toggle"></button>`;
+    <button id="fof-key-toggle"></button>
+    <button id="pool-clear"></button>
+    <button id="fof-clear"></button>`;
   MapFinderView.initialize({ getMainAuth: () => "head.payload.signature" });
 });
 
@@ -73,7 +75,7 @@ beforeEach(() => {
 
 afterEach(() => {
   // Not reset(): that would also drop the view's own subscriptions
-  mapKeeper.keep(null);
+  mapKeeper.clear();
   userLocation.setSteamPresence(null);
   jest.restoreAllMocks();
 });
@@ -114,7 +116,7 @@ test("the pin keeps a map, and a second click lets it go", () => {
   MapFinderView.render();
 
   click(row('[data-keep-map="de_dust2"]'));
-  expect(mapKeeper.getMap()).toBe("de_dust2");
+  expect(mapKeeper.getMaps()).toEqual(["de_dust2"]);
   const pin = row('[data-keep-map="de_dust2"]');
   expect(pin.classList.contains("active")).toBe(true);
   expect(pin.getAttribute("aria-pressed")).toBe("true");
@@ -122,24 +124,97 @@ test("the pin keeps a map, and a second click lets it go", () => {
   expect(MapFinderView.expanded.has("de_dust2")).toBe(true);
 
   click(row('[data-keep-map="de_dust2"]'));
-  expect(mapKeeper.getMap()).toBeNull();
+  expect(mapKeeper.getMaps()).toEqual([]);
 });
 
-test("Join on another map lets a kept map go, and so does cancelling its own join", () => {
-  mapKeeper.keep("de_mirage");
+test("Join on a map not pinned lets the pins go, and so does cancelling their join", () => {
+  mapKeeper.toggle("de_mirage");
   MapFinderView.render();
 
   click(button(getMapJoinId("de_dust2")));
   expect(joinManager.startMapJoin).toHaveBeenCalledWith(
     expect.objectContaining({ map: "de_dust2", serverId: null })
   );
-  expect(mapKeeper.getMap()).toBeNull();
+  expect(mapKeeper.getMaps()).toEqual([]);
 
-  mapKeeper.keep("de_dust2");
-  joinStates = { [getMapJoinId("de_dust2")]: { status: STATUS_TYPES.CONNECTING, cancelled: false } };
+  mapKeeper.toggle("de_dust2");
+  joinStates = { [PINNED_MAPS_JOIN_ID]: { status: STATUS_TYPES.CONNECTING, cancelled: false } };
   MapFinderView.render();
 
-  click(button(getMapJoinId("de_dust2")));
-  expect(joinManager.cancelJoin).toHaveBeenCalledWith(getMapJoinId("de_dust2"));
-  expect(mapKeeper.getMap()).toBeNull();
+  click(button(PINNED_MAPS_JOIN_ID));
+  expect(joinManager.cancelJoin).toHaveBeenCalledWith(PINNED_MAPS_JOIN_ID);
+  expect(mapKeeper.getMaps()).toEqual([]);
+});
+
+test("pinned maps gather in a row whose Join takes any of them", () => {
+  mapKeeper.toggle("de_dust2");
+  mapKeeper.toggle("de_mirage");
+  MapFinderView.render();
+
+  const pinned = row(".pinned-row");
+  expect(pinned.textContent).toContain("Any pinned map");
+  expect(pinned.textContent).toContain("Dust II / Mirage");
+  // Dust II's running match has the one free slot among them
+  expect(label(PINNED_MAPS_JOIN_ID).textContent).toBe("free slot");
+
+  click(button(PINNED_MAPS_JOIN_ID));
+  expect(joinManager.startMapJoin).toHaveBeenCalledWith(
+    expect.objectContaining({ joinId: PINNED_MAPS_JOIN_ID })
+  );
+
+  click(row("[data-unpin-all]"));
+  expect(mapKeeper.getMaps()).toEqual([]);
+  expect(row(".pinned-row")).toBeNull();
+});
+
+describe("clear buttons", () => {
+  afterEach(() => {
+    mapFinder.pool = new Map();
+    mapFinder.poolFriends = { ids: [], crawled: {} };
+    mapFinder.fof = { ids: [], fetchedAt: 0, friendsCount: 0 };
+  });
+
+  test("ask on the first click and clear on the second", () => {
+    const clearPool = jest.spyOn(mapFinder, "clearPool").mockImplementation(() => {});
+    mapFinder.pool.set("76561198000000011", { lastSeen: Date.now(), map: "de_dust2" });
+    MapFinderView.render();
+    const button = document.getElementById("pool-clear");
+    expect(button.textContent).toBe("Clear the pool");
+
+    button.click();
+    expect(button.textContent).toBe("Sure? Click again");
+    expect(clearPool).not.toHaveBeenCalled();
+
+    button.click();
+    expect(clearPool).toHaveBeenCalledTimes(1);
+    expect(button.textContent).toBe("Clear the pool");
+  });
+
+  test("forget the first click after a few seconds", () => {
+    jest.useFakeTimers();
+    try {
+      const restartFof = jest.spyOn(mapFinder, "restartFof").mockImplementation(() => {});
+      mapFinder.fof = { ids: ["76561198000000021"], fetchedAt: 1, friendsCount: 1 };
+      MapFinderView.render();
+      const button = document.getElementById("fof-clear");
+
+      button.click();
+      jest.advanceTimersByTime(3000);
+      expect(button.textContent).toBe("Clear friends of friends");
+
+      button.click();
+      expect(restartFof).not.toHaveBeenCalled();
+      button.click();
+      expect(restartFof).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test("are off with nothing to clear", () => {
+    MapFinderView.render();
+
+    expect(document.getElementById("pool-clear").disabled).toBe(true);
+    expect(document.getElementById("fof-clear").disabled).toBe(true);
+  });
 });

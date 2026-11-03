@@ -1,5 +1,9 @@
 // Shared constants
-import { JOIN_TARGET_PREFIXES, STATUS_TYPES } from "../shared/constants.js";
+import {
+  JOIN_TARGET_PREFIXES,
+  PINNED_MAPS_JOIN_ID,
+  STATUS_TYPES,
+} from "../shared/constants.js";
 
 // Game singletons
 import joinManager from "../game/join-manager.js";
@@ -91,6 +95,7 @@ class JoinBar {
     const row = DOMUtils.getElementById(`friend-${joinId}`);
     const rowName = row?.querySelector(".personaname")?.textContent;
     if (rowName) return rowName;
+    if (joinId === PINNED_MAPS_JOIN_ID) return mapKeeper.getLabel();
     if (joinId.startsWith(JOIN_TARGET_PREFIXES.MAP)) {
       return mapLabel(joinId.slice(JOIN_TARGET_PREFIXES.MAP.length));
     }

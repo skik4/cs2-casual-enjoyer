@@ -566,3 +566,146 @@ describe("setNeed", () => {
     }
   });
 });
+
+describe("friends of pool players", () => {
+  const KEY = "ABCDEF0123456789ABCDEF0123456789";
+  const X = "76561198000000031";
+  const Y = "76561198000000032";
+  const Z = "76561198000000033";
+
+  test("are read with a key, the most recently seen pool player first, once a day", async () => {
+    jest.useFakeTimers();
+    try {
+      configure({ getFofKey: () => KEY });
+      mapFinder.pool.set(B, { lastSeen: Date.now() - 60000, map: "de_dust2" });
+      mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
+      SteamAPI.getFriendIdsOf.mockImplementation(async (id) =>
+        id === A ? [X, Y, USER, B] : [Y, Z]
+      );
+
+      const crawl = mapFinder._crawlPoolFriends();
+      await jest.advanceTimersByTimeAsync(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS * 2);
+      await crawl;
+
+      expect(SteamAPI.getFriendIdsOf.mock.calls.map(([id]) => id)).toEqual([A, B]);
+      expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledWith(A, KEY);
+      // Neither the user nor someone already in the pool
+      expect(mapFinder.poolFriends.ids).toEqual([X, Y, Z]);
+      expect(mapFinder._poolFriendsDue()).toBe(false);
+
+      jest.advanceTimersByTime(MAP_FINDER_CONFIG.FOF_REFRESH_MS);
+      expect(mapFinder._poolFriendsDue()).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test("are not read without a key", () => {
+    configure();
+    mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
+
+    expect(mapFinder._poolFriendsDue()).toBe(false);
+  });
+
+  test("past the limit the oldest go", () => {
+    const limit = MAP_FINDER_CONFIG.POOL_FRIENDS_MAX_IDS;
+    MAP_FINDER_CONFIG.POOL_FRIENDS_MAX_IDS = 2;
+    try {
+      mapFinder._addPoolFriends([X, Y], USER);
+      mapFinder._addPoolFriends([Z], USER);
+
+      expect(mapFinder.poolFriends.ids).toEqual([Y, Z]);
+    } finally {
+      MAP_FINDER_CONFIG.POOL_FRIENDS_MAX_IDS = limit;
+    }
+  });
+
+  test("are polled in turn after the pool, which is polled every round", async () => {
+    const cap = MAP_FINDER_CONFIG.MAX_IDS_PER_REFRESH;
+    MAP_FINDER_CONFIG.MAX_IDS_PER_REFRESH = 3;
+    try {
+      configure();
+      mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
+      mapFinder.poolFriends = { ids: [X, Y], crawled: {} };
+      mapFinder.fof = { ids: [Z, C], fetchedAt: Date.now(), friendsCount: 0 };
+
+      await mapFinder.refresh();
+      await mapFinder.refresh();
+
+      expect(SteamAPI.getPresence.mock.calls[0][0]).toEqual([A, X, Y]);
+      expect(SteamAPI.getPresence.mock.calls[1][0]).toEqual([A, Z, C]);
+    } finally {
+      MAP_FINDER_CONFIG.MAX_IDS_PER_REFRESH = cap;
+    }
+  });
+
+  test("clearing the pool forgets its players and their friends, and stops a crawl under way", async () => {
+    configure({ getFofKey: () => KEY });
+    mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
+    mapFinder.poolFriends = { ids: [X], crawled: {} };
+    let answer;
+    SteamAPI.getFriendIdsOf.mockImplementation(
+      () => new Promise((resolve) => (answer = resolve))
+    );
+
+    const crawl = mapFinder._crawlPoolFriends();
+    mapFinder.clearPool();
+    answer([Y, Z]);
+    await crawl;
+
+    expect(mapFinder.pool.size).toBe(0);
+    expect(mapFinder.poolFriends).toEqual({ ids: [], crawled: {} });
+    expect(mapFinder.getStatus()).toMatchObject({ poolSize: 0, poolFriendsSize: 0 });
+  });
+
+  test("are saved and loaded with the pool", async () => {
+    jest.useFakeTimers();
+    try {
+      const save = jest.fn().mockResolvedValue(true);
+      global.window.electronAPI = { mapFinder: { save } };
+      mapFinder.poolFriends = { ids: [X], crawled: { [A]: 123 } };
+      mapFinder._scheduleSave();
+      jest.advanceTimersByTime(2000);
+      expect(save.mock.calls[0][0].poolFriends).toEqual({ ids: [X], crawled: { [A]: 123 } });
+    } finally {
+      jest.useRealTimers();
+    }
+
+    mapFinder.reset();
+    global.window.electronAPI = {
+      mapFinder: {
+        load: jest.fn().mockResolvedValue({
+          pool: { [A]: { lastSeen: Date.now(), map: "de_dust2" } },
+          poolFriends: { ids: [X, "junk"], crawled: { [A]: 123, [B]: 456, bad: 1 } },
+        }),
+      },
+    };
+    await mapFinder._load();
+
+    // A read mark goes with its player when the player leaves the pool
+    expect(mapFinder.poolFriends).toEqual({ ids: [X], crawled: { [A]: 123 } });
+  });
+});
+
+describe("several maps", () => {
+  test("candidates come best server first across the maps, running matches only", () => {
+    const server = (serverId, map, overrides, steamid) => ({
+      serverId,
+      map,
+      score: "[ 1 : 0 ]",
+      rounds: 1,
+      over: false,
+      freeSlot: true,
+      players: [{ steamid, personaname: steamid, connect: null }],
+      ...overrides,
+    });
+    mapFinder.servers = [
+      server("1", "de_dust2", { freeSlot: false, rounds: 10 }, A),
+      server("2", "de_mirage", {}, B),
+      server("3", "de_inferno", {}, C),
+      server("4", "de_dust2", { score: "[ 8 : 1 ]", rounds: 9, over: true }, D),
+    ];
+
+    expect(mapFinder.getCandidateIdsForMaps(["de_dust2", "de_mirage"])).toEqual([B, A]);
+  });
+});

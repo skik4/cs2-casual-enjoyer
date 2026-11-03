@@ -120,14 +120,18 @@ export function buildServers(presences, statusSince = () => 0) {
  * publishes no list of its servers, but a player's rich presence tells the
  * map, the score and - when there is a free slot - the connect string.
  * Players come from the user's friends, a pool of people seen on official
- * servers before, friends of friends (API key only) and whoever CS2 shows or
- * lists in the user's own matches.
+ * servers before, the friends of those pool players and friends of friends
+ * (both API key only), and whoever CS2 shows or lists in the user's own
+ * matches. The pool is polled every round; the friends lists, far bigger and
+ * far fewer of them in casual, a slice each round in turn.
  */
 class MapFinder {
   constructor() {
     /** @type {Map<string, {lastSeen: number, map: string}>} */
     this.pool = new Map();
     this.fof = { ids: [], fetchedAt: 0, friendsCount: 0 };
+    // Friends of pool players, and when each pool player's list was read
+    this.poolFriends = { ids: [], crawled: {} };
     this.seeds = new Set();
     /** @type {import('../shared/types.js').MapServer[]} */
     this.servers = [];
@@ -136,6 +140,7 @@ class MapFinder {
       lastRefreshAt: 0,
       polled: 0,
       fof: "no-key",
+      poolFriends: "idle",
     };
     this.deps = null;
     this.active = false;
@@ -144,7 +149,10 @@ class MapFinder {
     this._timer = null;
     this._saveTimer = null;
     this._fofRunning = false;
-    this._fofOffset = 0;
+    this._poolFriendsRunning = false;
+    // Changes when the pool is cleared, so a crawl under way stops
+    this._poolGeneration = 0;
+    this._candidateOffset = 0;
     this._refreshAgain = false;
     this._gsiUnsubscribe = null;
     // Seeds Steam has answered about this run, so watching the same player
@@ -490,6 +498,19 @@ class MapFinder {
   }
 
   /**
+   * Players to join through on any of several maps, the best server of
+   * them all first
+   * @param {string[]} maps - Map codes
+   * @returns {string[]} - SteamID64s
+   */
+  getCandidateIdsForMaps(maps) {
+    return this._currentServers()
+      .filter((server) => maps.includes(server.map) && this._joinable(server))
+      .sort(compareServers)
+      .flatMap((server) => server.players.map((player) => player.steamid));
+  }
+
+  /**
    * Forget friends of friends and read them again, e.g. after a new API key
    */
   restartFof() {
@@ -502,14 +523,29 @@ class MapFinder {
 
   /**
    * Counters for the status line
-   * @returns {{refreshing: boolean, lastRefreshAt: number, polled: number, fof: string, poolSize: number, fofSize: number}}
+   * @returns {{refreshing: boolean, lastRefreshAt: number, polled: number, fof: string, poolFriends: string, poolSize: number, poolFriendsSize: number, fofSize: number}}
    */
   getStatus() {
     return {
       ...this.status,
       poolSize: this.pool.size,
+      poolFriendsSize: this.poolFriends.ids.length,
       fofSize: this.fof.ids.length,
     };
+  }
+
+  /**
+   * Forget the pool and the friends found through it, at the user's word.
+   * Players seen in this run's matches may join it again.
+   */
+  clearPool() {
+    this._poolGeneration++;
+    this.pool = new Map();
+    this.poolFriends = { ids: [], crawled: {} };
+    this._checkedSeeds = new Set();
+    this._candidateOffset = 0;
+    this._scheduleSave();
+    this._notify();
   }
 
   /**
@@ -531,6 +567,7 @@ class MapFinder {
     this._saveTimer = null;
     this.pool = new Map();
     this.fof = { ids: [], fetchedAt: 0, friendsCount: 0 };
+    this.poolFriends = { ids: [], crawled: {} };
     this.seeds = new Set();
     this.servers = [];
     this.status = {
@@ -538,10 +575,13 @@ class MapFinder {
       lastRefreshAt: 0,
       polled: 0,
       fof: "no-key",
+      poolFriends: "idle",
     };
     this._loaded = false;
     this._fofRunning = false;
-    this._fofOffset = 0;
+    this._poolFriendsRunning = false;
+    this._poolGeneration = 0;
+    this._candidateOffset = 0;
     this._refreshAgain = false;
     this._checkedSeeds = new Set();
     this._checkingSeeds = false;
@@ -556,13 +596,15 @@ class MapFinder {
    */
   _tick() {
     if (this._fofDue()) this._crawlFof();
+    if (this._poolFriendsDue()) this._crawlPoolFriends();
     this.refresh();
   }
 
   /**
-   * Everyone to ask about this round, up to the cap: friends, fresh seeds,
-   * the pool (most recent first), then friends of friends in the room
-   * left, a different slice each round
+   * Everyone to ask about this round, up to the cap: friends, fresh seeds
+   * and the pool (most recent first) every round, then in the room left a
+   * different slice each round of the friends of pool players and friends
+   * of friends
    * @param {string} userId - User's SteamID64, never polled here
    * @returns {Set<string>}
    * @private
@@ -584,11 +626,13 @@ class MapFinder {
       .sort((a, b) => b[1].lastSeen - a[1].lastSeen)
       .forEach(([id]) => add(id));
 
-    const fof = this.fof.ids;
-    const room = Math.min(cap - ids.size, fof.length);
+    const candidates = [...new Set([...this.poolFriends.ids, ...this.fof.ids])];
+    const room = Math.min(cap - ids.size, candidates.length);
     if (room > 0) {
-      for (let i = 0; i < room; i++) add(fof[(this._fofOffset + i) % fof.length]);
-      this._fofOffset = (this._fofOffset + room) % fof.length;
+      for (let i = 0; i < room; i++) {
+        add(candidates[(this._candidateOffset + i) % candidates.length]);
+      }
+      this._candidateOffset = (this._candidateOffset + room) % candidates.length;
     }
     return ids;
   }
@@ -666,6 +710,89 @@ class MapFinder {
   }
 
   /**
+   * @returns {boolean} - Whether a pool player's friends list waits to be read
+   * @private
+   */
+  _poolFriendsDue() {
+    if (!this.deps?.getFofKey?.() || this._poolFriendsRunning) return false;
+    return this._poolPlayersToRead(Date.now()).length > 0;
+  }
+
+  /**
+   * Pool players whose friends list has not been read for a day, the most
+   * recently seen first
+   * @param {number} now - Current time
+   * @returns {string[]}
+   * @private
+   */
+  _poolPlayersToRead(now) {
+    return [...this.pool.entries()]
+      .filter(
+        ([id]) =>
+          now - (this.poolFriends.crawled[id] || 0) >= MAP_FINDER_CONFIG.FOF_REFRESH_MS
+      )
+      .sort((a, b) => b[1].lastSeen - a[1].lastSeen)
+      .map(([id]) => id);
+  }
+
+  /**
+   * Read the friends lists of pool players. Their friends sat on official
+   * casual servers about three times as often as friends of the user's
+   * friends (0.69% against 0.21%, measured 2026-10-25), and whoever turns up
+   * there joins the pool and brings friends of their own. A list is read
+   * again after a day.
+   * @private
+   */
+  async _crawlPoolFriends() {
+    const key = this.deps.getFofKey();
+    const userId = String(this.deps.getUserId?.() || "");
+    const generation = this._poolGeneration;
+    const players = this._poolPlayersToRead(Date.now());
+
+    this._poolFriendsRunning = true;
+    this.status.poolFriends = "crawling";
+    this._notify();
+    try {
+      for (const playerId of players) {
+        if (this._poolGeneration !== generation) return;
+        const ids = await SteamAPI.getFriendIdsOf(playerId, key);
+        if (this._poolGeneration !== generation) return;
+        this.poolFriends.crawled[playerId] = Date.now();
+        this._addPoolFriends(ids, userId);
+        await sleep(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS);
+      }
+      this._scheduleSave();
+    } catch (error) {
+      logger.error("MapFinder", "Friends of pool players failed", {
+        error: error.message,
+      });
+    } finally {
+      this._poolFriendsRunning = false;
+      this.status.poolFriends = "idle";
+      this._notify();
+    }
+  }
+
+  /**
+   * Add new friends of a pool player to the list. Over the limit the oldest
+   * go: the latest lists belong to the players seen most recently.
+   * @param {string[]} ids - The pool player's friends
+   * @param {string} userId - The user, never added
+   * @private
+   */
+  _addPoolFriends(ids, userId) {
+    const list = this.poolFriends.ids;
+    const have = new Set(list);
+    for (const id of ids) {
+      if (id === userId || this.pool.has(id) || have.has(id)) continue;
+      list.push(id);
+      have.add(id);
+    }
+    const extra = list.length - MAP_FINDER_CONFIG.POOL_FRIENDS_MAX_IDS;
+    if (extra > 0) list.splice(0, extra);
+  }
+
+  /**
    * Drop players not seen on an official server for too long, and keep the
    * pool to its size limit
    * @param {number} now - Current time
@@ -681,10 +808,14 @@ class MapFinder {
         .slice(0, MAP_FINDER_CONFIG.POOL_MAX);
       this.pool = new Map(keep);
     }
+    for (const id of Object.keys(this.poolFriends.crawled)) {
+      if (!this.pool.has(id)) delete this.poolFriends.crawled[id];
+    }
   }
 
   /**
-   * Load the pool and friends of friends kept from earlier runs
+   * Load the pool, its players' friends and friends of friends kept from
+   * earlier runs
    * @private
    */
   async _load() {
@@ -712,6 +843,19 @@ class MapFinder {
       };
       if (this.fof.ids.length) this.status.fof = "ready";
     }
+    if (Array.isArray(data?.poolFriends?.ids)) {
+      const crawled = {};
+      for (const [id, at] of Object.entries(data.poolFriends.crawled || {})) {
+        if (Validators.validateSteamId(id) && Number.isFinite(at)) crawled[id] = at;
+      }
+      this.poolFriends = {
+        ids: data.poolFriends.ids
+          .map(String)
+          .filter((id) => Validators.validateSteamId(id))
+          .slice(-MAP_FINDER_CONFIG.POOL_FRIENDS_MAX_IDS),
+        crawled,
+      };
+    }
     this._prunePool(Date.now());
   }
 
@@ -728,6 +872,7 @@ class MapFinder {
       api.save({
         version: 1,
         pool: Object.fromEntries(this.pool),
+        poolFriends: this.poolFriends,
         fof: this.fof,
       });
     }, 2000);

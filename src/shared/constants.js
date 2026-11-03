@@ -72,6 +72,10 @@ export const MAP_FINDER_CONFIG = {
   FOF_REQUEST_DELAY_MS: 250,
   POOL_MAX: 5000,
   POOL_TTL_MS: 14 * 24 * 60 * 60 * 1000,
+  // Friends of pool players kept to poll; the newest lists push out the
+  // oldest. At 100 ids a request, one pass over them is 200 requests,
+  // spread over the refreshes.
+  POOL_FRIENDS_MAX_IDS: 20000,
 };
 
 /**
@@ -80,7 +84,13 @@ export const MAP_FINDER_CONFIG = {
 export const JOIN_TARGET_PREFIXES = {
   MAP: "map-",
   SERVER: "srv-",
+  MAPS: "maps-",
 };
+
+/**
+ * Join id of the attempt on any of the pinned maps
+ */
+export const PINNED_MAPS_JOIN_ID = `${JOIN_TARGET_PREFIXES.MAPS}pinned`;
 
 export const WINDOW_CONFIG = {
   WIDTH: 850,

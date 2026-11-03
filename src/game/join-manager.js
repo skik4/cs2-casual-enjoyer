@@ -87,7 +87,8 @@ class JoinManager {
     return Object.entries(this.joinStates).some(
       ([id, state]) =>
         (id.startsWith(JOIN_TARGET_PREFIXES.MAP) ||
-          id.startsWith(JOIN_TARGET_PREFIXES.SERVER)) &&
+          id.startsWith(JOIN_TARGET_PREFIXES.SERVER) ||
+          id.startsWith(JOIN_TARGET_PREFIXES.MAPS)) &&
         this.isActive(state)
     );
   }
@@ -121,18 +122,24 @@ class JoinManager {
 
   /**
    * Start joining a map - any known official casual server playing it - or
-   * one server of it, through the players known to be there
+   * one server of it, or any of several maps, through the players known to
+   * be there
    * @param {Object} target
-   * @param {string} target.map - Map code
+   * @param {string} [target.map] - Map code
+   * @param {string[]|Function} [target.maps] - Several maps instead, or a
+   *   function returning them, read again every iteration
    * @param {string|null} [target.serverId] - One server, null for any
-   * @param {string} [target.label] - Name shown for the attempt
+   * @param {string} [target.joinId] - Id of the attempt, when not the map's
+   * @param {string|Function} [target.label] - Name shown for the attempt
    * @param {Function} target.getCandidateIds - Players to join through, best
    *   first; read again every iteration so new arrivals count
    */
   async startMapJoin(target) {
-    const join_id = target.serverId
-      ? getServerJoinId(target.serverId)
-      : getMapJoinId(target.map);
+    const join_id =
+      target.joinId ??
+      (target.serverId
+        ? getServerJoinId(target.serverId)
+        : getMapJoinId(target.map));
     return this._startAttempt(join_id, (user_steam_id, auth) =>
       this.resolveMapTarget(target, user_steam_id, auth)
     );
@@ -187,13 +194,17 @@ class JoinManager {
     const user = presence.get(String(user_steam_id)) ?? null;
     if (!user) return { user: null, target: null };
 
+    const maps =
+      typeof target.maps === "function"
+        ? target.maps()
+        : (target.maps ?? [target.map]);
     // Official means a running casual match on one of Valve's servers
     const onMap = candidateIds
       .map((id) => presence.get(id))
       .filter(
         (player) =>
           player?.official &&
-          player.map === target.map &&
+          maps.includes(player.map) &&
           (!target.serverId || player.serverId === target.serverId)
       );
     const servers = new Set(onMap.map((player) => player.serverId));
@@ -213,7 +224,9 @@ class JoinManager {
     return {
       user,
       target: {
-        personaname: target.label || null,
+        personaname:
+          (typeof target.label === "function" ? target.label() : target.label) ||
+          null,
         inSupportedMode: joinable.length > 0,
         connect: pick?.connect ?? null,
         joinAs: pick?.steamid ?? null,
@@ -228,14 +241,14 @@ class JoinManager {
           // while after the match ends and the server moves on
           const gsiNow = this.cs2Manager?.getGsiUserState?.() ?? null;
           if (gsiNow?.inMatch) {
-            return gsiNow.mapName === target.map && gsiNow.phase !== "gameover";
+            return maps.includes(gsiNow.mapName) && gsiNow.phase !== "gameover";
           }
           if (!userInfo.serverId) return false;
           // Any server of the map will do - even one whose known players
           // left as the user arrived
           return (
             servers.has(userInfo.serverId) ||
-            Boolean(userInfo.official && userInfo.map === target.map)
+            Boolean(userInfo.official && maps.includes(userInfo.map))
           );
         },
       },

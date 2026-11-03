@@ -298,3 +298,37 @@ describe("getFriendIdsOf", () => {
     await expect(SteamAPIClient.getFriendIdsOf("76561198000000001", KEY)).resolves.toEqual([]);
   });
 });
+
+describe("friends statuses", () => {
+  const withoutServer = OFFICIAL_CASUAL.replace(' "game_server_steam_id" "90071992547409921"', "");
+
+  test("a friend's server comes from the account when rich presence leaves it out", async () => {
+    // As Steam answers in practice: rich presence seldom carries the server
+    const data = {
+      response: {
+        accounts: [
+          {
+            public_data: { steamid: A, persona_name: "a" },
+            private_data: {
+              game_id: "730",
+              rich_presence_kv: withoutServer,
+              game_server_steam_id: OFFICIAL_SERVER,
+            },
+          },
+          account(B, "", "570"),
+        ],
+      },
+    };
+
+    const friends = await SteamAPIResponseProcessor.processFriendsStatusesResponse(data, {});
+
+    expect(friends).toHaveLength(1);
+    expect(friends[0]).toMatchObject({
+      steamid: A,
+      game_server_id: OFFICIAL_SERVER,
+      game_map: "de_dust2",
+      in_casual_mode: true,
+      join_available: true,
+    });
+  });
+});

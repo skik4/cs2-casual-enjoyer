@@ -1,6 +1,6 @@
 /**
- * Jest tests for MapKeeper: after a match on the kept map ends, or when CS2
- * loads another map, another server of the kept map is joined
+ * Jest tests for MapKeeper: pinned maps joined as one, and joined again by
+ * themselves after a match on one of them ends or CS2 is on another map
  */
 
 jest.mock("../src/utils/logger.js", () => ({
@@ -10,9 +10,9 @@ jest.mock("../src/utils/logger.js", () => ({
 
 import mapKeeper from "../src/game/map-keeper.js";
 import gsiManager from "../src/game/gsi-manager.js";
-import joinManager, { getMapJoinId } from "../src/game/join-manager.js";
+import joinManager from "../src/game/join-manager.js";
 import mapFinder from "../src/game/map-finder.js";
-import { STATUS_TYPES } from "../src/shared/constants.js";
+import { PINNED_MAPS_JOIN_ID, STATUS_TYPES } from "../src/shared/constants.js";
 
 const USER = "76561198000000001";
 
@@ -31,6 +31,7 @@ beforeEach(() => {
   joinStates = {};
   startMapJoin = jest.spyOn(joinManager, "startMapJoin").mockResolvedValue();
   jest.spyOn(joinManager, "getJoinStates").mockImplementation(() => joinStates);
+  jest.spyOn(joinManager, "cancelJoin").mockImplementation(() => {});
   jest.spyOn(mapFinder, "setNeed").mockImplementation(() => {});
 });
 
@@ -40,29 +41,38 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-test("joins another server of the kept map once its match ends", () => {
+test("joins a server of a pinned map once the match on one ends", () => {
   cs2("de_dust2");
-  mapKeeper.keep("de_dust2");
+  mapKeeper.toggle("de_dust2");
   expect(startMapJoin).not.toHaveBeenCalled();
 
   // As seen live: the match ended 8:2 and the server went on to Inferno
   cs2("de_dust2", "gameover");
 
   expect(startMapJoin).toHaveBeenCalledTimes(1);
-  expect(startMapJoin.mock.calls[0][0]).toMatchObject({ map: "de_dust2", serverId: null });
+  expect(startMapJoin.mock.calls[0][0]).toMatchObject({ joinId: PINNED_MAPS_JOIN_ID });
 });
 
-test("joins the kept map when CS2 is on another one", () => {
-  mapKeeper.keep("de_dust2");
+test("one join takes any pinned map, read again as pins change", () => {
+  mapKeeper.toggle("de_dust2");
+  mapKeeper.toggle("de_mirage");
   cs2("de_inferno", "warmup");
 
   expect(startMapJoin).toHaveBeenCalledTimes(1);
+  const target = startMapJoin.mock.calls[0][0];
+  expect(target.maps()).toEqual(["de_dust2", "de_mirage"]);
+  expect(target.label()).toBe("Dust II / Mirage");
+
+  mapKeeper.toggle("de_dust2");
+  expect(target.maps()).toEqual(["de_mirage"]);
 });
 
-test("stays quiet in the menu, in another mode, and on states it has seen", () => {
-  mapKeeper.keep("de_dust2");
+test("stays quiet in the menu, in another mode, on a pinned map and on states it has seen", () => {
+  mapKeeper.toggle("de_dust2");
+  mapKeeper.toggle("de_mirage");
   cs2(null);
   cs2("de_inferno", "live", "competitive");
+  cs2("de_mirage", "warmup");
   expect(startMapJoin).not.toHaveBeenCalled();
 
   cs2("de_inferno", "warmup");
@@ -70,40 +80,44 @@ test("stays quiet in the menu, in another mode, and on states it has seen", () =
   expect(startMapJoin).toHaveBeenCalledTimes(1);
 });
 
-test("starts no second join while one for the map runs", () => {
-  joinStates = { [getMapJoinId("de_dust2")]: { status: STATUS_TYPES.CONNECTING, cancelled: false } };
-  mapKeeper.keep("de_dust2");
+test("starts no second join while one runs", () => {
+  joinStates = { [PINNED_MAPS_JOIN_ID]: { status: STATUS_TYPES.CONNECTING, cancelled: false } };
+  mapKeeper.toggle("de_dust2");
 
   cs2("de_mirage", "warmup");
+  mapKeeper.join();
 
   expect(startMapJoin).not.toHaveBeenCalled();
 });
 
-test("lets go when the user joins elsewhere or cancels its join", () => {
-  mapKeeper.keep("de_dust2");
+test("the pins go when the user joins a friend or a map not pinned, or cancels their join", () => {
+  mapKeeper.toggle("de_dust2");
   mapKeeper.userJoined("de_dust2");
-  expect(mapKeeper.getMap()).toBe("de_dust2");
+  expect(mapKeeper.getMaps()).toEqual(["de_dust2"]);
   mapKeeper.userJoined("de_mirage");
-  expect(mapKeeper.getMap()).toBeNull();
+  expect(mapKeeper.getMaps()).toEqual([]);
 
-  mapKeeper.keep("de_dust2");
+  mapKeeper.toggle("de_dust2");
   mapKeeper.userJoined(null);
-  expect(mapKeeper.getMap()).toBeNull();
+  expect(mapKeeper.getMaps()).toEqual([]);
 
-  mapKeeper.keep("de_dust2");
-  mapKeeper.userCancelled("map-de_mirage");
-  expect(mapKeeper.getMap()).toBe("de_dust2");
-  mapKeeper.userCancelled(getMapJoinId("de_dust2"));
-  expect(mapKeeper.getMap()).toBeNull();
+  mapKeeper.toggle("de_dust2");
+  mapKeeper.userCancelled("map-de_dust2");
+  expect(mapKeeper.getMaps()).toEqual(["de_dust2"]);
+  mapKeeper.userCancelled(PINNED_MAPS_JOIN_ID);
+  expect(mapKeeper.getMaps()).toEqual([]);
 });
 
-test("keeps the map finder polling while a map is kept", () => {
+test("unpinning the last map ends its join and lets the map finder rest", () => {
   const listener = jest.fn();
   mapKeeper.onChange(listener);
-
   mapKeeper.toggle("de_dust2");
   expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
+
+  joinStates = { [PINNED_MAPS_JOIN_ID]: { status: STATUS_TYPES.WAITING, cancelled: false } };
   mapKeeper.toggle("de_dust2");
+
+  expect(joinManager.cancelJoin).toHaveBeenCalledWith(PINNED_MAPS_JOIN_ID, "unpinned");
   expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
   expect(listener).toHaveBeenCalledTimes(2);
 });

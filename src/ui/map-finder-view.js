@@ -1,5 +1,5 @@
 // Shared constants
-import { JOIN_TARGET_PREFIXES } from "../shared/constants.js";
+import { JOIN_TARGET_PREFIXES, PINNED_MAPS_JOIN_ID } from "../shared/constants.js";
 
 // Core singletons
 import appStateManager from "../core/app-state-manager.js";
@@ -28,6 +28,10 @@ import { t, tPlural, onLanguageChange } from "../i18n/i18n-manager.js";
 // Names and scores come from other players
 const escapeHtml = DOMUtils.escapeHtml;
 
+// A clear button waits this long for its second click, as a fake friend's
+// remove button does
+const CLEAR_CONFIRM_MS = 3000;
+
 /**
  * "[ 3 : 1 ]" as "3 : 1"
  * @param {string|null} score - Rich presence score
@@ -46,6 +50,8 @@ class MapFinderView {
   static keyDetailsOpen = false;
   static _initialized = false;
   static _lastListHtml = null;
+  // Clear buttons waiting for their second click: id -> timer
+  static _armedClear = new Map();
 
   /**
    * Wire the view once
@@ -63,6 +69,10 @@ class MapFinderView {
         mapKeeper.toggle(keep.dataset.keepMap);
         return;
       }
+      if (event.target.closest("[data-unpin-all]")) {
+        mapKeeper.clear();
+        return;
+      }
       const button = event.target.closest('[id^="join-btn-"]');
       if (button) {
         this.handleJoinClick(button);
@@ -77,6 +87,12 @@ class MapFinderView {
     );
     DOMUtils.getElementById("fof-key-delete")?.addEventListener("click", () =>
       this.deleteFofKey()
+    );
+    DOMUtils.getElementById("pool-clear")?.addEventListener("click", () =>
+      this.confirmClear("pool-clear", () => mapFinder.clearPool())
+    );
+    DOMUtils.getElementById("fof-clear")?.addEventListener("click", () =>
+      this.confirmClear("fof-clear", () => mapFinder.restartFof())
     );
     DOMUtils.getElementById("fof-key-toggle")?.addEventListener("click", () => {
       this.keyDetailsOpen = !this.keyDetailsOpen;
@@ -138,10 +154,14 @@ class MapFinderView {
       joinManager.cancelJoin(joinId);
       return;
     }
+    if (joinId === PINNED_MAPS_JOIN_ID) {
+      mapKeeper.join();
+      return;
+    }
 
     const map = button.closest(".map-card")?.dataset.map;
     if (!map) return;
-    // Joining another map, the user no longer keeps the one kept
+    // Joining a map not pinned, the user no longer keeps the pinned ones
     mapKeeper.userJoined(map);
 
     if (joinId.startsWith(JOIN_TARGET_PREFIXES.SERVER)) {
@@ -224,9 +244,9 @@ class MapFinderView {
 
     const joinStates = joinManager.getJoinStates();
     const maps = mapFinder.getMaps();
-    const html = maps
-      .map((entry) => this.renderMapCard(entry, joinStates))
-      .join("");
+    const html =
+      this.renderPinnedRow(maps, joinStates) +
+      maps.map((entry) => this.renderMapCard(entry, joinStates)).join("");
     // The finder notifies on every refresh, most of which change nothing
     if (html !== this._lastListHtml) {
       list.innerHTML = html;
@@ -237,6 +257,83 @@ class MapFinderView {
     this.renderEmpty(maps.length);
     this.renderStatus();
     this.renderFofKey();
+    this.renderClearButtons();
+  }
+
+  /**
+   * Clear on a second click within a few seconds; the first only asks
+   * @param {string} id - Button id
+   * @param {Function} clear - What the button clears
+   */
+  static confirmClear(id, clear) {
+    const timer = this._armedClear.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      this._armedClear.delete(id);
+      clear();
+    } else {
+      this._armedClear.set(
+        id,
+        setTimeout(() => {
+          this._armedClear.delete(id);
+          this.renderClearButtons();
+        }, CLEAR_CONFIRM_MS)
+      );
+    }
+    this.renderClearButtons();
+  }
+
+  /**
+   * The clear buttons: idle, or asking for the second click. One with
+   * nothing to clear is off.
+   */
+  static renderClearButtons() {
+    const status = mapFinder.getStatus();
+    const buttons = [
+      ["pool-clear", "clearPool", status.poolSize + status.poolFriendsSize],
+      ["fof-clear", "clearFof", status.fofSize],
+    ];
+    for (const [id, key, count] of buttons) {
+      const button = DOMUtils.getElementById(id);
+      if (!button) continue;
+      const armed = this._armedClear.has(id);
+      button.textContent = t(armed ? "mapFinder.confirmClear" : `mapFinder.${key}`);
+      button.title = t(`mapFinder.${key}Title`);
+      button.classList.toggle("armed", armed);
+      button.disabled = !count && !armed;
+    }
+  }
+
+  /**
+   * The pinned maps above the list, with one Join that takes a server of
+   * any of them
+   * @param {Array<{map: string, freeServers: number}>} maps - Known maps
+   * @param {Object} joinStates - Join states by id
+   * @returns {string} - Nothing while no map is pinned
+   */
+  static renderPinnedRow(maps, joinStates) {
+    const pinned = mapKeeper.getMaps();
+    if (!pinned.length) return "";
+    const freeServers = maps
+      .filter((entry) => pinned.includes(entry.map))
+      .reduce((sum, entry) => sum + entry.freeServers, 0);
+    const here = pinned.includes(userLocation.getMap());
+    let idleText;
+    if (here) idleText = t("join.onPinnedMap");
+    else if (freeServers > 1) {
+      idleText = t("mapFinder.freeServers", { count: freeServers });
+    }
+    const slot = { free: freeServers > 0, casual: true, here, idleText };
+
+    return `
+      <div class="friend pinned-row">
+        <div class="friend-info">
+          <span class="personaname">${escapeHtml(t("mapFinder.pinnedTitle"))}</span>
+          <span class="game-line"><span class="game-where">${escapeHtml(mapKeeper.getLabel())}</span>${this.renderLabel(PINNED_MAPS_JOIN_ID, joinStates, slot)}</span>
+        </div>
+        <button class="link-btn unpin-all-btn" data-unpin-all>${escapeHtml(t("mapFinder.unpinAll"))}</button>
+        ${this.renderJoinButton(PINNED_MAPS_JOIN_ID, joinStates, slot)}
+      </div>`;
   }
 
   /**
@@ -322,13 +419,12 @@ class MapFinderView {
   }
 
   /**
-   * Pin that keeps a map: after a match there ends, another server of the
-   * map is joined
+   * Pin that adds a map to the pinned ones
    * @param {string} map - Map code
    * @returns {string}
    */
   static renderKeepButton(map) {
-    const kept = mapKeeper.getMap() === map;
+    const kept = mapKeeper.isKept(map);
     const title = t(kept ? "mapFinder.keeping" : "mapFinder.keep");
     return `
       <button class="icon-btn keep-btn${kept ? " active" : ""}" data-keep-map="${escapeHtml(map)}" title="${escapeHtml(title)}" aria-pressed="${kept}">
@@ -391,6 +487,9 @@ class MapFinderView {
       parts.push(tPlural("mapFinder.searchingAmong", status.polled));
     }
     if (status.fof === "crawling") parts.push(t("mapFinder.fofCrawling"));
+    if (status.poolFriends === "crawling") {
+      parts.push(t("mapFinder.poolFriendsCrawling"));
+    }
     DOMUtils.setText("map-finder-status", parts.join(" · "));
   }
 
@@ -410,6 +509,7 @@ class MapFinderView {
       "fof-summary",
       `${t("mapFinder.sources", {
         pool: status.poolSize,
+        poolFriends: status.poolFriendsSize,
         fof: status.fofSize,
       })} · ${keyText}`
     );

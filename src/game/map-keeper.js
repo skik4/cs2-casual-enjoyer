@@ -1,26 +1,27 @@
 // Shared constants
-import { GAME_MODES } from "../shared/constants.js";
+import { GAME_MODES, PINNED_MAPS_JOIN_ID } from "../shared/constants.js";
 
 // Game singletons
 import gsiManager from "./gsi-manager.js";
-import joinManager, { getMapJoinId } from "./join-manager.js";
+import joinManager from "./join-manager.js";
 import mapFinder, { mapLabel } from "./map-finder.js";
 
 // UI and utilities
 import logger from "../utils/logger.js";
 
 /**
- * Keeps the user on one map. A casual server loads another map when its
- * match ends; with a map kept, the app then joins another server of that
- * map by itself. It goes by what CS2 reports: the kept map's match ending,
- * or a match on another map. It stays quiet in the menu, so leaving a match
- * never pulls the user back in, and lets go once the user joins something
- * else or cancels its join.
+ * The maps the user pinned, and keeping the user on them. One join takes a
+ * server of any pinned map, the first with a free slot. A casual server
+ * loads another map when its match ends, so once CS2 reports the match over
+ * or a casual match on a map not pinned, that join starts by itself. It
+ * stays quiet in the menu, so leaving a match never pulls the user back in,
+ * and the pins go once the user joins a friend or a map not pinned, or
+ * cancels their join.
  */
 class MapKeeper {
   constructor() {
-    /** @type {string|null} */
-    this.map = null;
+    /** @type {string[]} Pinned map codes, in the order pinned */
+    this.maps = [];
     this.listeners = new Set();
     this._gsiUnsubscribe = null;
     // CS2's last map and match state seen in a casual match
@@ -28,57 +29,82 @@ class MapKeeper {
   }
 
   /**
-   * The kept map
-   * @returns {string|null} - Map code, e.g. de_dust2
+   * The pinned maps
+   * @returns {string[]} - Map codes, e.g. de_dust2
    */
-  getMap() {
-    return this.map;
+  getMaps() {
+    return [...this.maps];
   }
 
   /**
-   * Keep a map, or stop keeping one
-   * @param {string|null} map - Map code, null to stop
+   * @param {string} map - Map code
+   * @returns {boolean}
    */
-  keep(map) {
-    const next = map ?? null;
-    if (next === this.map) return;
-    this.map = next;
-    this._lastSeen = "";
-    if (this.map && !this._gsiUnsubscribe) {
-      this._gsiUnsubscribe = gsiManager.onChange(() => this._check());
-    }
-    // Its join needs servers known now, not when the Maps view last looked
-    mapFinder.setNeed("keep", Boolean(this.map));
-    this._notify();
-    this._check();
+  isKept(map) {
+    return this.maps.includes(map);
   }
 
   /**
-   * Keep a map, or stop keeping it if it is kept already
+   * The pinned maps by name, e.g. "Dust II / Mirage"
+   * @returns {string}
+   */
+  getLabel() {
+    return this.maps.map(mapLabel).join(" / ");
+  }
+
+  /**
+   * Pin a map, or unpin it if it is pinned already
    * @param {string} map - Map code
    */
   toggle(map) {
-    this.keep(this.map === map ? null : map);
+    this.maps = this.isKept(map)
+      ? this.maps.filter((kept) => kept !== map)
+      : [...this.maps, map];
+    this._changed();
   }
 
   /**
-   * The user started a join: one anywhere but the kept map lets it go
+   * Unpin every map
+   */
+  clear() {
+    if (!this.maps.length) return;
+    this.maps = [];
+    this._changed();
+  }
+
+  /**
+   * The user started a join: a friend or a map not pinned lets the pins go
    * @param {string|null} map - Map of the join, null for a friend
    */
   userJoined(map) {
-    if (this.map && map !== this.map) this.keep(null);
+    if (this.maps.length && (map === null || !this.isKept(map))) this.clear();
   }
 
   /**
-   * The user cancelled a join: cancelling the kept map's own lets it go
+   * The user cancelled a join: cancelling the pinned maps' own lets them go
    * @param {string} joinId - The cancelled attempt
    */
   userCancelled(joinId) {
-    if (this.map && joinId === getMapJoinId(this.map)) this.keep(null);
+    if (joinId === PINNED_MAPS_JOIN_ID) this.clear();
   }
 
   /**
-   * Subscribe to the kept map changing
+   * Join a server of any pinned map, unless that join runs already. The
+   * maps are read again every iteration, so pinning or unpinning one while
+   * it runs counts.
+   */
+  join() {
+    if (!this.maps.length || this._joining()) return;
+    joinManager.startMapJoin({
+      joinId: PINNED_MAPS_JOIN_ID,
+      maps: () => this.getMaps(),
+      label: () => this.getLabel(),
+      getCandidateIds: () => mapFinder.getCandidateIdsForMaps(this.getMaps()),
+    });
+  }
+
+  /**
+   * Subscribe to the pinned maps changing
    * @param {Function} listener - Called with no arguments
    * @returns {Function} - Unsubscribe
    */
@@ -88,26 +114,51 @@ class MapKeeper {
   }
 
   /**
-   * Stop keeping and forget listeners (used by tests)
+   * Unpin everything and forget listeners (used by tests)
    */
   reset() {
     if (this._gsiUnsubscribe) this._gsiUnsubscribe();
     this._gsiUnsubscribe = null;
-    this.map = null;
+    this.maps = [];
     this._lastSeen = "";
     this.listeners.clear();
     mapFinder.setNeed("keep", false);
   }
 
   /**
-   * Join the kept map again once CS2 shows the user elsewhere in a casual
-   * match: the kept map's match over, or another map loaded. Only a change
-   * counts, so a join that found nothing is not restarted on every state
-   * CS2 posts.
+   * @returns {boolean} - Whether the pinned maps' join runs
+   * @private
+   */
+  _joining() {
+    return joinManager.isActive(joinManager.getJoinStates()[PINNED_MAPS_JOIN_ID]);
+  }
+
+  /**
+   * @private
+   */
+  _changed() {
+    if (this.maps.length && !this._gsiUnsubscribe) {
+      this._gsiUnsubscribe = gsiManager.onChange(() => this._check());
+    }
+    // With nothing pinned any more, its join has nowhere to go
+    if (!this.maps.length && this._joining()) {
+      joinManager.cancelJoin(PINNED_MAPS_JOIN_ID, "unpinned");
+    }
+    // Its join needs servers known now, not when the Maps view last looked
+    mapFinder.setNeed("keep", this.maps.length > 0);
+    this._lastSeen = "";
+    this._notify();
+    this._check();
+  }
+
+  /**
+   * Join a pinned map once CS2 shows the user elsewhere in a casual match:
+   * the match over, or a map not pinned. Only a change counts, so a join
+   * that found nothing is not restarted on every state CS2 posts.
    * @private
    */
   _check() {
-    if (!this.map) return;
+    if (!this.maps.length) return;
     const gsi = gsiManager.getUserState();
     // In the menu, loading or another mode there is nothing to rejoin
     if (!gsi?.inMatch || gsi.mode !== GAME_MODES.CASUAL) {
@@ -118,23 +169,15 @@ class MapKeeper {
     const seen = `${gsi.mapName}\n${over}`;
     if (seen === this._lastSeen) return;
     this._lastSeen = seen;
-    if (gsi.mapName === this.map && !over) return;
+    if (this.isKept(gsi.mapName) && !over) return;
+    if (this._joining()) return;
 
-    const map = this.map;
-    const joinId = getMapJoinId(map);
-    if (joinManager.isActive(joinManager.getJoinStates()[joinId])) return;
-
-    logger.info("MapKeeper", "Joining the kept map again", {
-      map,
+    logger.info("MapKeeper", "Joining a pinned map", {
+      maps: this.maps,
       from: gsi.mapName,
       over,
     });
-    joinManager.startMapJoin({
-      map,
-      serverId: null,
-      label: mapLabel(map),
-      getCandidateIds: () => mapFinder.getCandidateIds(map),
-    });
+    this.join();
   }
 
   /**
@@ -145,7 +188,7 @@ class MapKeeper {
       try {
         listener();
       } catch (error) {
-        logger.error("MapKeeper", "Keep listener failed", {
+        logger.error("MapKeeper", "Pin listener failed", {
           error: error.message,
         });
       }
