@@ -111,7 +111,7 @@ beforeEach(() => {
 
   // Wired as App's constructor wires them
   const inputManager = { getSteamId: () => USER, getAuth: () => AUTH };
-  appFriendsManager.setManagers(inputManager, appEventManager, null);
+  appFriendsManager.setManagers(inputManager, appEventManager);
   appEventManager.setManagers(inputManager, appFriendsManager);
 
   appEventManager.setupEventListeners();

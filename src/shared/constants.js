@@ -5,6 +5,9 @@
 export const API_CONFIG = {
   STEAM_API_BASE: "https://api.steampowered.com",
   AUTO_REFRESH_INTERVAL_MS: 3000,
+  // The first refresh of a run starts this long after the saved credentials
+  // check out at startup. No reason for the wait is recorded.
+  AUTO_REFRESH_START_MS: 500,
   JOIN_LOOP_INTERVAL_MS: 200,
   JOIN_RETRY_INTERVAL_MS: 400,
   MISSING_TIMEOUT_MS: 60000,

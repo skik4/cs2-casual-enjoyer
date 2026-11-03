@@ -1,3 +1,6 @@
+// Shared constants
+import { API_CONFIG } from "../shared/constants.js";
+
 // Core singletons
 import appStateManager from "./app-state-manager.js";
 
@@ -26,19 +29,71 @@ class AppFriendsManager {
   constructor() {
     this.inputManager = null;
     this.eventManager = null;
-    this.validationManager = null;
+    // Set once the startup refresh has started; it never starts twice
+    this.initialLoadAttempted = false;
   }
 
   /**
    * Set manager references
    * @param {Object} inputManager - Reference to input manager
    * @param {Object} eventManager - Reference to event manager
-   * @param {Object} validationManager - Reference to validation manager
    */
-  setManagers(inputManager, eventManager, validationManager) {
+  setManagers(inputManager, eventManager) {
     this.inputManager = inputManager;
     this.eventManager = eventManager;
-    this.validationManager = validationManager;
+  }
+
+  /**
+   * Start the auto-refresh once per run, when the inputs check out: saved
+   * settings whose token has not expired, and a saved friends list to
+   * refresh. Called on every validation of the inputs.
+   * @param {Object} facts - What validateInputs found
+   * @param {boolean} facts.hasSaved - Saved settings hold a SteamID and a credential
+   * @param {boolean} facts.validSteamId - The SteamID field holds a SteamID64
+   * @param {boolean} facts.validApiKey - The credential field holds a key or token
+   * @param {boolean} facts.tokenExpired - The token, in the field or saved, has expired
+   */
+  startAutoRefreshOnce({ hasSaved, validSteamId, validApiKey, tokenExpired }) {
+    // Don't start auto-refresh if tutorial is active
+    if (tutorialManager.isActive) {
+      logger.info("App", "Auto-refresh not started - tutorial is active");
+      return;
+    }
+
+    // Don't start auto-refresh if we already attempted initial load
+    if (this.initialLoadAttempted) {
+      return;
+    }
+
+    // Only start auto-refresh for users with saved settings that include friends list
+    const savedFriendsIds = appStateManager.getState("savedFriendsIds");
+    const hasSavedFriends = savedFriendsIds && savedFriendsIds.length > 0;
+    const hasValidSavedSettings = hasSaved && !tokenExpired;
+
+    const hasValidCurrentInputs = validSteamId && validApiKey && !tokenExpired;
+
+    // Start auto-refresh ONLY if we have valid saved settings AND saved friends list
+    if (hasValidSavedSettings && hasSavedFriends) {
+      logger.info("App", "Starting auto-refresh - validation passed", {
+        hasValidSavedSettings,
+        hasSavedFriends,
+        friendsCount: savedFriendsIds?.length || 0,
+      });
+
+      setTimeout(() => {
+        this.initialLoadAttempted = true;
+        this.startAutoRefresh().catch((error) => {
+          logger.error("App", "Auto-refresh startup failed: " + error.message);
+        });
+      }, API_CONFIG.AUTO_REFRESH_START_MS);
+    } else {
+      logger.info("App", "Auto-refresh not started - validation failed", {
+        hasValidCurrentInputs,
+        hasValidSavedSettings,
+        hasSavedFriends,
+        isTokenExpired: tokenExpired,
+      });
+    }
   }
 
   /**

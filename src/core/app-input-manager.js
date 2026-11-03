@@ -19,16 +19,16 @@ import { t } from "../i18n/i18n-manager.js";
  */
 class AppInputManager {
   constructor() {
-    this.validationManager = null;
+    this.friendsManager = null;
     this.lastAuth = null;
   }
 
   /**
-   * Set validation manager reference
-   * @param {Object} validationManager - Reference to validation manager
+   * Set friends manager reference
+   * @param {Object} friendsManager - Reference to friends manager
    */
-  setValidationManager(validationManager) {
-    this.validationManager = validationManager;
+  setFriendsManager(friendsManager) {
+    this.friendsManager = friendsManager;
   } /**
    * Get Steam ID input element
    * @returns {HTMLElement|null} - Steam ID input element
@@ -262,13 +262,13 @@ class AppInputManager {
     });
 
     // Check if we should start auto-refresh
-    if (this.validationManager) {
-      this.validationManager.checkAndStartAutoRefresh(
+    if (this.friendsManager) {
+      this.friendsManager.startAutoRefreshOnce({
         hasSaved,
         validSteamId,
         validApiKey,
-        isTokenExpired
-      );
+        tokenExpired: isTokenExpired,
+      });
     }
   }
 }

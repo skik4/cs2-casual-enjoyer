@@ -54,7 +54,6 @@ jest.mock("../src/ui/tutorial/tutorial-manager.js", () => ({
 }));
 
 import appInputManager from "../src/core/app-input-manager.js";
-import appValidationManager from "../src/core/app-validation-manager.js";
 import appFriendsManager from "../src/core/app-friends-manager.js";
 import appStateManager from "../src/core/app-state-manager.js";
 import DOMUtils from "../src/utils/dom-utils.js";
@@ -99,12 +98,11 @@ beforeEach(() => {
   appStateManager.batchUpdate({
     savedFriendsIds: [FRIEND],
     usingSavedFriends: true,
-    initialLoadAttempted: false,
   });
+  appFriendsManager.initialLoadAttempted = false;
 
   // Wired as App's constructor wires them
-  appInputManager.setValidationManager(appValidationManager);
-  appValidationManager.setFriendsManager(appFriendsManager);
+  appInputManager.setFriendsManager(appFriendsManager);
   start = jest.spyOn(appFriendsManager, "startAutoRefresh").mockResolvedValue();
 });
 

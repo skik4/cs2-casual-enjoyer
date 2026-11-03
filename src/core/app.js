@@ -2,7 +2,6 @@
 import appInputManager from "./app-input-manager.js";
 import appFriendsManager from "./app-friends-manager.js";
 import appEventManager from "./app-event-manager.js";
-import appValidationManager from "./app-validation-manager.js";
 import appStateManager from "./app-state-manager.js";
 
 // Game singletons
@@ -40,19 +39,13 @@ class App {
     this.inputManager = appInputManager;
     this.friendsManager = appFriendsManager;
     this.eventManager = appEventManager;
-    this.validationManager = appValidationManager;
     this.cs2Manager = cs2Manager;
 
     logger.info("App", "Setting up cross-references between managers...");
     // Set up cross-references
-    this.inputManager.setValidationManager(this.validationManager);
-    this.friendsManager.setManagers(
-      this.inputManager,
-      this.eventManager,
-      this.validationManager
-    );
+    this.inputManager.setFriendsManager(this.friendsManager);
+    this.friendsManager.setManagers(this.inputManager, this.eventManager);
     this.eventManager.setManagers(this.inputManager, this.friendsManager);
-    this.validationManager.setFriendsManager(this.friendsManager);
     logger.info("App", "App instance created successfully");
   }
   /**
