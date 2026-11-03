@@ -27,7 +27,7 @@
 
 ## How to Run
 
-The easiest way to use the application is to download the prebuilt `.exe` from the [Releases](https://github.com/skik4/cs2-casual-enjoyer-electron/releases) page and run it directly.  
+The easiest way to use the application is to download the prebuilt `.exe` from the [Releases](https://github.com/skik4/cs2-casual-enjoyer/releases) page and run it directly.  
 **No installation of Node.js or other dependencies is required.**
 
 ## How to Use
@@ -64,8 +64,8 @@ If you want to build the application yourself:
 1. **Clone the repository:**
 
    ```sh
-   git clone https://github.com/skik4/cs2-casual-enjoyer-electron.git
-   cd cs2-casual-enjoyer-electron
+   git clone https://github.com/skik4/cs2-casual-enjoyer.git
+   cd cs2-casual-enjoyer
    ```
 
 2. **Install dependencies:**
@@ -106,10 +106,10 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ### 🔗 Links & Support
 
-- **GitHub Repository**: [cs2-casual-enjoyer-electron](https://github.com/skik4/cs2-casual-enjoyer-electron)
-- **Latest Releases**: [Download Page](https://github.com/skik4/cs2-casual-enjoyer-electron/releases)
+- **GitHub Repository**: [cs2-casual-enjoyer](https://github.com/skik4/cs2-casual-enjoyer)
+- **Latest Releases**: [Download Page](https://github.com/skik4/cs2-casual-enjoyer/releases)
 - **Steam Profile**: [skik4](https://steamcommunity.com/id/skik4)
-- **Issues & Bug Reports**: [GitHub Issues](https://github.com/skik4/cs2-casual-enjoyer-electron/issues)
+- **Issues & Bug Reports**: [GitHub Issues](https://github.com/skik4/cs2-casual-enjoyer/issues)
 
 ### 👨‍💻 Created by skik4
 

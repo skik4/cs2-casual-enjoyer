@@ -47,11 +47,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/skik4/cs2-casual-enjoyer-electron.git"
+    "url": "https://github.com/skik4/cs2-casual-enjoyer.git"
   },
-  "homepage": "https://github.com/skik4/cs2-casual-enjoyer-electron#readme",
+  "homepage": "https://github.com/skik4/cs2-casual-enjoyer#readme",
   "bugs": {
-    "url": "https://github.com/skik4/cs2-casual-enjoyer-electron/issues"
+    "url": "https://github.com/skik4/cs2-casual-enjoyer/issues"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.27.2",

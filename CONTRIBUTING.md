@@ -15,8 +15,8 @@ Thank you for your interest in contributing to CS2 Casual Enjoyer! This document
 1. **Fork and clone the repository:**
 
    ```sh
-   git clone https://github.com/your-username/cs2-casual-enjoyer-electron.git
-   cd cs2-casual-enjoyer-electron
+   git clone https://github.com/your-username/cs2-casual-enjoyer.git
+   cd cs2-casual-enjoyer
    ```
 
 2. **Install dependencies:**
@@ -35,7 +35,7 @@ Thank you for your interest in contributing to CS2 Casual Enjoyer! This document
 
 ### Reporting Bugs
 
-1. Check [existing issues](https://github.com/skik4/cs2-casual-enjoyer-electron/issues) first
+1. Check [existing issues](https://github.com/skik4/cs2-casual-enjoyer/issues) first
 2. Create a new issue with:
    - Clear description of the problem
    - Steps to reproduce
