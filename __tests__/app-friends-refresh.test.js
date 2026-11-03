@@ -11,13 +11,13 @@ jest.mock("../src/game/join-manager.js", () => ({
     resetAll: jest.fn(),
   },
 }));
-jest.mock("../src/ui/ui-manager.js", () => ({
+jest.mock("../src/ui/friends-renderer.js", () => ({
   __esModule: true,
-  default: {
-    renderFriendsList: jest.fn(),
-    renderFakeFriendsList: jest.fn(),
-    showError: jest.fn(),
-  },
+  default: { renderFriendsList: jest.fn(), renderFakeFriendsList: jest.fn() },
+}));
+jest.mock("../src/ui/notification-manager.js", () => ({
+  __esModule: true,
+  default: { showError: jest.fn() },
 }));
 jest.mock("../src/steam/steam-api.js", () => ({
   __esModule: true,

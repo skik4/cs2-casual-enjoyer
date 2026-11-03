@@ -12,7 +12,8 @@ import joinJournal from "../game/join-journal.js";
 import mapFinder from "../game/map-finder.js";
 
 // UI and utilities
-import UIManager from "../ui/ui-manager.js";
+import StatusManager from "../ui/status-manager.js";
+import NotificationManager from "../ui/notification-manager.js";
 import AccountView from "../ui/account-view.js";
 import JoinBar from "../ui/join-bar.js";
 import GsiStatusIndicator from "../ui/gsi-status-indicator.js";
@@ -86,11 +87,11 @@ class App {
       // Setup JoinManager UI callbacks
       joinManager.setUICallbacks(
         (friendId, status) => {
-          UIManager.updateLabel(friendId, status);
+          StatusManager.updateLabel(friendId, status);
           // A map or server join needs fresh servers whatever tab is open
           mapFinder.setNeed("join", joinManager.hasActiveMapJoin());
         },
-        (friendId, status) => UIManager.updateJoinButton(friendId, status)
+        (friendId, status) => StatusManager.updateJoinButton(friendId, status)
       );
       logger.info("App", "JoinManager UI callbacks set");
 
@@ -153,7 +154,7 @@ class App {
       logger.info("App", "Step 7: Setting CS2 launch callback");
       // Set CS2 launch callback
       joinManager.setCS2LaunchCallback(async (friendId) => {
-        return UIManager.showCS2LaunchNotification(friendId, this.cs2Manager);
+        return NotificationManager.showCS2LaunchNotification(friendId, this.cs2Manager);
       });
       logger.info("App", "CS2 launch callback configured");
 
@@ -243,7 +244,7 @@ class App {
         "Error during frontend app initialization: " + error.message
       );
       logger.error("App", "Stack trace: " + error.stack);
-      UIManager.showError(
+      NotificationManager.showError(
         t("common.failedToInitializeAppPrefix") + error.message
       );
     }

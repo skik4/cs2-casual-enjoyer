@@ -33,13 +33,13 @@ jest.mock("../src/game/join-manager.js", () => ({
     getJoinStates: jest.fn(() => ({})),
   },
 }));
-jest.mock("../src/ui/ui-manager.js", () => ({
+jest.mock("../src/ui/friends-renderer.js", () => ({
   __esModule: true,
-  default: {
-    renderFriendsList: jest.fn(),
-    renderFakeFriendsList: jest.fn(),
-    showError: jest.fn(),
-  },
+  default: { renderFriendsList: jest.fn(), renderFakeFriendsList: jest.fn() },
+}));
+jest.mock("../src/ui/notification-manager.js", () => ({
+  __esModule: true,
+  default: { showError: jest.fn() },
 }));
 jest.mock("../src/steam/steam-api.js", () => ({
   __esModule: true,
@@ -68,7 +68,7 @@ jest.mock("../src/i18n/i18n-manager.js", () => ({
 
 import appStateManager from "../src/core/app-state-manager.js";
 import joinManager from "../src/game/join-manager.js";
-import UIManager from "../src/ui/ui-manager.js";
+import FriendsRenderer from "../src/ui/friends-renderer.js";
 import SteamAPI from "../src/steam/steam-api.js";
 import FakeFriendsManager from "../src/ui/fake-friends-manager.js";
 import appFriendsManager from "../src/core/app-friends-manager.js";
@@ -328,7 +328,7 @@ describe("AppFriendsManager.getFriendsWithActiveJoins", () => {
     expect(result.map((f) => f.steamid)).toEqual([ALICE, BOB]);
     expect(result[1].in_casual_mode).toBe(false);
     expect(appStateManager.getState("friendsData")).toBe(result);
-    expect(UIManager.renderFriendsList).toHaveBeenCalledWith(
+    expect(FriendsRenderer.renderFriendsList).toHaveBeenCalledWith(
       result,
       joinStates
     );

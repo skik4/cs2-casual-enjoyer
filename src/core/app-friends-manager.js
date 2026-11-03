@@ -9,7 +9,8 @@ import joinManager from "../game/join-manager.js";
 import userLocation from "../game/user-location.js";
 
 // UI and utilities
-import UIManager from "../ui/ui-manager.js";
+import FriendsRenderer from "../ui/friends-renderer.js";
+import NotificationManager from "../ui/notification-manager.js";
 import AccountView from "../ui/account-view.js";
 import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import SteamAPI from "../steam/steam-api.js";
@@ -145,7 +146,7 @@ class AppFriendsManager {
       return supportedFriends;
     } catch (error) {
       ErrorHandler.logError("App.fetchAndRenderFriendsByIds", error);
-      if (!keepStates) UIManager.showError(error.message || error);
+      if (!keepStates) NotificationManager.showError(error.message || error);
       throw error;
     }
   }
@@ -179,8 +180,8 @@ class AppFriendsManager {
    */
   renderLists(list, joinStates) {
     const { friends, fakeFriends } = FakeFriendsManager.splitFakeFriends(list);
-    UIManager.renderFriendsList(friends, joinStates);
-    UIManager.renderFakeFriendsList(fakeFriends, joinStates);
+    FriendsRenderer.renderFriendsList(friends, joinStates);
+    FriendsRenderer.renderFakeFriendsList(fakeFriends, joinStates);
   }
 
   /**
@@ -236,7 +237,7 @@ class AppFriendsManager {
     auth = Validators.extractApiKeyOrToken(auth);
 
     if (!steam_id || !auth) {
-      UIManager.showError(t("errors.pleaseEnterSteamIdAndApiKey"));
+      NotificationManager.showError(t("errors.pleaseEnterSteamIdAndApiKey"));
       return;
     }
 
@@ -245,7 +246,7 @@ class AppFriendsManager {
       auth,
     });
     if (!validation.valid) {
-      UIManager.showError(validation.errors.join(". "));
+      NotificationManager.showError(validation.errors.join(". "));
       return;
     }
 
@@ -269,9 +270,9 @@ class AppFriendsManager {
       let allFriendIds = [];
       try {
         allFriendIds = await SteamAPI.getFriendsList(steam_id, auth);
-        UIManager.hideNotification();
+        NotificationManager.hideNotification();
       } catch (err) {
-        UIManager.showError(err, steam_id);
+        NotificationManager.showError(err, steam_id);
         return;
       } finally {
         if (updateBtn) {
@@ -327,7 +328,7 @@ class AppFriendsManager {
       }
     } catch (error) {
       ErrorHandler.logError("App.updateFriendsList", error);
-      UIManager.showError(error.message || error, steam_id);
+      NotificationManager.showError(error.message || error, steam_id);
     } finally {
       if (updateBtn) {
         updateBtn.disabled = false;

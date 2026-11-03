@@ -6,7 +6,8 @@ import mapKeeper from "../game/map-keeper.js";
 import appStateManager from "./app-state-manager.js";
 
 // UI and utilities
-import UIManager from "../ui/ui-manager.js";
+import FriendsRenderer from "../ui/friends-renderer.js";
+import NotificationManager from "../ui/notification-manager.js";
 import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import ViewTabs from "../ui/view-tabs.js";
 import { FRIENDS_TEMPLATES } from "../ui/html-templates.js";
@@ -106,7 +107,7 @@ class AppEventManager {
     if (steamIdHelp) {
       steamIdHelp.addEventListener("click", (e) => {
         e.preventDefault();
-        UIManager.showSteamIdHelp();
+        NotificationManager.showSteamIdHelp();
       });
     }
 
@@ -114,7 +115,7 @@ class AppEventManager {
     if (apiKeyHelp) {
       apiKeyHelp.addEventListener("click", (e) => {
         e.preventDefault();
-        UIManager.showApiKeyHelp();
+        NotificationManager.showApiKeyHelp();
       });
     }
 
@@ -122,11 +123,11 @@ class AppEventManager {
     const filterInput = DOMUtils.getElementById("friend-filter-input");
     if (filterInput) {
       filterInput.addEventListener("input", () => {
-        if (UIManager.lastRenderedFriends) {
+        if (FriendsRenderer.lastRenderedFriends) {
           const joinStates = joinManager.getJoinStates();
           // Use the same incremental update as normal rendering
-          UIManager.renderFriendsList(
-            UIManager.lastRenderedFriends,
+          FriendsRenderer.renderFriendsList(
+            FriendsRenderer.lastRenderedFriends,
             joinStates
           );
         }
@@ -226,7 +227,7 @@ class AppEventManager {
       removed = await FakeFriendsManager.removeId(steamId);
     } catch (error) {
       ErrorHandler.logError("AppEventManager.removeFakeFriend", error);
-      UIManager.showError(error.message || error);
+      NotificationManager.showError(error.message || error);
       return;
     }
     if (!removed) return;
@@ -235,10 +236,10 @@ class AppEventManager {
     joinManager.cancelJoin(steamId);
 
     // The next poll no longer asks about it; until then, stop showing it
-    const remaining = UIManager.lastRenderedFakeFriends.filter(
+    const remaining = FriendsRenderer.lastRenderedFakeFriends.filter(
       (friend) => friend.steamid !== steamId
     );
-    UIManager.renderFakeFriendsList(remaining, joinManager.getJoinStates());
+    FriendsRenderer.renderFakeFriendsList(remaining, joinManager.getJoinStates());
     appStateManager.setState(
       "friendsData",
       (appStateManager.getState("friendsData") || []).filter(
@@ -285,7 +286,7 @@ class AppEventManager {
       added = await FakeFriendsManager.addId(steamId);
     } catch (error) {
       ErrorHandler.logError("AppEventManager.addFakeFriend", error);
-      UIManager.showError(error.message || error);
+      NotificationManager.showError(error.message || error);
       return;
     }
 
@@ -296,7 +297,7 @@ class AppEventManager {
 
     this.setFakeFriendError(input, null);
     input.value = "";
-    UIManager.showNotification(
+    NotificationManager.showNotification(
       `<span>${t("friends.fakeFriendAdded")}</span>`,
       "info"
     );

@@ -5,7 +5,7 @@ import appStateManager from "./app-state-manager.js";
 import joinManager from "../game/join-manager.js";
 
 // UI and utilities
-import UIManager from "../ui/ui-manager.js";
+import NotificationManager from "../ui/notification-manager.js";
 import AccountView from "../ui/account-view.js";
 import SteamAPI from "../steam/steam-api.js";
 import Validators from "../utils/validators.js";
@@ -77,7 +77,7 @@ class AppInputManager {
 
     const urlValidation = Validators.validateSteamUrl(pastedText);
     if (!urlValidation.valid) {
-      UIManager.showError(urlValidation.error);
+      NotificationManager.showError(urlValidation.error);
       return;
     }
 
@@ -90,7 +90,7 @@ class AppInputManager {
     } else if (urlValidation.type === "vanity") {
       const auth = this.getAuth();
       if (!auth) {
-        UIManager.showError(t("validation.vanityNeedsAuth"));
+        NotificationManager.showError(t("validation.vanityNeedsAuth"));
         return;
       }
 
@@ -105,14 +105,14 @@ class AppInputManager {
         );
         if (steamId) {
           steamIdInput.value = steamId;
-          UIManager.hideNotification();
+          NotificationManager.hideNotification();
         } else {
           steamIdInput.value = originalValue;
-          UIManager.showError(t("validation.vanityNotResolved"));
+          NotificationManager.showError(t("validation.vanityNotResolved"));
         }
       } catch (error) {
         steamIdInput.value = originalValue;
-        UIManager.showError(t("validation.vanityError") + error.message);
+        NotificationManager.showError(t("validation.vanityError") + error.message);
       } finally {
         steamIdInput.disabled = false;
         this.validateInputs();
