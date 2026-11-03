@@ -33,6 +33,29 @@ describe("map finder store", () => {
     await expect(readMapFinderStore(file)).resolves.toEqual(data);
   });
 
+  test("a write that breaks off halfway leaves the previous store readable", async () => {
+    const file = path.join(dir, "map-finder.json");
+    const before = { version: 1, pool: { [STEAM_ID]: { lastSeen: 1 } } };
+    await writeMapFinderStore(file, before);
+
+    // The app crashes, or the disk fills, with part of the new file written
+    const writeFile = jest
+      .spyOn(fs.promises, "writeFile")
+      .mockImplementationOnce(async (target, text) => {
+        fs.writeFileSync(target, String(text).slice(0, 10));
+        throw new Error("ENOSPC: no space left on device");
+      });
+    try {
+      await expect(
+        writeMapFinderStore(file, { version: 1, pool: {} })
+      ).resolves.toBe(false);
+    } finally {
+      writeFile.mockRestore();
+    }
+
+    await expect(readMapFinderStore(file)).resolves.toEqual(before);
+  });
+
   test("refuses anything that is not an object, or too big", async () => {
     const file = path.join(dir, "map-finder.json");
 
