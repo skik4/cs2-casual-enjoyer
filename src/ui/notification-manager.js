@@ -7,6 +7,7 @@ import {
 // UI and utilities
 import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
+import Validators from "../utils/validators.js";
 import logger from "../utils/logger.js";
 import i18n from "../i18n/i18n-manager.js";
 
@@ -70,7 +71,8 @@ class NotificationManager {
   static showUpdateError(steamId = "") {
     const currentSteamId =
       steamId || DOMUtils.getElementById("steam-id")?.value.trim() || "";
-    const privacyUrl = currentSteamId
+    // The id becomes a steam:// link: anything but a SteamID64 gets none
+    const privacyUrl = Validators.validateSteamId(currentSteamId)
       ? `steam://openurl/https://steamcommunity.com/profiles/${currentSteamId}/edit/settings/`
       : "";
 

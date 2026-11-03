@@ -194,6 +194,21 @@ export async function findCs2Dir(steamPath) {
 }
 
 /**
+ * reg.exe by its full path. Given a bare name, Node looks for the program
+ * in the working directory before PATH, so a reg.exe dropped next to the
+ * app - in the Downloads folder, say - would run in its place.
+ * @param {Object} [env] - Environment variables
+ * @returns {string}
+ */
+export function regExePath(env = process.env) {
+  return path.win32.join(
+    env.SystemRoot || env.windir || "C:\\Windows",
+    "System32",
+    "reg.exe"
+  );
+}
+
+/**
  * Read one registry value through reg.exe
  * @param {string} key - Registry key
  * @param {string} name - Value name
@@ -202,7 +217,7 @@ export async function findCs2Dir(steamPath) {
 function readRegistryValue(key, name) {
   return new Promise((resolve) => {
     execFile(
-      "reg",
+      regExePath(),
       ["query", key, "/v", name],
       { windowsHide: true, timeout: 5000 },
       (error, stdout) => {

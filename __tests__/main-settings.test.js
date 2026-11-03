@@ -105,3 +105,50 @@ describe("isAllowedExternalUrl", () => {
     expect(isAllowedExternalUrl(url)).toBe(expected);
   });
 });
+
+describe("isAllowedExternalUrl: steam:// commands", () => {
+  const STEAM_ID = "76561198000000001";
+
+  test.each([
+    // What the app itself sends the Steam client
+    ["steam://run/730/", true],
+    ["steam://run/730", true],
+    ["STEAM://Run/730/", true],
+    [`steam://rungame/730/${STEAM_ID}/+gcconnectG1A2B3C4D`, true],
+    [`steam://rungame/730/${STEAM_ID}/+gcconnect0A1B:2C_3D-4E`, true],
+    [
+      "steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig",
+      true,
+    ],
+    ["steam://openurl/https://steamcommunity.com/dev/apikey", true],
+    [
+      `steam://openurl/https://steamcommunity.com/profiles/${STEAM_ID}/edit/settings/`,
+      true,
+    ],
+    ["steam://url/SteamIDMyProfile", true],
+    // Launch options for CS2, or any other game
+    ["steam://run/730//-insecure +connect 203.0.113.1:27015", false],
+    ["steam://run/730/?-console", false],
+    ["steam://run/440/", false],
+    [`steam://rungame/730/${STEAM_ID}/+gcconnectG1A2B3C4D -console`, false],
+    [`steam://rungame/730/${STEAM_ID}/+gcconnectG1A2B3C4D/+map de_dust2`, false],
+    [`steam://rungame/730/${STEAM_ID}/+connect 203.0.113.1:27015`, false],
+    ["steam://rungame/730/not-a-steamid/+gcconnectG1A2B3C4D", false],
+    [`steam://rungame/440/${STEAM_ID}/+gcconnectG1A2B3C4D`, false],
+    // Other pages in the client's signed-in browser
+    ["steam://openurl/https://evil.example/login", false],
+    ["steam://openurl/https://steamcommunity.com.evil.example/", false],
+    ["steam://openurl/http://steamcommunity.com/", false],
+    ["steam://openurl/javascript:alert(1)", false],
+    ["steam://openurl/", false],
+    // Everything else the client's protocol can do
+    ["steam://install/730", false],
+    ["steam://uninstall/730", false],
+    ["steam://settings/account", false],
+    ["steam://exit", false],
+    ["steam://url/SteamIDMyProfile?x=1", false],
+    ["steam:run/730/", false],
+  ])("%s -> %s", (url, expected) => {
+    expect(isAllowedExternalUrl(url)).toBe(expected);
+  });
+});
