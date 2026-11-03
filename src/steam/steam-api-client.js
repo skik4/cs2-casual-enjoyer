@@ -35,8 +35,11 @@ class SteamAPIClient {
   static _batchers = new Map();
 
   /**
-   * Every batch currently awaiting its response. Each batch removes only its
-   * own entry, so overlapping batches cannot clear the coverage of another.
+   * Every request currently out, with the ids it asks about. A caller whose
+   * ids are in one waits for that request alone: the map finder's batch of
+   * thousands goes out as many requests one after the other, and the join
+   * loop and the friends refresh must not wait for the last of them. Each
+   * request removes only its own entry.
    * @type {Set<{ promise: Promise<Map<string, Object|null>>, ids: Set<string> }>}
    */
   static _inFlight = new Set();
@@ -138,16 +141,16 @@ class SteamAPIClient {
     }
     if (!missingIds.length) return result;
 
-    // Reuse any in-flight batch that already covers some of the missing ids
+    // Reuse any request already out that covers some of the missing ids
     const pending = [];
-    for (const batch of this._inFlight) {
-      if (!missingIds.some((id) => batch.ids.has(id))) continue;
-      pending.push(batch.promise);
-      missingIds = missingIds.filter((id) => !batch.ids.has(id));
+    for (const request of this._inFlight) {
+      if (!missingIds.some((id) => request.ids.has(id))) continue;
+      pending.push(request.promise);
+      missingIds = missingIds.filter((id) => !request.ids.has(id));
       if (!missingIds.length) break;
     }
 
-    // Whatever no batch covers gets a batch of its own
+    // Whatever no request covers gets a batch of its own
     if (missingIds.length) {
       pending.push(this._scheduleBatchForIds(missingIds, auth, context));
     }
@@ -197,34 +200,11 @@ class SteamAPIClient {
         // Drop the coordinator so later callers start a fresh one
         this._batchers.delete(key);
 
-        let settle;
-        const batch = {
-          promise: new Promise((res) => (settle = res)),
-          ids: new Set(requestIds),
-        };
-        this._inFlight.add(batch);
-
-        let mapById;
-        try {
-          mapById = await this._fetchLinkDetailsInChunks(
-            requestIds,
-            auth,
-            context
-          );
-        } finally {
-          // Remove only this batch, never the entry belonging to another
-          this._inFlight.delete(batch);
-        }
-
-        // Cache answers, negatives included, with a short TTL. A failed id is
-        // left uncached so the next call asks Steam again.
-        this._pruneCache();
-        for (const id of requestIds) {
-          if (mapById.has(id)) this._setCachedRaw(id, mapById.get(id));
-        }
-
-        // Resolve in-flight promise for any waiters
-        settle(mapById);
+        const mapById = await this._fetchLinkDetailsInChunks(
+          requestIds,
+          auth,
+          context
+        );
 
         // Fan-out results to individual resolvers, keeping failed ids absent
         for (const { ids: reqIds, resolve } of resolvers) {
@@ -240,7 +220,10 @@ class SteamAPIClient {
 
   /**
    * Fetch link details in chunks small enough to keep the query string inside
-   * normal request-line limits, merging the results.
+   * normal request-line limits, one request after the other, merging the
+   * results. Each chunk is in flight on its own and its answers are cached
+   * as they come, so a caller asking about an id of a chunk that is out
+   * waits for that request, not for the chunks after it.
    * Never rejects. Every id of an answered chunk gets an entry: its raw-like
    * object, or null when Steam returned no account for it. Ids belonging to a
    * failed chunk are absent from the returned map, so one bad chunk cannot void
@@ -259,6 +242,13 @@ class SteamAPIClient {
       const chunk = requestIds.slice(i, i + size);
       const chunkIndex = Math.floor(i / size) + 1;
 
+      let settle;
+      const request = {
+        promise: new Promise((resolve) => (settle = resolve)),
+        ids: new Set(chunk),
+      };
+      this._inFlight.add(request);
+      const answered = new Map();
       try {
         const rawData = await this._getPlayerLinkDetails(chunk, auth, {
           ...context,
@@ -268,11 +258,11 @@ class SteamAPIClient {
           totalChunks,
         });
         // allowFailure turns an HTTP error (429, 5xx) into null: unanswered
-        if (!rawData) continue;
-
-        const byId = this._splitRawBySteamId(rawData);
-        for (const id of chunk) {
-          merged.set(id, byId.get(id) ?? null);
+        if (rawData) {
+          const byId = this._splitRawBySteamId(rawData);
+          for (const id of chunk) {
+            answered.set(id, byId.get(id) ?? null);
+          }
         }
       } catch (error) {
         SteamAPILogger.logError("GetPlayerLinkDetails", error, {
@@ -280,6 +270,18 @@ class SteamAPIClient {
           totalChunks,
           chunkSize: chunk.length,
         });
+      } finally {
+        // Remove only this request, never the entry belonging to another
+        this._inFlight.delete(request);
+        settle(answered);
+      }
+
+      // Cache answers, negatives included, with a short TTL. A failed id is
+      // left uncached so the next call asks Steam again.
+      this._pruneCache();
+      for (const [id, raw] of answered) {
+        this._setCachedRaw(id, raw);
+        merged.set(id, raw);
       }
     }
 

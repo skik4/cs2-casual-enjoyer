@@ -145,10 +145,13 @@ class MapFinder {
     this.deps = null;
     this.active = false;
     this.listeners = new Set();
-    this._loaded = false;
+    // The store being read, shared by everyone who asks for it
+    this._loading = null;
     this._timer = null;
     this._saveTimer = null;
     this._fofRunning = false;
+    // When a crawl last read not one list; tried again after FOF_RETRY_MS
+    this._fofFailedAt = 0;
     this._poolFriendsRunning = false;
     // Changes when the pool is cleared, so a crawl under way stops
     this._poolGeneration = 0;
@@ -362,21 +365,29 @@ class MapFinder {
       const polledSeeds = [...this.seeds].filter((id) => ids.has(id));
       const presence = await SteamAPI.getPresence([...ids], auth);
 
-      const now = Date.now();
-      this._addToPool(presence.values(), now);
-      if (polledSeeds.length) {
-        this.journal.record("seeds", this._takeSeedAnswers(polledSeeds, presence));
-      }
-      this._prunePool(now);
+      // Not one answer means every request failed: Steam down, the token
+      // expired, the daily limit reached. What was known stays, so a join
+      // under way keeps its candidates and the list does not go blank until
+      // a refresh gets through.
+      if (ids.size && !presence.size) {
+        logger.warn("MapFinder", "Refresh got no answer", { asked: ids.size });
+      } else {
+        const now = Date.now();
+        this._addToPool(presence.values(), now);
+        if (polledSeeds.length) {
+          this.journal.record("seeds", this._takeSeedAnswers(polledSeeds, presence));
+        }
+        this._prunePool(now);
 
-      this._noteStatusChanges(presence, now);
-      this.servers = buildServers(
-        presence.values(),
-        (id) => this._statusSince.get(id)?.since ?? 0
-      );
-      this.status.lastRefreshAt = now;
-      this.status.polled = ids.size;
-      this._scheduleSave();
+        this._noteStatusChanges(presence, now);
+        this.servers = buildServers(
+          presence.values(),
+          (id) => this._statusSince.get(id)?.since ?? 0
+        );
+        this.status.lastRefreshAt = now;
+        this.status.polled = ids.size;
+        this._scheduleSave();
+      }
     } catch (error) {
       logger.error("MapFinder", "Refresh failed", { error: error.message });
     } finally {
@@ -515,6 +526,7 @@ class MapFinder {
    */
   restartFof() {
     this.fof = { ids: [], fetchedAt: 0, friendsCount: 0 };
+    this._fofFailedAt = 0;
     this.status.fof = this.deps?.getFofKey?.() ? "pending" : "no-key";
     this._scheduleSave();
     if (this.active && this._fofDue()) this._crawlFof();
@@ -577,8 +589,9 @@ class MapFinder {
       fof: "no-key",
       poolFriends: "idle",
     };
-    this._loaded = false;
+    this._loading = null;
     this._fofRunning = false;
+    this._fofFailedAt = 0;
     this._poolFriendsRunning = false;
     this._poolGeneration = 0;
     this._candidateOffset = 0;
@@ -649,6 +662,10 @@ class MapFinder {
       return false;
     }
     if (this._fofRunning) return false;
+    // A crawl that read nothing is not repeated on the very next refresh
+    if (Date.now() - this._fofFailedAt < MAP_FINDER_CONFIG.FOF_RETRY_MS) {
+      return false;
+    }
     const friendsCount = (this.deps.getRealFriendIds?.() || []).length;
     return (
       Date.now() - this.fof.fetchedAt >= MAP_FINDER_CONFIG.FOF_REFRESH_MS ||
@@ -685,10 +702,11 @@ class MapFinder {
         await sleep(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS);
       }
 
-      // Not one readable list: most likely a wrong key - try again later
-      // rather than settle on an empty result for a day
+      // Not one readable list: most likely a wrong key - try again after
+      // FOF_RETRY_MS rather than settle on an empty result for a day
       if (friendIds.length && listsRead === 0) {
         this.status.fof = "error";
+        this._fofFailedAt = Date.now();
         return;
       }
       this.fof = {
@@ -696,6 +714,7 @@ class MapFinder {
         fetchedAt: Date.now(),
         friendsCount: friendIds.length,
       };
+      this._fofFailedAt = 0;
       this.status.fof = "ready";
       this._scheduleSave();
     } catch (error) {
@@ -703,6 +722,7 @@ class MapFinder {
         error: error.message,
       });
       this.status.fof = "error";
+      this._fofFailedAt = Date.now();
     } finally {
       this._fofRunning = false;
       this._notify();
@@ -819,9 +839,17 @@ class MapFinder {
    * @private
    */
   async _load() {
-    if (this._loaded) return;
-    this._loaded = true;
+    // One read, shared: whoever asks while it is under way waits for it
+    // rather than going on with an empty pool
+    if (!this._loading) this._loading = this._readStore();
+    await this._loading;
+  }
 
+  /**
+   * Read the store once
+   * @private
+   */
+  async _readStore() {
     const data = await window.electronAPI?.mapFinder?.load?.();
     for (const [id, entry] of Object.entries(data?.pool || {})) {
       if (!Validators.validateSteamId(id) || !Number.isFinite(entry?.lastSeen)) {

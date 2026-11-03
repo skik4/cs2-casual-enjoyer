@@ -27,7 +27,12 @@ export async function writeMapFinderStore(filePath, data) {
     if (!data || typeof data !== "object" || text.length > STORE_MAX_BYTES) {
       return false;
     }
-    await fs.writeFile(filePath, text, "utf-8");
+    // Written beside the store and renamed over it: a write that breaks off
+    // - a crash, a full disk - leaves the previous store readable instead of
+    // a pool weeks in the making cut short and replaced by an empty one
+    const tempPath = `${filePath}.tmp`;
+    await fs.writeFile(tempPath, text, "utf-8");
+    await fs.rename(tempPath, filePath);
     return true;
   } catch {
     return false;
