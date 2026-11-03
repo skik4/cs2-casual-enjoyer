@@ -142,6 +142,8 @@ export default {
     tokenValidUntil: "Токен действует до {date}",
     tokenExpiresIn: "Токен истекает через {minutes} мин",
     tokenExpired: "Токен истёк, получи новый",
+    tokenRejected: "Steam не принял токен, получи новый",
+    keyRejected: "Steam не принял ключ, проверь его",
     apiKey: "Ключ Steam Web API",
     edit: "Аккаунт",
     refreshTitle: "Обновить список друзей",

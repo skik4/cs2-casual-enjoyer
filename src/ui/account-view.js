@@ -1,5 +1,6 @@
 // UI and utilities
 import SteamAPI from "../steam/steam-api.js";
+import credentialState from "../steam/credential-state.js";
 import DOMUtils from "../utils/dom-utils.js";
 import { t, onLanguageChange } from "../i18n/i18n-manager.js";
 
@@ -73,6 +74,7 @@ class AccountView {
       () => onRefresh()
     );
     onLanguageChange(() => this.render());
+    credentialState.onChange(() => this.render());
   }
 
   /**
@@ -184,6 +186,14 @@ class AccountView {
    * @returns {{state: "ok"|"warn"|"expired", text: string}}
    */
   static describeAuth(facts, now = Date.now()) {
+    // Background polling waits until another credential is pasted, or the
+    // refresh button gets this one answered again
+    if (credentialState.isRejected(facts?.auth)) {
+      return {
+        state: "expired",
+        text: t(facts.isKey ? "account.keyRejected" : "account.tokenRejected"),
+      };
+    }
     if (!facts?.tokenInfo) {
       return { state: "ok", text: facts?.isKey ? t("account.apiKey") : "" };
     }

@@ -9,6 +9,7 @@ import userLocation from "./user-location.js";
 // UI and utilities
 import SteamAPI from "../steam/steam-api.js";
 import SteamAPIUtils from "../steam/steam-api-utils.js";
+import credentialState from "../steam/credential-state.js";
 import Validators from "../utils/validators.js";
 import logger from "../utils/logger.js";
 
@@ -356,7 +357,9 @@ class MapFinder {
 
     const auth = this.deps?.getAuth?.();
     const userId = this.deps?.getUserId?.();
-    if (!auth) return;
+    // A credential Steam turned down would fail every request of the batch;
+    // the servers known stay until another one is pasted
+    if (!auth || credentialState.isRejected(auth)) return;
 
     this.status.refreshing = true;
     this._notify();

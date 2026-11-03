@@ -4,10 +4,30 @@ import SteamAPIConfig from "./api-config.js";
 import SteamAPILogger from "./api-logger.js";
 import SteamAPIResponseProcessor from "./steam-api-response-processor.js";
 import SteamAPIUtils from "./steam-api-utils.js";
+import credentialState from "./credential-state.js";
 import { API_CONFIG } from "../shared/constants.js";
 
 // UI and utilities
 import Validators from "../utils/validators.js";
+
+/**
+ * Methods any valid token or key may call: a 401 or 403 on one means Steam
+ * turned the credential itself down, not that a profile is private
+ */
+const CREDENTIAL_CHECKED_METHODS = new Set([
+  "GetPlayerLinkDetails",
+  "GetPlayerSummaries",
+]);
+
+/**
+ * Whether an HTTP status says the rest of a batch should not be sent: Steam
+ * asks to slow down (429), is failing (5xx), or turned the credential down
+ * @param {number|null} status
+ * @returns {boolean}
+ */
+function stopsBatch(status) {
+  return status === 429 || status === 401 || status === 403 || status >= 500;
+}
 
 /**
  * Steam API client with proper separation of concerns
@@ -249,14 +269,20 @@ class SteamAPIClient {
       };
       this._inFlight.add(request);
       const answered = new Map();
+      let failedStatus = null;
       try {
-        const rawData = await this._getPlayerLinkDetails(chunk, auth, {
-          ...context,
-          batched: true,
-          batchSize: chunk.length,
-          chunkIndex,
-          totalChunks,
-        });
+        const rawData = await this._getPlayerLinkDetails(
+          chunk,
+          auth,
+          {
+            ...context,
+            batched: true,
+            batchSize: chunk.length,
+            chunkIndex,
+            totalChunks,
+          },
+          (status) => (failedStatus = status)
+        );
         // allowFailure turns an HTTP error (429, 5xx) into null: unanswered
         if (rawData) {
           const byId = this._splitRawBySteamId(rawData);
@@ -283,6 +309,18 @@ class SteamAPIClient {
         this._setCachedRaw(id, raw);
         merged.set(id, raw);
       }
+
+      // The chunks after it would meet the same answer and only add to the
+      // load: their ids stay unanswered, as a failed chunk's are, and the
+      // next refresh asks again
+      if (stopsBatch(failedStatus)) {
+        SteamAPILogger.logError(
+          "GetPlayerLinkDetails",
+          new Error(`HTTP ${failedStatus}: rest of the batch not sent`),
+          { chunkIndex, totalChunks, skipped: totalChunks - chunkIndex }
+        );
+        break;
+      }
     }
 
     return merged;
@@ -294,11 +332,13 @@ class SteamAPIClient {
    * @param {Object} params - Request parameters
    * @param {string} auth - API key or token
    * @param {Object} options - Request options
+   * @param {Function} [options.onHttpError] - Told the HTTP status when
+   *   allowFailure turns a failed answer into null
    * @returns {Promise<Object|null>} - Parsed response data
    * @private
    */
   static async _makeRequest(method, params, auth, options = {}) {
-    const { allowFailure = false, context = {}, signal } = options;
+    const { allowFailure = false, context = {}, signal, onHttpError } = options;
 
     try {
       // Build URL using config manager
@@ -308,6 +348,16 @@ class SteamAPIClient {
       SteamAPILogger.logRequest(method, url, context);
       // Make HTTP request
       const response = await SteamAPIHttpClient.makeRequest(url, { signal });
+
+      // Whether Steam still takes the credential, for the polling that
+      // should stop when it does not
+      if (CREDENTIAL_CHECKED_METHODS.has(method)) {
+        if (response.status === 401 || response.status === 403) {
+          credentialState.reject(auth);
+        } else if (response.ok) {
+          credentialState.accept(auth);
+        }
+      }
 
       // Handle HTTP errors
       const isOk = SteamAPIUtils.handleHttpResponse(response, {
@@ -323,6 +373,7 @@ class SteamAPIClient {
           response.statusText,
           context
         );
+        onHttpError?.(response.status);
         return null;
       }
 
@@ -422,10 +473,11 @@ class SteamAPIClient {
    * @param {string|string[]} steamids - Steam ID(s) to get details for
    * @param {string} auth - API key or token
    * @param {Object} context - Additional context for logging
+   * @param {Function} [onHttpError] - Told the HTTP status of a failed answer
    * @returns {Promise<Object|null>} - Player link details response
    * @private
    */
-  static async _getPlayerLinkDetails(steamids, auth, context = {}) {
+  static async _getPlayerLinkDetails(steamids, auth, context = {}, onHttpError) {
     // Build special params for this API call
     const params = {};
 
@@ -440,6 +492,7 @@ class SteamAPIClient {
     return await this._makeRequest("GetPlayerLinkDetails", params, auth, {
       allowFailure: true,
       context,
+      onHttpError,
     });
   }
 

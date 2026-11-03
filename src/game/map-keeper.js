@@ -5,6 +5,7 @@ import { GAME_MODES, PINNED_MAPS_JOIN_ID } from "../shared/constants.js";
 import gsiManager from "./gsi-manager.js";
 import joinManager from "./join-manager.js";
 import mapFinder, { mapLabel } from "./map-finder.js";
+import userLocation from "./user-location.js";
 
 // UI and utilities
 import logger from "../utils/logger.js";
@@ -24,6 +25,7 @@ class MapKeeper {
     this.maps = [];
     this.listeners = new Set();
     this._gsiUnsubscribe = null;
+    this._locationUnsubscribe = null;
     // CS2's last map and match state seen in a casual match
     this._lastSeen = "";
   }
@@ -119,10 +121,22 @@ class MapKeeper {
   reset() {
     if (this._gsiUnsubscribe) this._gsiUnsubscribe();
     this._gsiUnsubscribe = null;
+    if (this._locationUnsubscribe) this._locationUnsubscribe();
+    this._locationUnsubscribe = null;
     this.maps = [];
     this._lastSeen = "";
     this.listeners.clear();
     mapFinder.setNeed("keep", false);
+  }
+
+  /**
+   * The pinned maps' join needs servers known now, not when the Maps view
+   * last looked - but only while CS2 runs. With it closed no match can end
+   * and no join can start, and the finder would poll Steam for nothing.
+   * @private
+   */
+  _updateNeed() {
+    mapFinder.setNeed("keep", this.maps.length > 0 && userLocation.isInCS2());
   }
 
   /**
@@ -139,13 +153,13 @@ class MapKeeper {
   _changed() {
     if (this.maps.length && !this._gsiUnsubscribe) {
       this._gsiUnsubscribe = gsiManager.onChange(() => this._check());
+      this._locationUnsubscribe = userLocation.onChange(() => this._updateNeed());
     }
     // With nothing pinned any more, its join has nowhere to go
     if (!this.maps.length && this._joining()) {
       joinManager.cancelJoin(PINNED_MAPS_JOIN_ID, "unpinned");
     }
-    // Its join needs servers known now, not when the Maps view last looked
-    mapFinder.setNeed("keep", this.maps.length > 0);
+    this._updateNeed();
     this._lastSeen = "";
     this._notify();
     this._check();

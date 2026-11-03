@@ -136,6 +136,8 @@ export default {
     tokenValidUntil: "Token valid until {date}",
     tokenExpiresIn: "Token expires in {minutes} min",
     tokenExpired: "Token expired, get a new one",
+    tokenRejected: "Steam turned the token down, get a new one",
+    keyRejected: "Steam turned the key down, check it",
     apiKey: "Steam Web API key",
     edit: "Account",
     refreshTitle: "Update the friends list",

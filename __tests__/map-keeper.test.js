@@ -12,7 +12,8 @@ import mapKeeper from "../src/game/map-keeper.js";
 import gsiManager from "../src/game/gsi-manager.js";
 import joinManager from "../src/game/join-manager.js";
 import mapFinder from "../src/game/map-finder.js";
-import { PINNED_MAPS_JOIN_ID, STATUS_TYPES } from "../src/shared/constants.js";
+import userLocation from "../src/game/user-location.js";
+import { GSI_CONFIG, PINNED_MAPS_JOIN_ID, STATUS_TYPES } from "../src/shared/constants.js";
 
 const USER = "76561198000000001";
 
@@ -38,6 +39,8 @@ beforeEach(() => {
 afterEach(() => {
   mapKeeper.reset();
   gsiManager.reset();
+  userLocation.reset();
+  jest.useRealTimers();
   jest.restoreAllMocks();
 });
 
@@ -109,6 +112,7 @@ test("the pins go when the user joins a friend or a map not pinned, or cancels t
 });
 
 test("unpinning the last map ends its join and lets the map finder rest", () => {
+  cs2(null);
   const listener = jest.fn();
   mapKeeper.onChange(listener);
   mapKeeper.toggle("de_dust2");
@@ -120,4 +124,38 @@ test("unpinning the last map ends its join and lets the map finder rest", () => 
   expect(joinManager.cancelJoin).toHaveBeenCalledWith(PINNED_MAPS_JOIN_ID, "unpinned");
   expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
   expect(listener).toHaveBeenCalledTimes(2);
+});
+
+describe("pins poll Steam only while CS2 runs", () => {
+  test("pinned with CS2 closed: the finder rests until CS2 posts", () => {
+    mapKeeper.toggle("de_dust2");
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
+
+    cs2(null);
+
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
+  });
+
+  test("CS2 falling silent and Steam showing it closed lets the finder rest", () => {
+    jest.useFakeTimers();
+    cs2("de_dust2");
+    mapKeeper.toggle("de_dust2");
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
+
+    // CS2 closed: no more posts, and Steam's copy says so too
+    userLocation.setSteamPresence({ inCS2: false });
+    jest.advanceTimersByTime(GSI_CONFIG.FRESH_MS + 1);
+
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
+  });
+
+  test("without CS2's state, Steam showing the user in CS2 is enough", () => {
+    userLocation.setSteamPresence({ inCS2: true });
+    mapKeeper.toggle("de_dust2");
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
+
+    userLocation.setSteamPresence({ inCS2: false });
+
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
+  });
 });

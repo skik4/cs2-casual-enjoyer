@@ -10,6 +10,7 @@ jest.mock("../src/utils/validators.js");
 jest.mock("../src/utils/error-handler.js");
 
 import SteamAPIClient from "../src/steam/steam-api-client.js";
+import credentialState from "../src/steam/credential-state.js";
 
 const USER = "76561198000000001";
 const AUTH = "ABCDEF0123456789ABCDEF0123456789";
@@ -80,4 +81,64 @@ test("a few ids wait for the request that holds them, not for every chunk of a b
   expect(result.friend).toMatchObject({ inCS2: true, inSupportedMode: true });
   // The finder's own batch still waits on its second request
   expect(await within(finder, 50)).toBe("stalled");
+});
+
+const errorResponse = (status, statusText) => ({
+  ok: false,
+  status,
+  statusText,
+  json: async () => ({}),
+});
+
+describe("Steam saying stop", () => {
+  const ids = Array.from({ length: 350 }, (_, i) =>
+    String(76561198200000000n + BigInt(i))
+  );
+
+  afterEach(() => credentialState.reset());
+
+  test.each([
+    [429, "Too Many Requests"],
+    [503, "Service Unavailable"],
+  ])("an HTTP %s stops the rest of the batch, its ids left unanswered", async (status, text) => {
+    global.fetch.mockImplementation(async (url) => {
+      const asked = requestedIds(url);
+      return asked.includes(ids[100])
+        ? errorResponse(status, text)
+        : okResponse(asked.map(account));
+    });
+
+    const presence = await SteamAPIClient.getPresence(ids, AUTH);
+
+    // The first chunk answered, the second failed, the third and fourth
+    // were never sent
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(presence.has(ids[0])).toBe(true);
+    expect(presence.has(ids[100])).toBe(false);
+    expect(presence.has(ids[300])).toBe(false);
+  });
+
+  test("a 401 marks the credential turned down, and an answer takes it back", async () => {
+    global.fetch.mockResolvedValue(errorResponse(401, "Unauthorized"));
+
+    await SteamAPIClient.getPresence(ids, AUTH);
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(credentialState.isRejected(AUTH)).toBe(true);
+
+    // A reload the user asks for is answered: polling may go on
+    SteamAPIClient._cache.clear();
+    global.fetch.mockImplementation(async (url) => okResponse(requestedIds(url).map(account)));
+    await SteamAPIClient.getPresence([USER], AUTH);
+
+    expect(credentialState.isRejected(AUTH)).toBe(false);
+  });
+
+  test("another credential is not held back by one Steam turned down", async () => {
+    global.fetch.mockResolvedValue(errorResponse(403, "Forbidden"));
+    await SteamAPIClient.getPresence([USER], AUTH);
+
+    expect(credentialState.isRejected(AUTH)).toBe(true);
+    expect(credentialState.isRejected("FEDCBA9876543210FEDCBA9876543210")).toBe(false);
+  });
 });

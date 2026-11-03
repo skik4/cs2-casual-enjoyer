@@ -49,6 +49,15 @@ class UserLocation {
   }
 
   /**
+   * Whether CS2 runs: CS2 posting its state, or Steam showing the user in it
+   * @returns {boolean}
+   */
+  isInCS2() {
+    if (gsiManager.getUserState()) return true;
+    return Boolean(this.steamPresence?.inCS2);
+  }
+
+  /**
    * The user's match as CS2 itself reports it
    * @returns {{map: string, over: boolean}|null} - null without a fresh CS2
    *   state, or outside a match
@@ -105,7 +114,13 @@ class UserLocation {
    */
   _notifyIfChanged() {
     const own = this.getOwnMatch();
-    const key = [this.getServerId(), this.getMap(), own?.map, own?.over].join("\n");
+    const key = [
+      this.getServerId(),
+      this.getMap(),
+      own?.map,
+      own?.over,
+      this.isInCS2(),
+    ].join("\n");
     if (key === this._lastKey) return;
     this._lastKey = key;
     for (const listener of [...this.listeners]) {

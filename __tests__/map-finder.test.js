@@ -19,6 +19,7 @@ import mapFinder, {
 import gsiManager from "../src/game/gsi-manager.js";
 import userLocation from "../src/game/user-location.js";
 import SteamAPI from "../src/steam/steam-api.js";
+import credentialState from "../src/steam/credential-state.js";
 import { MAP_FINDER_CONFIG } from "../src/shared/constants.js";
 
 const USER = "76561198000000001";
@@ -159,6 +160,28 @@ describe("helpers", () => {
     const finished = { freeSlot: true, rounds: 10, over: true };
 
     expect([finished, running].sort(compareServers)).toEqual([running, finished]);
+  });
+});
+
+describe("a credential Steam turned down", () => {
+  afterEach(() => credentialState.reset());
+
+  test("refreshes nothing and keeps the servers known until it is taken again", async () => {
+    configure({ getFriendIds: () => [A] });
+    SteamAPI.getPresence.mockResolvedValue(presenceMap(presence(A, { connect: CONNECT })));
+    await mapFinder.refresh();
+    expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A]);
+
+    credentialState.reject("token");
+    SteamAPI.getPresence.mockClear();
+    await mapFinder.refresh();
+
+    expect(SteamAPI.getPresence).not.toHaveBeenCalled();
+    expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A]);
+
+    credentialState.accept("token");
+    await mapFinder.refresh();
+    expect(SteamAPI.getPresence).toHaveBeenCalledTimes(1);
   });
 });
 

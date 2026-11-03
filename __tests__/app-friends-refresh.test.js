@@ -32,6 +32,7 @@ import appFriendsManager from "../src/core/app-friends-manager.js";
 import appStateManager from "../src/core/app-state-manager.js";
 import userLocation from "../src/game/user-location.js";
 import SteamAPI from "../src/steam/steam-api.js";
+import credentialState from "../src/steam/credential-state.js";
 import { API_CONFIG } from "../src/shared/constants.js";
 
 const USER = "76561198000000001";
@@ -58,6 +59,22 @@ describe("startAutoRefresh", () => {
     userLocation.reset();
     appStateManager.clearRefreshInterval();
     jest.useRealTimers();
+  });
+
+  test("pauses while Steam turns the credential down, and goes on with a new one", async () => {
+    await appFriendsManager.startAutoRefresh();
+    credentialState.reject("token-1");
+    SteamAPI.getFriendsStatuses.mockClear();
+
+    await jest.advanceTimersByTimeAsync(API_CONFIG.AUTO_REFRESH_INTERVAL_MS * 3);
+    expect(SteamAPI.getFriendsStatuses).not.toHaveBeenCalled();
+
+    // The user pasted a fresh token
+    auth = "token-2";
+    await jest.advanceTimersByTimeAsync(API_CONFIG.AUTO_REFRESH_INTERVAL_MS);
+
+    expect(SteamAPI.getFriendsStatuses).toHaveBeenLastCalledWith([FRIEND], "token-2");
+    credentialState.reset();
   });
 
   test("asks with the credential entered at the time of each round", async () => {

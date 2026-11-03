@@ -11,6 +11,7 @@ jest.mock("../src/steam/steam-api.js", () => ({
 
 import AccountView from "../src/ui/account-view.js";
 import SteamAPI from "../src/steam/steam-api.js";
+import credentialState from "../src/steam/credential-state.js";
 import { setLanguage } from "../src/i18n/i18n-manager.js";
 
 const STEAM_ID = "76561198000000001";
@@ -135,6 +136,24 @@ test("the token is called out in its last hour and once it has expired", () => {
     AccountView.describeAuth(facts({ tokenInfo: null, isKey: true }), now)
   ).toEqual({ state: "ok", text: "Steam Web API key" });
 });
+
+test("a token or key Steam turned down is called out until Steam takes it again", () => {
+    const now = Date.now();
+    const token = facts({ tokenInfo: { steamid: STEAM_ID, expires: Math.floor(now / 1000) + 3600 * 10 } });
+    credentialState.reject(token.auth);
+
+    expect(AccountView.describeAuth(token, now)).toEqual({
+      state: "expired",
+      text: "Steam turned the token down, get a new one",
+    });
+    const key = facts({ tokenInfo: null, isKey: true, auth: "ABCDEF0123456789ABCDEF0123456789" });
+    credentialState.reject(key.auth);
+    expect(AccountView.describeAuth(key, now).text).toBe("Steam turned the key down, check it");
+
+    credentialState.accept(token.auth);
+    expect(AccountView.describeAuth(token, now).state).toBe("ok");
+    credentialState.reset();
+  });
 
 test("the SteamID step: read from a token, typed in for an API key", () => {
   AccountView.update(facts({ hasFriends: false }));

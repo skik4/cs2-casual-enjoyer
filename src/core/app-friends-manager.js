@@ -10,6 +10,7 @@ import UIManager from "../ui/ui-manager.js";
 import AccountView from "../ui/account-view.js";
 import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import SteamAPI from "../steam/steam-api.js";
+import credentialState from "../steam/credential-state.js";
 import Validators from "../utils/validators.js";
 import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
@@ -349,6 +350,9 @@ class AppFriendsManager {
         }
         // A slow Steam must not pile up overlapping refreshes
         if (refreshing) return;
+        // Steam turned the credential down: nothing to gain from asking
+        // again until another one is pasted, or a reload is asked for
+        if (credentialState.isRejected(currentAuth())) return;
 
         const usingSavedFriends = appStateManager.getState("usingSavedFriends");
         const currentSavedFriendsIds = FakeFriendsManager.mergeIds(
