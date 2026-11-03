@@ -5,6 +5,7 @@ import { JOIN_JOURNAL_CONFIG, WINDOW_CONFIG } from "../shared/constants.js";
 import GsiService from "./gsi-service.js";
 import SettingsStore from "./settings-store.js";
 import { isAllowedExternalUrl } from "./external-links.js";
+import { isPermissionAllowed } from "./permissions.js";
 import { appendJoinJournal } from "./join-journal-file.js";
 import {
   readMapFinderStore,
@@ -95,6 +96,9 @@ class WindowManager {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
+        // Electron's default since version 20, spelled out: the renderer runs
+        // in the OS sandbox and the preload sees nothing of Node
+        sandbox: true,
         preload: fileURLToPath(new URL("preload.cjs", import.meta.url)),
         // CS2 covers the window while the user plays, and a covered window
         // counts as hidden: Electron then ran the join loop's 200 ms pauses
@@ -120,6 +124,18 @@ class WindowManager {
       event.preventDefault();
       openExternalSafely(url);
     });
+
+    // Chromium grants a page every permission it asks for unless told
+    // otherwise; this page needs almost none of them
+    const ses = win.webContents.session;
+    ses.setPermissionRequestHandler(
+      (webContents, permission, callback, details) =>
+        callback(isPermissionAllowed(permission, details))
+    );
+    ses.setPermissionCheckHandler(
+      (webContents, permission, requestingOrigin, details) =>
+        isPermissionAllowed(permission, details)
+    );
 
     // Show window after content is loaded to prevent flash
     win.webContents.on("did-finish-load", () => {
