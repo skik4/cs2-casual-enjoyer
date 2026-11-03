@@ -13,6 +13,10 @@ export const API_CONFIG = {
   // How long a map load reported by GSI after a connect holds off further
   // connects while Steam catches up with the user's new server
   JOIN_GSI_CONFIRM_MS: 15000,
+  // A request that hangs would hold up the join loop or the map refresh
+  // until the connection broke. Steam answers in well under a second, so
+  // this only ends a stuck request, which then counts as a failed one.
+  REQUEST_TIMEOUT_MS: 10000,
 };
 
 /**

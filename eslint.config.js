@@ -18,6 +18,8 @@ const browser = {
   Response: "readonly",
   Request: "readonly",
   Headers: "readonly",
+  AbortController: "readonly",
+  AbortSignal: "readonly",
   URL: "readonly",
   URLSearchParams: "readonly",
   Element: "readonly",
