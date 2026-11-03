@@ -8,7 +8,7 @@ import http from "http";
 import os from "os";
 import path from "path";
 
-import { parseVdf, findCs2Dir } from "../src/main/cs2-locator.js";
+import { parseVdf, findCs2Dir, regExePath } from "../src/main/cs2-locator.js";
 import { buildGsiConfig, installGsiConfig } from "../src/main/gsi-config.js";
 import { startGsiServer } from "../src/main/gsi-server.js";
 import GsiService from "../src/main/gsi-service.js";
@@ -90,6 +90,18 @@ describe("parseVdf", () => {
     expect(parseVdf('"a" { "b" "c"')).toEqual({ a: { b: "c" } });
     expect(parseVdf("")).toEqual({});
     expect(parseVdf(undefined)).toEqual({});
+  });
+});
+
+describe("regExePath", () => {
+  test("names the system reg.exe rather than whichever one is found first", () => {
+    expect(regExePath({ SystemRoot: "D:\\Win" })).toBe(
+      "D:\\Win\\System32\\reg.exe"
+    );
+    expect(regExePath({ windir: "D:\\Win" })).toBe(
+      "D:\\Win\\System32\\reg.exe"
+    );
+    expect(regExePath({})).toBe("C:\\Windows\\System32\\reg.exe");
   });
 });
 
