@@ -78,8 +78,8 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
 
   beforeEach(() => {
     global.fetch = jest.fn();
-    SteamAPIClient._cache.clear();
-    SteamAPIResponseProcessor._reportedInvalidConnects.clear();
+    SteamAPIClient.reset();
+    SteamAPIResponseProcessor.reset();
   });
 
   afterEach(() => {
@@ -248,7 +248,7 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
       );
 
       const first = await SteamAPIClient.getJoinSnapshot(USER_ID, FRIEND_ID, AUTH);
-      SteamAPIClient._cache.clear();
+      SteamAPIClient.reset();
       const second = await SteamAPIClient.getJoinSnapshot(USER_ID, FRIEND_ID, AUTH);
 
       expect(global.fetch).toHaveBeenCalledTimes(2);

@@ -42,7 +42,7 @@ const mockSteam = ({ accounts = [] }) => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  SteamAPIClient._cache.clear();
+  SteamAPIClient.reset();
   global.fetch = jest.fn();
   // Real token/key detection decides which parameter carries the auth
   Validators.isWebApiToken.mockImplementation((value) =>

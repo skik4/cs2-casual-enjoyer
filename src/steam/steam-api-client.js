@@ -30,6 +30,20 @@ function stopsBatch(status) {
 }
 
 /**
+ * Runs of at most size ids, in order
+ * @param {string[]} ids
+ * @param {number} size
+ * @returns {string[][]}
+ */
+function chunk(ids, size) {
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += size) {
+    chunks.push(ids.slice(i, i + size));
+  }
+  return chunks;
+}
+
+/**
  * Steam API client with proper separation of concerns
  * Responsible only for orchestrating API calls using specialized components
  */
@@ -77,6 +91,20 @@ class SteamAPIClient {
    * @type {Object<string, Object>}
    */
   static _avatarCache = {};
+
+  /**
+   * Forget every answer, request and avatar, and drop the batches waiting
+   * to go out (used by tests)
+   */
+  static reset() {
+    for (const batcher of this._batchers.values()) {
+      clearTimeout(batcher.timer);
+    }
+    this._batchers.clear();
+    this._inFlight.clear();
+    this._cache.clear();
+    this._avatarCache = {};
+  }
 
   /**
    * Read the cached entry for steamid, or null when absent or stale.
@@ -255,29 +283,28 @@ class SteamAPIClient {
    */
   static async _fetchLinkDetailsInChunks(requestIds, auth, context = {}) {
     const merged = new Map();
-    const size = this._MAX_IDS_PER_REQUEST;
-    const totalChunks = Math.ceil(requestIds.length / size);
+    const chunks = chunk(requestIds, this._MAX_IDS_PER_REQUEST);
+    const totalChunks = chunks.length;
 
-    for (let i = 0; i < requestIds.length; i += size) {
-      const chunk = requestIds.slice(i, i + size);
-      const chunkIndex = Math.floor(i / size) + 1;
+    for (const [index, ids] of chunks.entries()) {
+      const chunkIndex = index + 1;
 
       let settle;
       const request = {
         promise: new Promise((resolve) => (settle = resolve)),
-        ids: new Set(chunk),
+        ids: new Set(ids),
       };
       this._inFlight.add(request);
       const answered = new Map();
       let failedStatus = null;
       try {
         const rawData = await this._getPlayerLinkDetails(
-          chunk,
+          ids,
           auth,
           {
             ...context,
             batched: true,
-            batchSize: chunk.length,
+            batchSize: ids.length,
             chunkIndex,
             totalChunks,
           },
@@ -286,7 +313,7 @@ class SteamAPIClient {
         // allowFailure turns an HTTP error (429, 5xx) into null: unanswered
         if (rawData) {
           const byId = this._splitRawBySteamId(rawData);
-          for (const id of chunk) {
+          for (const id of ids) {
             answered.set(id, byId.get(id) ?? null);
           }
         }
@@ -294,7 +321,7 @@ class SteamAPIClient {
         SteamAPILogger.logError("GetPlayerLinkDetails", error, {
           chunkIndex,
           totalChunks,
-          chunkSize: chunk.length,
+          chunkSize: ids.length,
         });
       } finally {
         // Remove only this request, never the entry belonging to another
@@ -427,20 +454,19 @@ class SteamAPIClient {
     const result = {};
 
     try {
-      const size = this._MAX_IDS_PER_REQUEST;
-      for (let i = 0; i < steamids.length; i += size) {
-        const chunk = steamids.slice(i, i + size).map(String);
-        const chunkIndex = Math.floor(i / size) + 1;
-        const totalChunks = Math.ceil(steamids.length / size);
+      const chunks = chunk(steamids.map(String), this._MAX_IDS_PER_REQUEST);
+      for (const [index, ids] of chunks.entries()) {
+        const chunkIndex = index + 1;
+        const totalChunks = chunks.length;
 
-        const params = { steamids: chunk.join(",") };
+        const params = { steamids: ids.join(",") };
         const data = await this._makeRequest(
           "GetPlayerSummaries",
           params,
           auth,
           {
             allowFailure: true,
-            context: { chunkIndex, totalChunks, chunkSize: chunk.length },
+            context: { chunkIndex, totalChunks, chunkSize: ids.length },
           }
         );
 
@@ -604,9 +630,8 @@ class SteamAPIClient {
         key,
         { allowFailure: true, context: { steamid } }
       );
-      return (data?.friendslist?.friends || [])
-        .filter((friend) => friend.relationship === "friend")
-        .map((friend) => String(friend.steamid));
+      // allowFailure turns a failed request into null: no list
+      return data ? SteamAPIUtils.extractFriendIds(data, false) : [];
     } catch (error) {
       SteamAPILogger.logError("getFriendIdsOf", error, { steamid });
       return [];
