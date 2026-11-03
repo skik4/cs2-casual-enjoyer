@@ -10,6 +10,7 @@ import AccountView from "../ui/account-view.js";
 import SteamAPI from "../steam/steam-api.js";
 import Validators from "../utils/validators.js";
 import DOMUtils from "../utils/dom-utils.js";
+import ErrorHandler from "../utils/error-handler.js";
 import { t } from "../i18n/i18n-manager.js";
 
 /**
@@ -148,6 +149,31 @@ class AppInputManager {
       steamIdInput.value = info.steamid;
     }
     this.validateInputs();
+    this.saveFreshToken(token, info);
+  }
+
+  /**
+   * Keep a new token for the account already saved. It used to be saved
+   * only with the next friends reload, so a restart brought the expired one
+   * back. A token for another account still waits for its friends list,
+   * which is saved together with it.
+   * @param {string|null} token - Token from the input, if any
+   * @param {{steamid: string, expires: number}|null} info - What the token says
+   */
+  async saveFreshToken(token, info) {
+    const saved = appStateManager.getState("savedSettings");
+    if (!token || !info || !saved?.steam_id || info.steamid !== saved.steam_id) {
+      return;
+    }
+    if (info.expires * 1000 <= Date.now()) return;
+    if (Validators.extractApiKeyOrToken(saved.auth || "") === token) return;
+
+    try {
+      const updated = await window.electronAPI?.settings?.update?.({ auth: token });
+      if (updated) appStateManager.setState("savedSettings", updated);
+    } catch (error) {
+      ErrorHandler.logError("AppInputManager.saveFreshToken", error);
+    }
   }
 
   /**
