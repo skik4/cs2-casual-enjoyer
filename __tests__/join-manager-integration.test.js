@@ -10,9 +10,7 @@
  */
 
 // Mock modules before importing
-jest.mock("../src/utils/dom-utils.js");
 jest.mock("../src/steam/steam-api.js");
-jest.mock("../src/utils/validators.js");
 jest.mock("../src/utils/error-handler.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
@@ -22,9 +20,7 @@ jest.mock("../src/utils/logger.js", () => ({
 import joinManager from "../src/game/join-manager.js";
 import { API_CONFIG, STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
-import DOMUtils from "../src/utils/dom-utils.js";
 import logger from "../src/utils/logger.js";
-import Validators from "../src/utils/validators.js";
 
 const { WAITING, CONNECTING, CANCELLED } = STATUS_TYPES;
 
@@ -141,11 +137,9 @@ describe("JoinManager - Real-world Competitive/Premier Scenarios", () => {
     joinManager.setUICallbacks(onUpdateDot, onUpdateJoinButton);
     joinManager.setCS2LaunchCallback(jest.fn().mockResolvedValue(true));
 
-    DOMUtils.getElementById.mockImplementation(
-      (id) =>
-        ({ "steam-id": { value: USER_ID }, auth: { value: AUTH } })[id] || null
-    );
-    Validators.extractApiKeyOrToken.mockReturnValue(AUTH);
+    joinManager.configure({
+      getCredentials: () => ({ steamId: USER_ID, auth: AUTH }),
+    });
 
     openExternal = jest.fn().mockResolvedValue(true);
     global.window.electronAPI = { shell: { openExternal } };

@@ -180,7 +180,14 @@ class App {
       });
       logger.info("App", "Event listeners configured successfully");
 
-      logger.info("App", "Step 4: Configuring JoinManager UI callbacks");
+      logger.info("App", "Step 4: Configuring JoinManager");
+      // The credentials as the fields hold them now: trimmed, the token taken
+      // out of a pasted JSON
+      const getCredentials = () => ({
+        steamId: this.inputManager.getSteamId(),
+        auth: this.inputManager.getAuth(),
+      });
+      joinManager.configure({ getCredentials });
       // Setup JoinManager UI callbacks
       joinManager.setUICallbacks(
         (friendId, status) => {

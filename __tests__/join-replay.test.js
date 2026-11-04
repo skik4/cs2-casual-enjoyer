@@ -7,9 +7,7 @@
  * fields and timings are as recorded.
  */
 
-jest.mock("../src/utils/dom-utils.js");
 jest.mock("../src/steam/steam-api.js");
-jest.mock("../src/utils/validators.js");
 jest.mock("../src/utils/error-handler.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
@@ -21,8 +19,6 @@ import { interpretGsiPayload } from "../src/game/gsi-manager.js";
 import SteamAPIResponseProcessor from "../src/steam/steam-api-response-processor.js";
 import { STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
-import DOMUtils from "../src/utils/dom-utils.js";
-import Validators from "../src/utils/validators.js";
 
 const USER = "76561198000000001";
 const PICK = "76561198000000011";
@@ -134,10 +130,9 @@ beforeEach(() => {
   jest.clearAllMocks();
   updateDot = jest.fn();
   joinManager.setUICallbacks(updateDot, jest.fn());
-  DOMUtils.getElementById.mockImplementation(
-    (id) => ({ "steam-id": { value: USER }, auth: { value: AUTH } })[id] || null
-  );
-  Validators.extractApiKeyOrToken.mockReturnValue(AUTH);
+  joinManager.configure({
+    getCredentials: () => ({ steamId: USER, auth: AUTH }),
+  });
   openExternal = jest.fn().mockResolvedValue(true);
   global.window.electronAPI = { shell: { openExternal } };
 });

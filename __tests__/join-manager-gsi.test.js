@@ -3,9 +3,7 @@
  * State Integration while the friend's state still comes from Steam
  */
 
-jest.mock("../src/utils/dom-utils.js");
 jest.mock("../src/steam/steam-api.js");
-jest.mock("../src/utils/validators.js");
 jest.mock("../src/utils/error-handler.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
@@ -15,8 +13,6 @@ jest.mock("../src/utils/logger.js", () => ({
 import joinManager from "../src/game/join-manager.js";
 import { API_CONFIG, STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
-import DOMUtils from "../src/utils/dom-utils.js";
-import Validators from "../src/utils/validators.js";
 
 const USER_ID = "76561198000000001";
 const FRIEND_ID = "76561198000000002";
@@ -85,11 +81,9 @@ describe("JoinManager with CS2 Game State Integration", () => {
     joinManager.setCS2Manager(cs2);
     joinManager.setUICallbacks(jest.fn(), jest.fn());
 
-    DOMUtils.getElementById.mockImplementation(
-      (id) =>
-        ({ "steam-id": { value: USER_ID }, auth: { value: AUTH } })[id] || null
-    );
-    Validators.extractApiKeyOrToken.mockReturnValue(AUTH);
+    joinManager.configure({
+      getCredentials: () => ({ steamId: USER_ID, auth: AUTH }),
+    });
 
     openExternal = jest.fn().mockResolvedValue(true);
     global.window.electronAPI = { shell: { openExternal } };

@@ -7,12 +7,13 @@ import {
 } from "../shared/constants.js";
 import SteamAPI from "../steam/steam-api.js";
 import SteamAPIUtils from "../steam/steam-api-utils.js";
-import Validators from "../utils/validators.js";
-import DOMUtils from "../utils/dom-utils.js";
 import logger from "../utils/logger.js";
 
 // Game singletons
 import joinJournal from "./join-journal.js";
+
+// The Steam client
+import { joinUrl, openSteamUrl } from "./steam-protocol.js";
 
 /**
  * Statuses of a join attempt that is still running
@@ -53,6 +54,8 @@ class JoinManager {
     this.onUpdateJoinButton = null;
     this.cs2Manager = null;
     this.onRequestCS2Launch = null; // Callback for requesting CS2 launch from UI layer
+    // Set by configure: the user's Steam ID and token or key
+    this.getCredentials = null;
     this.journal = joinJournal;
     // Connect string -> the attempt that sent it, so two attempts going
     // through the same player send it once
@@ -65,6 +68,16 @@ class JoinManager {
    */
   setCS2Manager(cs2Manager) {
     this.cs2Manager = cs2Manager;
+  }
+
+  /**
+   * Where the credentials come from
+   * @param {Object} options
+   * @param {() => {steamId: string, auth: string}} options.getCredentials -
+   *   The user's Steam ID and API key or token, empty when missing
+   */
+  configure({ getCredentials }) {
+    this.getCredentials = getCredentials;
   }
 
   /**
@@ -320,16 +333,10 @@ class JoinManager {
         }
       }
 
-      const steamIdInput = DOMUtils.getElementById("steam-id");
-      const authInput = DOMUtils.getElementById("auth");
-
-      if (!steamIdInput || !authInput) {
-        throw new Error("Required input elements not found");
-      }
-
-      const steam_id = steamIdInput.value.trim();
-      const auth_raw = authInput.value.trim();
-      const auth = Validators.extractApiKeyOrToken(auth_raw);
+      // Read once: the loop goes on with the credentials it started with. A
+      // credential that changes mid-join resets the attempts itself
+      // (AppInputManager.handleAuthInput).
+      const { steamId: steam_id, auth } = this.getCredentials?.() ?? {};
 
       if (!steam_id || !auth) {
         throw new Error("Steam ID and API auth are required");
@@ -621,12 +628,7 @@ class JoinManager {
           joinAs: target.joinAs,
           connect: target.connect,
         });
-        const url = `steam://rungame/730/${target.joinAs}/${target.connect}`;
-        if (window.electronAPI?.shell?.openExternal) {
-          await window.electronAPI.shell.openExternal(url);
-        } else {
-          window.open(url, "_self");
-        }
+        await openSteamUrl(joinUrl(target.joinAs, target.connect));
 
         // Give the game a moment to act on this attempt before the next one
         await this.sleep(API_CONFIG.JOIN_RETRY_INTERVAL_MS);

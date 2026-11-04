@@ -3,6 +3,7 @@ import { API_CONFIG } from "../shared/constants.js";
 
 // Game singletons
 import gsiManager from "./gsi-manager.js";
+import { LAUNCH_CS2_URL, openSteamUrl } from "./steam-protocol.js";
 
 // UI and utilities
 import SteamAPI from "../steam/steam-api.js";
@@ -155,13 +156,12 @@ class CS2Manager {
    */
   launchCS2() {
     try {
-      const launchUrl = "steam://run/730/";
-      if (window.electronAPI?.shell?.openExternal) {
-        window.electronAPI.shell.openExternal(launchUrl);
-      } else {
-        window.open(launchUrl);
-      }
-      logger.info("CS2Manager", "Launching CS2...", { launchUrl });
+      // The client's answer is not waited for: whether CS2 comes up is
+      // watched through the lobby poll and GSI
+      openSteamUrl(LAUNCH_CS2_URL);
+      logger.info("CS2Manager", "Launching CS2...", {
+        launchUrl: LAUNCH_CS2_URL,
+      });
     } catch (error) {
       logger.error("CS2Manager", "Error launching CS2", {
         error: error.message,
