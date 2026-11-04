@@ -18,7 +18,9 @@ class SteamAPILogger {
   static logRequest(method, url, context = {}) {
     const maskedUrl = SteamAPIUtils.maskAuthInUrl(url);
 
-    logger.info("SteamAPI", `Making ${method} request`, {
+    // One of these per request, five a second during a join: at info each
+    // would also reach the main process over IPC
+    logger.debug("SteamAPI", `Making ${method} request`, {
       ...context,
       endpoint: this._extractEndpoint(url),
     });

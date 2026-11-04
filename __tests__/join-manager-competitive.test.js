@@ -14,12 +14,16 @@ jest.mock("../src/utils/dom-utils.js");
 jest.mock("../src/steam/steam-api.js");
 jest.mock("../src/utils/validators.js");
 jest.mock("../src/utils/error-handler.js");
+jest.mock("../src/utils/logger.js", () => ({
+  __esModule: true,
+  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+}));
 
 import joinManager from "../src/game/join-manager.js";
 import { API_CONFIG, STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
 import DOMUtils from "../src/utils/dom-utils.js";
-import ErrorHandler from "../src/utils/error-handler.js";
+import logger from "../src/utils/logger.js";
 import Validators from "../src/utils/validators.js";
 
 const { WAITING, CONNECTING, JOINED, CANCELLED } = STATUS_TYPES;
@@ -243,10 +247,10 @@ describe("JoinManager - Competitive/Premier Mode Interruption", () => {
       joinManager.startJoin(FRIEND_ID);
       await flush();
 
-      expect(ErrorHandler.logError).toHaveBeenCalledWith(
-        "JoinManager.joinLoop",
-        expect.any(Error),
-        { join_id: FRIEND_ID, user_steam_id: USER_ID }
+      expect(logger.error).toHaveBeenCalledWith(
+        "JoinManager",
+        expect.any(String),
+        { join_id: FRIEND_ID, user_steam_id: USER_ID, error: "Steam API error" }
       );
       expect(joinManager.isActive(state())).toBe(true);
 

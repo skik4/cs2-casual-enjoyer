@@ -14,12 +14,16 @@ jest.mock("../src/utils/dom-utils.js");
 jest.mock("../src/steam/steam-api.js");
 jest.mock("../src/utils/validators.js");
 jest.mock("../src/utils/error-handler.js");
+jest.mock("../src/utils/logger.js", () => ({
+  __esModule: true,
+  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+}));
 
 import joinManager from "../src/game/join-manager.js";
 import { API_CONFIG, STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
 import DOMUtils from "../src/utils/dom-utils.js";
-import ErrorHandler from "../src/utils/error-handler.js";
+import logger from "../src/utils/logger.js";
 import Validators from "../src/utils/validators.js";
 
 const { WAITING, CONNECTING, CANCELLED } = STATUS_TYPES;
@@ -337,10 +341,14 @@ describe("JoinManager - Real-world Competitive/Premier Scenarios", () => {
 
       steam.failing = true;
       await untilSteamAnswers(1);
-      expect(ErrorHandler.logError).toHaveBeenCalledWith(
-        "JoinManager.joinLoop",
-        expect.any(Error),
-        { join_id: FRIEND_ID, user_steam_id: USER_ID }
+      expect(logger.error).toHaveBeenCalledWith(
+        "JoinManager",
+        expect.any(String),
+        {
+          join_id: FRIEND_ID,
+          user_steam_id: USER_ID,
+          error: "Steam API temporarily unavailable",
+        }
       );
       expect(joinManager.isActive(state())).toBe(true);
 
@@ -375,10 +383,10 @@ describe("JoinManager - Real-world Competitive/Premier Scenarios", () => {
 
       await expect(joinManager.startJoin(FRIEND_ID)).resolves.toBeUndefined();
 
-      expect(ErrorHandler.logError).toHaveBeenCalledWith(
-        "JoinManager.startJoin",
-        expect.any(Error),
-        { join_id: FRIEND_ID }
+      expect(logger.error).toHaveBeenCalledWith(
+        "JoinManager",
+        expect.any(String),
+        { join_id: FRIEND_ID, error: "CS2 check failed" }
       );
       expect(state()).toBeUndefined();
       expect(requests).toHaveLength(0);

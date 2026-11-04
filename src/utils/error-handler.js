@@ -53,17 +53,6 @@ class ErrorHandler {
   }
 
   /**
-   * Log error with context
-   * @param {string} context - Context where error occurred
-   * @param {Error|string} error - Error to log
-   * @param {Object} [additionalData] - Additional data to log
-   */
-  static logError(context, error, additionalData = {}) {
-    const errorMessage = error instanceof Error ? error.message : error;
-    console.error(`[${context}]`, errorMessage, additionalData);
-  }
-
-  /**
    * Format error message for display
    * @param {Error|string} error - Error to format
    * @returns {string} - Formatted error message

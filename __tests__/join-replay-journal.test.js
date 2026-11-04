@@ -15,6 +15,10 @@ jest.mock("../src/utils/dom-utils.js");
 jest.mock("../src/steam/steam-api.js");
 jest.mock("../src/utils/validators.js");
 jest.mock("../src/utils/error-handler.js");
+jest.mock("../src/utils/logger.js", () => ({
+  __esModule: true,
+  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+}));
 
 import joinManager, {
   getMapJoinId,

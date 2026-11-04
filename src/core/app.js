@@ -23,7 +23,6 @@ import FakeFriendsView from "../ui/fake-friends-view.js";
 import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import DOMUtils from "../utils/dom-utils.js";
-import ErrorHandler from "../utils/error-handler.js";
 import logger from "../utils/logger.js";
 import {
   applyI18nToDom,
@@ -174,7 +173,9 @@ class App {
         // Pick the new ID up on the next poll so its real Steam status shows
         onAdded: () =>
           this.friendsManager.startAutoRefresh().catch((error) => {
-            ErrorHandler.logError("App.addFakeFriend", error);
+            logger.error("App", "Refresh after adding a fake friend failed", {
+              error: error.message,
+            });
           }),
       });
       logger.info("App", "Event listeners configured successfully");

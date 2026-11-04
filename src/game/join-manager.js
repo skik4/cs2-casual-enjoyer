@@ -8,8 +8,8 @@ import {
 import SteamAPI from "../steam/steam-api.js";
 import SteamAPIUtils from "../steam/steam-api-utils.js";
 import Validators from "../utils/validators.js";
-import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
+import logger from "../utils/logger.js";
 
 // Game singletons
 import joinJournal from "./join-journal.js";
@@ -285,34 +285,38 @@ class JoinManager {
     let state = null;
 
     try {
-      console.log("JoinManager: Starting join for:", join_id);
+      logger.info("JoinManager", "Starting join", { join_id });
 
       // First check if user is in CS2
       if (this.cs2Manager) {
-        console.log("JoinManager: Checking if user is in CS2...");
+        logger.debug("JoinManager", "Checking if user is in CS2");
         const isInCS2 = await this.cs2Manager.checkUserInCS2();
-        console.log("JoinManager: User in CS2 check result:", isInCS2);
+        logger.debug("JoinManager", "User in CS2 check result", { isInCS2 });
 
         // null means Steam could not be asked. Offering to launch a game that
         // may well be running would be wrong; the loop's failure budget deals
         // with an outage instead.
         if (isInCS2 === false) {
-          console.log("JoinManager: User not in CS2, requesting launch...");
+          logger.info("JoinManager", "User not in CS2, requesting launch", {
+            join_id,
+          });
           // Request CS2 launch from UI layer
           if (this.onRequestCS2Launch) {
             const shouldLaunch = await this.onRequestCS2Launch(join_id);
-            console.log("JoinManager: Launch request result:", shouldLaunch);
+            logger.debug("JoinManager", "Launch request result", {
+              shouldLaunch,
+            });
             if (!shouldLaunch) {
               // User cancelled, don't proceed with join
-              console.log("JoinManager: User cancelled launch, aborting join");
+              logger.info("JoinManager", "User cancelled launch, aborting join", {
+                join_id,
+              });
               return;
             }
             // CS2 launch notification will handle waiting for CS2 to start
           }
         } else {
-          console.log(
-            "JoinManager: User already in CS2, proceeding with join..."
-          );
+          logger.debug("JoinManager", "User already in CS2, proceeding with join");
         }
       }
 
@@ -336,7 +340,7 @@ class JoinManager {
       // second loop and orphan the first interval.
       const existing = this.joinStates[join_id];
       if (existing && !existing.cancelled) {
-        console.log("JoinManager: Join already in progress for:", join_id);
+        logger.info("JoinManager", "Join already in progress", { join_id });
         return;
       }
       if (existing?.interval) clearInterval(existing.interval);
@@ -378,7 +382,10 @@ class JoinManager {
       // Start the join loop
       await this.joinLoop(join_id, state, steam_id, auth, resolveTarget);
     } catch (error) {
-      ErrorHandler.logError("JoinManager.startJoin", error, { join_id });
+      logger.error("JoinManager", "Starting the join failed", {
+        join_id,
+        error: error.message,
+      });
       // Only this attempt's own state - an error before it existed must not
       // cancel an attempt that is already running for the friend
       if (state && this.joinStates[join_id] === state) {
@@ -438,10 +445,7 @@ class JoinManager {
       if (Date.now() - failingSince <= API_CONFIG.MISSING_TIMEOUT_MS) {
         return false;
       }
-      console.log(
-        "JoinManager: Giving up after repeated errors for:",
-        join_id
-      );
+      logger.info("JoinManager", "Giving up after repeated errors", { join_id });
       this.cancelJoin(join_id, "no-answer");
       return true;
     };
@@ -477,10 +481,9 @@ class JoinManager {
         const userInProtectedMatch = this._inProtectedMatch(user, gsiState);
 
         if (!userInCS2) {
-          console.log(
-            "JoinManager: User no longer in CS2, stopping join process for:",
-            join_id
-          );
+          logger.info("JoinManager", "User no longer in CS2, stopping join", {
+            join_id,
+          });
           this.cancelJoin(join_id, "left-cs2");
           break;
         }
@@ -488,9 +491,10 @@ class JoinManager {
         // Only casual, deathmatch and training may be left for the join;
         // Competitive, Premier, Wingman and the rest never are
         if (userInProtectedMatch) {
-          console.log(
-            "JoinManager: User is in a match not to leave, stopping join process for:",
-            join_id
+          logger.info(
+            "JoinManager",
+            "User is in a match not to leave, stopping join",
+            { join_id }
           );
           this.cancelJoin(join_id, "protected-match");
           break;
@@ -627,9 +631,10 @@ class JoinManager {
         // Give the game a moment to act on this attempt before the next one
         await this.sleep(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
       } catch (error) {
-        ErrorHandler.logError("JoinManager.joinLoop", error, {
+        logger.error("JoinManager", "Join loop iteration failed", {
           join_id,
           user_steam_id,
+          error: error.message,
         });
 
         if (!alive() || giveUpAfterFailure()) break;

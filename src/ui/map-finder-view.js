@@ -24,7 +24,7 @@ import {
 } from "./join-status.js";
 import DOMUtils from "../utils/dom-utils.js";
 import Validators from "../utils/validators.js";
-import ErrorHandler from "../utils/error-handler.js";
+import logger from "../utils/logger.js";
 import { t, tPlural, onLanguageChange } from "../i18n/i18n-manager.js";
 
 // Names and scores come from other players
@@ -223,7 +223,7 @@ class MapFinderView {
       fof_api_key: key,
     });
     if (!updated) {
-      ErrorHandler.logError("MapFinderView", "Could not save settings");
+      logger.error("MapFinderView", "Could not save settings");
       return false;
     }
     appStateManager.setState("savedSettings", updated);

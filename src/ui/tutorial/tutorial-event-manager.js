@@ -1,6 +1,7 @@
 import { emojiImg } from "../emoji.js";
 import { TUTORIAL_TIMING } from "./tutorial-timing.js";
 import { TUTORIAL_STEPS } from "./tutorial-steps.js";
+import logger from "../../utils/logger.js";
 
 /**
  * Tutorial Event Manager
@@ -118,7 +119,9 @@ export class TutorialEventManager {
           link.textContent = originalText;
         }, TUTORIAL_TIMING.COPY_FEEDBACK_MS);
       } catch (err) {
-        console.error("Failed to copy to clipboard:", err);
+        logger.error("TutorialEventManager", "Failed to copy to clipboard", {
+          error: err.message,
+        });
         // Fallback visual feedback even if clipboard fails
         link.style.color = "var(--red-light)";
         link.textContent = "Copy failed";

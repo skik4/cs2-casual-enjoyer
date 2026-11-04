@@ -262,7 +262,10 @@ class TutorialManager {
       // Fallback timeout to prevent infinite waiting
       setTimeout(() => {
         observer.disconnect();
-        console.warn("Tutorial button not found within timeout period");
+        logger.warn(
+          "TutorialManager",
+          "Tutorial button not found within timeout period"
+        );
       }, TUTORIAL_TIMING.ELEMENT_WAIT_MS);
     }
   }

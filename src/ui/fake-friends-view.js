@@ -12,7 +12,7 @@ import FakeFriendsManager from "./fake-friends-manager.js";
 import { FRIENDS_TEMPLATES } from "./friend-row-template.js";
 import DOMUtils from "../utils/dom-utils.js";
 import Validators from "../utils/validators.js";
-import ErrorHandler from "../utils/error-handler.js";
+import logger from "../utils/logger.js";
 import tutorialManager from "./tutorial/tutorial-manager.js";
 import { t } from "../i18n/i18n-manager.js";
 
@@ -131,7 +131,9 @@ class FakeFriendsView {
     try {
       removed = await FakeFriendsManager.removeId(steamId);
     } catch (error) {
-      ErrorHandler.logError("FakeFriendsView.removeFakeFriend", error);
+      logger.error("FakeFriendsView", "Removing the fake friend failed", {
+        error: error.message,
+      });
       NotificationManager.showError(error);
       return;
     }
@@ -187,7 +189,9 @@ class FakeFriendsView {
     try {
       added = await FakeFriendsManager.addId(steamId);
     } catch (error) {
-      ErrorHandler.logError("FakeFriendsView.addFakeFriend", error);
+      logger.error("FakeFriendsView", "Adding the fake friend failed", {
+        error: error.message,
+      });
       NotificationManager.showError(error);
       return;
     }

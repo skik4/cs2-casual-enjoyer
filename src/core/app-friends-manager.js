@@ -16,7 +16,6 @@ import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import SteamAPI from "../steam/steam-api.js";
 import credentialState from "../steam/credential-state.js";
 import Validators from "../utils/validators.js";
-import ErrorHandler from "../utils/error-handler.js";
 import DOMUtils from "../utils/dom-utils.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import { TUTORIAL_TIMING } from "../ui/tutorial/tutorial-timing.js";
@@ -143,7 +142,9 @@ class AppFriendsManager {
 
       return supportedFriends;
     } catch (error) {
-      ErrorHandler.logError("App.fetchAndRenderFriendsByIds", error);
+      logger.error("App", "Fetching the friends failed", {
+        error: error.message,
+      });
       if (!keepStates) NotificationManager.showError(error);
       throw error;
     }
@@ -329,7 +330,9 @@ class AppFriendsManager {
         );
       }
     } catch (error) {
-      ErrorHandler.logError("App.updateFriendsList", error);
+      logger.error("App", "Updating the friends list failed", {
+        error: error.message,
+      });
       NotificationManager.showError(error, steam_id);
     } finally {
       if (updateBtn) {
