@@ -54,6 +54,9 @@ class MainLogger {
   }
 }
 
+// The store encrypts the credentials with safeStorage, which works only once
+// the app is ready: it is reached through the settings IPC alone, registered
+// in initialize() after ready and called by the renderer alone
 const settingsStore = new SettingsStore(SETTINGS_PATH, MainLogger);
 
 /**
