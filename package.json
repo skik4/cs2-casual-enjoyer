@@ -40,6 +40,13 @@
     },
     "icon": "assets/icon.ico",
     "asar": true,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    },
     "compression": "maximum",
     "publish": null
   },

@@ -6,6 +6,25 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
+// Jest runs under plain Node, where Electron is not there. This safeStorage
+// "encrypts" by putting a marker in front of the text: enough to tell a
+// stored value from the plain one, and to make one that cannot be decrypted
+jest.mock("electron", () => {
+  const MARK = "safe:";
+  return {
+    safeStorage: {
+      isEncryptionAvailable: jest.fn(() => true),
+      encryptString: jest.fn((text) => Buffer.from(`${MARK}${text}`)),
+      decryptString: jest.fn((buffer) => {
+        const text = buffer.toString();
+        if (!text.startsWith(MARK)) throw new Error("Decryption failed");
+        return text.slice(MARK.length);
+      }),
+    },
+  };
+});
+
+import { safeStorage } from "electron";
 import SettingsStore from "../src/main/settings-store.js";
 import { isAllowedExternalUrl } from "../src/main/external-links.js";
 
@@ -17,7 +36,9 @@ describe("SettingsStore", () => {
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), "casual-enjoyer-settings-"));
     file = path.join(dir, "settings.json");
-    logger = { info: jest.fn(), error: jest.fn() };
+    logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+    jest.clearAllMocks();
+    safeStorage.isEncryptionAvailable.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -25,6 +46,14 @@ describe("SettingsStore", () => {
   });
 
   const readFile = () => JSON.parse(fs.readFileSync(file, "utf-8"));
+  const readText = () => fs.readFileSync(file, "utf-8");
+  /** The encrypted shape, holding the given text */
+  const encrypted = (text) => ({
+    encrypted: Buffer.from(`safe:${text}`).toString("base64"),
+  });
+  /** Everything the logger was given, as one string */
+  const logged = () =>
+    JSON.stringify([logger.info, logger.warn, logger.error].map((fn) => fn.mock.calls));
 
   test("reads nothing when there is no file yet, without an error", async () => {
     const store = new SettingsStore(file, logger);
@@ -40,7 +69,7 @@ describe("SettingsStore", () => {
     const result = await store.update({ auth: "token", language: "en" });
 
     expect(result).toEqual({ steam_id: "1", language: "en", auth: "token" });
-    expect(readFile()).toEqual(result);
+    await expect(store.read()).resolves.toEqual(result);
   });
 
   test("a null field removes it", async () => {
@@ -61,11 +90,17 @@ describe("SettingsStore", () => {
       store.update({ steam_id: "1", auth: "token" }),
     ]);
 
-    expect(readFile()).toEqual({
+    await expect(store.read()).resolves.toEqual({
       language: "ru",
       fake_friend_ids: ["7"],
       steam_id: "1",
       auth: "token",
+    });
+    expect(readFile()).toEqual({
+      language: "ru",
+      fake_friend_ids: ["7"],
+      steam_id: "1",
+      auth: encrypted("token"),
     });
   });
 
@@ -87,6 +122,116 @@ describe("SettingsStore", () => {
 
     await expect(store.read()).resolves.toBeNull();
     expect(logger.error).toHaveBeenCalled();
+  });
+
+  describe("credentials", () => {
+    test("come back as they went in, and are not on disk in the clear", async () => {
+      const store = new SettingsStore(file, logger);
+
+      const result = await store.update({
+        steam_id: "1",
+        auth: "eyJ.token",
+        fof_api_key: "0123456789ABCDEF0123456789ABCDEF",
+      });
+
+      expect(result).toEqual({
+        steam_id: "1",
+        auth: "eyJ.token",
+        fof_api_key: "0123456789ABCDEF0123456789ABCDEF",
+      });
+      await expect(store.read()).resolves.toEqual(result);
+      expect(readFile()).toEqual({
+        steam_id: "1",
+        auth: encrypted("eyJ.token"),
+        fof_api_key: encrypted("0123456789ABCDEF0123456789ABCDEF"),
+      });
+      expect(readText()).not.toContain("eyJ.token");
+      expect(readText()).not.toContain("0123456789ABCDEF");
+      expect(logged()).not.toContain("eyJ.token");
+      expect(logged()).not.toContain("0123456789ABCDEF");
+    });
+
+    test("a plain value from before keeps working and is encrypted by the next write", async () => {
+      fs.writeFileSync(file, JSON.stringify({ steam_id: "1", auth: "old-token" }));
+      const store = new SettingsStore(file, logger);
+
+      await expect(store.read()).resolves.toEqual({ steam_id: "1", auth: "old-token" });
+      expect(readFile().auth).toBe("old-token");
+
+      await store.update({ language: "en" });
+
+      expect(readFile()).toEqual({
+        steam_id: "1",
+        auth: encrypted("old-token"),
+        language: "en",
+      });
+      await expect(store.read()).resolves.toEqual({
+        steam_id: "1",
+        auth: "old-token",
+        language: "en",
+      });
+    });
+
+    test("stay plain when encryption is not available, which is said once", async () => {
+      safeStorage.isEncryptionAvailable.mockReturnValue(false);
+      const store = new SettingsStore(file, logger);
+
+      await store.update({ steam_id: "1", auth: "token" });
+      await store.update({ fof_api_key: "K" });
+
+      expect(readFile()).toEqual({ steam_id: "1", auth: "token", fof_api_key: "K" });
+      await expect(store.read()).resolves.toEqual({
+        steam_id: "1",
+        auth: "token",
+        fof_api_key: "K",
+      });
+      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledTimes(1);
+      expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    test("one that cannot be decrypted reads as absent, is reported and never crashes", async () => {
+      fs.writeFileSync(
+        file,
+        JSON.stringify({
+          steam_id: "1",
+          auth: { encrypted: Buffer.from("written on another PC").toString("base64") },
+          fof_api_key: encrypted("K"),
+        })
+      );
+      const store = new SettingsStore(file, logger);
+
+      await expect(store.read()).resolves.toEqual({ steam_id: "1", fof_api_key: "K" });
+      expect(logger.error).toHaveBeenCalledTimes(1);
+      expect(logger.error.mock.calls[0][0]).toContain("auth");
+      expect(logged()).not.toContain("written on another PC");
+
+      // The next write drops it, and a new token takes its place
+      await expect(store.update({ auth: "new-token" })).resolves.toEqual({
+        steam_id: "1",
+        fof_api_key: "K",
+        auth: "new-token",
+      });
+      expect(readFile().auth).toEqual(encrypted("new-token"));
+    });
+
+    test("are the only fields touched", async () => {
+      const store = new SettingsStore(file, logger);
+      const plain = {
+        steam_id: "1",
+        language: "ru",
+        friends_ids: ["2", "3"],
+        fake_friend_ids: ["7"],
+        tutorial_done: true,
+      };
+
+      await store.update(plain);
+
+      expect(readFile()).toEqual(plain);
+      await expect(store.read()).resolves.toEqual(plain);
+      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(safeStorage.decryptString).not.toHaveBeenCalled();
+    });
   });
 });
 
