@@ -402,7 +402,10 @@ class MapFinderView {
   }
 
   /**
-   * Status label, with the id and slot facts StatusManager updates
+   * Status label, with the id and slot facts StatusManager updates. The id
+   * holds a map code or a server id, both from other players' rich
+   * presence, so it is escaped like the rest of the row; the parser gives
+   * the element the raw id back, so getElementById still finds it.
    * @param {string} joinId - Map or server join id
    * @param {Object} joinStates - Join states by id
    * @param {import('./join-status.js').SlotFacts} slot
@@ -410,7 +413,7 @@ class MapFinderView {
    */
   static renderLabel(joinId, joinStates, slot) {
     const look = statusLabel(joinStates[joinId]?.status, slot);
-    return `<span id="status-${joinId}" class="status-label status-${look.kind}" ${slotAttributes(slot)}>${escapeHtml(look.text)}</span>`;
+    return `<span id="status-${escapeHtml(joinId)}" class="status-label status-${look.kind}" ${slotAttributes(slot)}>${escapeHtml(look.text)}</span>`;
   }
 
   /**
@@ -428,7 +431,8 @@ class MapFinderView {
   }
 
   /**
-   * Join, Wait for a slot or Cancel button, with the id StatusManager updates
+   * Join, Wait for a slot or Cancel button, with the id StatusManager
+   * updates, escaped for the same reason as the label's
    * @param {string} joinId - Map or server join id
    * @param {Object} joinStates - Join states by id
    * @param {import('./join-status.js').SlotFacts} slot
@@ -438,7 +442,7 @@ class MapFinderView {
     const look = joinButtonLook(joinStates[joinId]?.status, slot);
     return `
       <div class="join-section">
-        <button id="join-btn-${joinId}" class="${look.className}" ${slotAttributes(slot)}${look.disabled ? " disabled" : ""}>${escapeHtml(look.text)}</button>
+        <button id="join-btn-${escapeHtml(joinId)}" class="${look.className}" ${slotAttributes(slot)}${look.disabled ? " disabled" : ""}>${escapeHtml(look.text)}</button>
       </div>`;
   }
 
