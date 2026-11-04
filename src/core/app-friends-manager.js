@@ -248,11 +248,11 @@ class AppFriendsManager {
       return;
     }
 
+    const sameAccount =
+      savedSettings?.steam_id === steam_id && savedSettings?.auth === auth;
+
     // Check if settings changed
-    if (
-      savedSettings &&
-      (savedSettings.steam_id !== steam_id || savedSettings.auth !== auth)
-    ) {
+    if (savedSettings && !sameAccount) {
       localStorage.removeItem("hide_privacy_warning");
       appStateManager.setState("usingSavedFriends", false);
     }
@@ -290,8 +290,6 @@ class AppFriendsManager {
         FakeFriendsManager.mergeIds(allFriendIds),
         auth
       );
-      const supportedFriends =
-        FakeFriendsManager.withFakeFriends(statuses);
 
       // Only these fields change; the main process merges them into the file
       const updatedSettings = await window.electronAPI.settings.update({
@@ -303,12 +301,18 @@ class AppFriendsManager {
         appStateManager.setState("savedSettings", updatedSettings);
       }
 
-      // Reset join states
-      joinManager.resetAll();
+      // Running joins go on with the account and credential they started
+      // with: another one ends them, while a reload of the same keeps them,
+      // so a join waiting for a slot outlives it
+      if (!sameAccount) joinManager.resetAll();
+      const joinStates = joinManager.getJoinStates();
+      const supportedFriends = FakeFriendsManager.withFakeFriends(
+        statuses,
+        this.getFriendsWithActiveJoins(joinStates)
+      );
 
       // Render friends
       appStateManager.setState("friendsData", supportedFriends);
-      const joinStates = joinManager.getJoinStates();
       this.renderLists(supportedFriends, joinStates);
 
       // Friends are in: the account panel gives way to the bar
