@@ -45,10 +45,6 @@ jest.mock("../src/steam/steam-api.js", () => ({
   __esModule: true,
   default: { getFriendsStatuses: jest.fn() },
 }));
-jest.mock("../src/utils/error-handler.js", () => ({
-  __esModule: true,
-  default: { logError: jest.fn() },
-}));
 jest.mock("../src/utils/dom-utils.js", () => ({
   __esModule: true,
   default: { getElementById: jest.fn(() => null) },

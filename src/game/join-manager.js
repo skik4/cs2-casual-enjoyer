@@ -6,13 +6,14 @@ import {
   STATUS_TYPES,
 } from "../shared/constants.js";
 import SteamAPI from "../steam/steam-api.js";
-import SteamAPIUtils from "../steam/steam-api-utils.js";
-import Validators from "../utils/validators.js";
-import ErrorHandler from "../utils/error-handler.js";
-import DOMUtils from "../utils/dom-utils.js";
+import { connectKind, isMatchOver } from "../steam/rich-presence.js";
+import logger from "../utils/logger.js";
 
 // Game singletons
 import joinJournal from "./join-journal.js";
+
+// The Steam client
+import { joinUrl, openSteamUrl } from "./steam-protocol.js";
 
 /**
  * Statuses of a join attempt that is still running
@@ -53,6 +54,8 @@ class JoinManager {
     this.onUpdateJoinButton = null;
     this.cs2Manager = null;
     this.onRequestCS2Launch = null; // Callback for requesting CS2 launch from UI layer
+    // Set by configure: the user's Steam ID and token or key
+    this.getCredentials = null;
     this.journal = joinJournal;
     // Connect string -> the attempt that sent it, so two attempts going
     // through the same player send it once
@@ -65,6 +68,16 @@ class JoinManager {
    */
   setCS2Manager(cs2Manager) {
     this.cs2Manager = cs2Manager;
+  }
+
+  /**
+   * Where the credentials come from
+   * @param {Object} options
+   * @param {() => {steamId: string, auth: string}} options.getCredentials -
+   *   The user's Steam ID and API key or token, empty when missing
+   */
+  configure({ getCredentials }) {
+    this.getCredentials = getCredentials;
   }
 
   /**
@@ -220,7 +233,7 @@ class JoinManager {
     const gsi = this.cs2Manager?.getGsiUserState?.() ?? null;
     const ownServerId = gsi && !gsi.inMatch ? null : user.serverId;
     const running = onMap.filter(
-      (player) => !SteamAPIUtils.isMatchOver(player.score)
+      (player) => !isMatchOver(player.score)
     );
     const joinable = running.filter(
       (player) => !ownServerId || player.serverId !== ownServerId
@@ -240,7 +253,7 @@ class JoinManager {
         connect: pick?.connect ?? null,
         joinAs: pick?.steamid ?? null,
         statusKey: pick
-          ? `${pick.steamid}\n${pick.statusKey ?? SteamAPIUtils.connectKind(pick.connect)}`
+          ? `${pick.steamid}\n${pick.statusKey ?? connectKind(pick.connect)}`
           : null,
         isJoined: (userInfo) => {
           if (target.serverId) {
@@ -262,7 +275,7 @@ class JoinManager {
           // Without CS2's state Steam's final score tells the same: the
           // user is on a server about to load another map, most likely the
           // one they were on when the attempt started
-          if (SteamAPIUtils.isMatchOver(userInfo.score)) return false;
+          if (isMatchOver(userInfo.score)) return false;
           // Any server of the map will do - even one whose known players
           // left as the user arrived
           return (
@@ -285,47 +298,45 @@ class JoinManager {
     let state = null;
 
     try {
-      console.log("JoinManager: Starting join for:", join_id);
+      logger.info("JoinManager", "Starting join", { join_id });
 
       // First check if user is in CS2
       if (this.cs2Manager) {
-        console.log("JoinManager: Checking if user is in CS2...");
+        logger.debug("JoinManager", "Checking if user is in CS2");
         const isInCS2 = await this.cs2Manager.checkUserInCS2();
-        console.log("JoinManager: User in CS2 check result:", isInCS2);
+        logger.debug("JoinManager", "User in CS2 check result", { isInCS2 });
 
         // null means Steam could not be asked. Offering to launch a game that
         // may well be running would be wrong; the loop's failure budget deals
         // with an outage instead.
         if (isInCS2 === false) {
-          console.log("JoinManager: User not in CS2, requesting launch...");
+          logger.info("JoinManager", "User not in CS2, requesting launch", {
+            join_id,
+          });
           // Request CS2 launch from UI layer
           if (this.onRequestCS2Launch) {
             const shouldLaunch = await this.onRequestCS2Launch(join_id);
-            console.log("JoinManager: Launch request result:", shouldLaunch);
+            logger.debug("JoinManager", "Launch request result", {
+              shouldLaunch,
+            });
             if (!shouldLaunch) {
               // User cancelled, don't proceed with join
-              console.log("JoinManager: User cancelled launch, aborting join");
+              logger.info("JoinManager", "User cancelled launch, aborting join", {
+                join_id,
+              });
               return;
             }
             // CS2 launch notification will handle waiting for CS2 to start
           }
         } else {
-          console.log(
-            "JoinManager: User already in CS2, proceeding with join..."
-          );
+          logger.debug("JoinManager", "User already in CS2, proceeding with join");
         }
       }
 
-      const steamIdInput = DOMUtils.getElementById("steam-id");
-      const authInput = DOMUtils.getElementById("auth");
-
-      if (!steamIdInput || !authInput) {
-        throw new Error("Required input elements not found");
-      }
-
-      const steam_id = steamIdInput.value.trim();
-      const auth_raw = authInput.value.trim();
-      const auth = Validators.extractApiKeyOrToken(auth_raw);
+      // Read once: the loop goes on with the credentials it started with. A
+      // credential that changes mid-join resets the attempts itself
+      // (AppInputManager.handleAuthInput).
+      const { steamId: steam_id, auth } = this.getCredentials?.() ?? {};
 
       if (!steam_id || !auth) {
         throw new Error("Steam ID and API auth are required");
@@ -333,18 +344,16 @@ class JoinManager {
 
       // The CS2 check above is a network round trip, during which the
       // button still reads Join - a second click would otherwise start a
-      // second loop and orphan the first interval.
+      // second loop.
       const existing = this.joinStates[join_id];
       if (existing && !existing.cancelled) {
-        console.log("JoinManager: Join already in progress for:", join_id);
+        logger.info("JoinManager", "Join already in progress", { join_id });
         return;
       }
-      if (existing?.interval) clearInterval(existing.interval);
 
       state = {
         status: STATUS_TYPES.WAITING,
         cancelled: false,
-        interval: null,
       };
       if (personaname) state.personaname = personaname;
       this.joinStates[join_id] = state;
@@ -354,31 +363,13 @@ class JoinManager {
         this.onUpdateJoinButton(join_id, STATUS_TYPES.WAITING);
       if (this.onUpdateDot) this.onUpdateDot(join_id, STATUS_TYPES.WAITING);
 
-      // Periodic UI re-assert. Closes over its own state and timer id so it
-      // always clears itself, never whichever id the current state holds.
-      const ownState = state;
-      ownState.interval = setInterval(() => {
-        if (this.joinStates[join_id] !== ownState) {
-          clearInterval(ownState.interval);
-          return;
-        }
-
-        if (this.onUpdateDot) this.onUpdateDot(join_id, ownState.status);
-        if (this.onUpdateJoinButton)
-          this.onUpdateJoinButton(join_id, ownState.status);
-
-        if (
-          ownState.status === STATUS_TYPES.JOINED ||
-          ownState.status === STATUS_TYPES.CANCELLED
-        ) {
-          clearInterval(ownState.interval);
-        }
-      }, 1000);
-
       // Start the join loop
       await this.joinLoop(join_id, state, steam_id, auth, resolveTarget);
     } catch (error) {
-      ErrorHandler.logError("JoinManager.startJoin", error, { join_id });
+      logger.error("JoinManager", "Starting the join failed", {
+        join_id,
+        error: error.message,
+      });
       // Only this attempt's own state - an error before it existed must not
       // cancel an attempt that is already running for the friend
       if (state && this.joinStates[join_id] === state) {
@@ -438,10 +429,7 @@ class JoinManager {
       if (Date.now() - failingSince <= API_CONFIG.MISSING_TIMEOUT_MS) {
         return false;
       }
-      console.log(
-        "JoinManager: Giving up after repeated errors for:",
-        join_id
-      );
+      logger.info("JoinManager", "Giving up after repeated errors", { join_id });
       this.cancelJoin(join_id, "no-answer");
       return true;
     };
@@ -465,7 +453,7 @@ class JoinManager {
         // Any change in what Steam shows about the target makes the next
         // connect worth sending, even one that changes back
         const targetStatus =
-          target.statusKey ?? SteamAPIUtils.connectKind(target.connect);
+          target.statusKey ?? connectKind(target.connect);
         if (connectedOn !== null && targetStatus !== connectedOn) {
           connectedOn = null;
         }
@@ -477,10 +465,9 @@ class JoinManager {
         const userInProtectedMatch = this._inProtectedMatch(user, gsiState);
 
         if (!userInCS2) {
-          console.log(
-            "JoinManager: User no longer in CS2, stopping join process for:",
-            join_id
-          );
+          logger.info("JoinManager", "User no longer in CS2, stopping join", {
+            join_id,
+          });
           this.cancelJoin(join_id, "left-cs2");
           break;
         }
@@ -488,9 +475,10 @@ class JoinManager {
         // Only casual, deathmatch and training may be left for the join;
         // Competitive, Premier, Wingman and the rest never are
         if (userInProtectedMatch) {
-          console.log(
-            "JoinManager: User is in a match not to leave, stopping join process for:",
-            join_id
+          logger.info(
+            "JoinManager",
+            "User is in a match not to leave, stopping join",
+            { join_id }
           );
           this.cancelJoin(join_id, "protected-match");
           break;
@@ -617,19 +605,15 @@ class JoinManager {
           joinAs: target.joinAs,
           connect: target.connect,
         });
-        const url = `steam://rungame/730/${target.joinAs}/${target.connect}`;
-        if (window.electronAPI?.shell?.openExternal) {
-          await window.electronAPI.shell.openExternal(url);
-        } else {
-          window.open(url, "_self");
-        }
+        await openSteamUrl(joinUrl(target.joinAs, target.connect));
 
         // Give the game a moment to act on this attempt before the next one
         await this.sleep(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
       } catch (error) {
-        ErrorHandler.logError("JoinManager.joinLoop", error, {
+        logger.error("JoinManager", "Join loop iteration failed", {
           join_id,
           user_steam_id,
+          error: error.message,
         });
 
         if (!alive() || giveUpAfterFailure()) break;
@@ -648,12 +632,20 @@ class JoinManager {
     if (!state) return;
 
     const previousStatus = state.status;
+    const previousName = state.personaname ?? null;
     Object.assign(state, updates);
 
-    // Notify immediately. Without this the UI only catches up on the next
-    // 1s tick, so CONNECTING is never drawn and JOINED can be missed
-    // entirely inside its 1.5s display window.
-    if (updates.status !== undefined && updates.status !== previousStatus) {
+    // Notify at once on every change the UI shows: the status, which the row
+    // and the join bar draw, and the name the bar is titled with - a
+    // pinned-maps attempt is named after the pins, which change mid-join.
+    // Nothing else repaints a running attempt; the rows a refresh re-renders
+    // are built from the join states.
+    const statusChanged =
+      updates.status !== undefined && updates.status !== previousStatus;
+    const nameChanged =
+      "personaname" in updates &&
+      (updates.personaname ?? null) !== previousName;
+    if (statusChanged || nameChanged) {
       if (this.onUpdateDot) this.onUpdateDot(friend_id, state.status);
       if (this.onUpdateJoinButton)
         this.onUpdateJoinButton(friend_id, state.status);
@@ -669,9 +661,6 @@ class JoinManager {
     const state = this.joinStates[friend_id];
     if (!state) return;
 
-    if (state.interval) {
-      clearInterval(state.interval);
-    }
     this._forgetConnects(friend_id);
     this.journal.attemptEnded(friend_id, reason);
     // updateJoinState pushes the CANCELLED status to the UI
@@ -706,10 +695,6 @@ class JoinManager {
    */
   resetAll() {
     Object.keys(this.joinStates).forEach((friendId) => {
-      const state = this.joinStates[friendId];
-      if (state?.interval) {
-        clearInterval(state.interval);
-      }
       delete this.joinStates[friendId];
       this._forgetConnects(friendId);
       this.journal.attemptEnded(friendId, "reset");

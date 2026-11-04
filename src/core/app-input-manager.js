@@ -11,6 +11,7 @@ import SteamAPI from "../steam/steam-api.js";
 import Validators from "../utils/validators.js";
 import DOMUtils from "../utils/dom-utils.js";
 import ErrorHandler from "../utils/error-handler.js";
+import logger from "../utils/logger.js";
 import { t } from "../i18n/i18n-manager.js";
 
 /**
@@ -174,7 +175,9 @@ class AppInputManager {
       const updated = await window.electronAPI?.settings?.update?.({ auth: token });
       if (updated) appStateManager.setState("savedSettings", updated);
     } catch (error) {
-      ErrorHandler.logError("AppInputManager.saveFreshToken", error);
+      logger.error("AppInputManager", "Saving the fresh token failed", {
+        error: error.message,
+      });
     }
   }
 

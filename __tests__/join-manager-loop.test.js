@@ -6,18 +6,18 @@
  * CS2's own reports and map joins.
  */
 
-jest.mock("../src/utils/dom-utils.js");
 jest.mock("../src/steam/steam-api.js");
-jest.mock("../src/utils/validators.js");
 jest.mock("../src/utils/error-handler.js");
+jest.mock("../src/utils/logger.js", () => ({
+  __esModule: true,
+  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+}));
 
 import joinManager from "../src/game/join-manager.js";
 import joinJournal from "../src/game/join-journal.js";
 import { API_CONFIG, STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
-import DOMUtils from "../src/utils/dom-utils.js";
-import ErrorHandler from "../src/utils/error-handler.js";
-import Validators from "../src/utils/validators.js";
+import logger from "../src/utils/logger.js";
 
 const { WAITING, CONNECTING, JOINED, CANCELLED, MISSING } = STATUS_TYPES;
 
@@ -130,11 +130,9 @@ describe("JoinManager join loop", () => {
     onRequestCS2Launch = jest.fn().mockResolvedValue(true);
     joinManager.setCS2LaunchCallback(onRequestCS2Launch);
 
-    DOMUtils.getElementById.mockImplementation(
-      (id) =>
-        ({ "steam-id": { value: USER_ID }, auth: { value: AUTH } })[id] || null
-    );
-    Validators.extractApiKeyOrToken.mockReturnValue(AUTH);
+    joinManager.configure({
+      getCredentials: () => ({ steamId: USER_ID, auth: AUTH }),
+    });
 
     openExternal = jest.fn().mockResolvedValue(true);
     global.window.electronAPI = { shell: { openExternal } };
@@ -578,14 +576,16 @@ describe("JoinManager join loop", () => {
       await flush();
       const running = state();
 
-      // The inputs are gone by the time Join is clicked again
-      DOMUtils.getElementById.mockReturnValue(null);
+      // The fields are empty by the time Join is clicked again
+      joinManager.configure({
+        getCredentials: () => ({ steamId: "", auth: "" }),
+      });
       await joinManager.startJoin(FRIEND_ID);
 
-      expect(ErrorHandler.logError).toHaveBeenCalledWith(
-        "JoinManager.startJoin",
-        expect.any(Error),
-        { join_id: FRIEND_ID }
+      expect(logger.error).toHaveBeenCalledWith(
+        "JoinManager",
+        expect.any(String),
+        { join_id: FRIEND_ID, error: "Steam ID and API auth are required" }
       );
       expect(state()).toBe(running);
       expect(joinManager.isActive(running)).toBe(true);

@@ -3,10 +3,10 @@ import { API_CONFIG } from "../shared/constants.js";
 
 // Game singletons
 import gsiManager from "./gsi-manager.js";
+import { LAUNCH_CS2_URL, openSteamUrl } from "./steam-protocol.js";
 
 // UI and utilities
 import SteamAPI from "../steam/steam-api.js";
-import Validators from "../utils/validators.js";
 import logger from "../utils/logger.js";
 
 /**
@@ -16,8 +16,8 @@ import logger from "../utils/logger.js";
  */
 class CS2Manager {
   constructor() {
-    this.appInputManager = null;
-    this.isInitialized = false;
+    // Set by configure: the user's Steam ID and token or key
+    this.getCredentials = null;
     this.statusCheckInterval = null;
     this.isMonitoring = false;
     this._pendingLobbyResolve = null;
@@ -26,13 +26,14 @@ class CS2Manager {
   }
 
   /**
-   * Initialize the CS2Manager with required dependencies
-   * @param {Object} appInputManager - App input manager instance
+   * Where the credentials come from: the same function the join manager
+   * reads, so both ask Steam about the same account
+   * @param {Object} options
+   * @param {() => {steamId: string, auth: string}} options.getCredentials -
+   *   The user's Steam ID and API key or token, empty when missing
    */
-  initialize(appInputManager) {
-    this.appInputManager = appInputManager;
-    this.isInitialized = true;
-    logger.info("CS2Manager", "CS2Manager initialized");
+  configure({ getCredentials }) {
+    this.getCredentials = getCredentials;
   }
 
   /**
@@ -50,25 +51,49 @@ class CS2Manager {
    * when Steam could not be asked
    */
   async checkUserInCS2() {
-    if (!this.isInitialized || !this.appInputManager) {
-      logger.warn("CS2Manager", "Not initialized or missing appInputManager", {
-        isInitialized: this.isInitialized,
-        hasAppInputManager: !!this.appInputManager,
-      });
+    return this._userState(false);
+  }
+
+  /**
+   * Check if the current user is playing CS2 and in lobby
+   * @returns {Promise<boolean|null>} - Whether the user is playing CS2 and in
+   * lobby, or null when Steam could not be asked
+   */
+  async checkUserInCS2AndLobby() {
+    return this._userState(true);
+  }
+
+  /**
+   * Whether the user is in CS2 - and in its menu, when asked - from CS2's
+   * own state while it is fresh, else from one Steam request
+   * @param {boolean} requireLobby - Whether being in the menu is required too
+   * @returns {Promise<boolean|null>} - True when in CS2 (and in the menu, when
+   *   required); false when not, and without credentials; null when Steam
+   *   could not be asked
+   * @private
+   */
+  async _userState(requireLobby) {
+    if (!this.getCredentials) {
+      logger.warn("CS2Manager", "Not configured: no credentials to ask with");
       return false;
     }
 
     // A fresh state from CS2 is proof enough, and costs no request
-    if (this.getGsiUserState()) {
-      logger.debug("CS2Manager", "CS2 status from GSI: playing");
-      return true;
+    const gsiState = this.getGsiUserState();
+    if (gsiState) {
+      logger.debug("CS2Manager", "CS2 status from GSI", {
+        inMenu: gsiState.inMenu,
+      });
+      return requireLobby ? gsiState.inMenu : true;
     }
 
     try {
-      const steamId = this.appInputManager.getSteamId();
-      const auth = this.appInputManager.getAuth();
+      const { steamId, auth } = this.getCredentials();
 
-      logger.debug("CS2Manager", "Checking CS2 status for user", { steamId });
+      logger.debug("CS2Manager", "Checking CS2 status for user", {
+        steamId,
+        requireLobby,
+      });
 
       if (!steamId || !auth) {
         logger.warn("CS2Manager", "Missing steamId or auth", {
@@ -78,10 +103,13 @@ class CS2Manager {
         return false;
       }
 
-      const extractedAuth = Validators.extractApiKeyOrToken(auth);
-      const result = await SteamAPI.isPlayerInCS2(steamId, extractedAuth);
+      const result = await SteamAPI.isPlayerInCS2(steamId, auth, requireLobby);
 
-      logger.info("CS2Manager", "CS2 status result", { steamId, result });
+      logger.info("CS2Manager", "CS2 status result", {
+        steamId,
+        requireLobby,
+        result,
+      });
       return result;
     } catch (error) {
       logger.error("CS2Manager", "Error checking CS2 status", {
@@ -93,75 +121,16 @@ class CS2Manager {
   }
 
   /**
-   * Check if the current user is playing CS2 and in lobby
-   * @returns {Promise<boolean|null>} - Whether the user is playing CS2 and in
-   * lobby, or null when Steam could not be asked
-   */
-  async checkUserInCS2AndLobby() {
-    if (!this.isInitialized || !this.appInputManager) {
-      logger.warn(
-        "CS2Manager",
-        "Not initialized or missing appInputManager for lobby check",
-        {
-          isInitialized: this.isInitialized,
-          hasAppInputManager: !!this.appInputManager,
-        }
-      );
-      return false;
-    }
-
-    const gsiState = this.getGsiUserState();
-    if (gsiState) {
-      logger.debug("CS2Manager", "CS2 lobby status from GSI", {
-        inMenu: gsiState.inMenu,
-      });
-      return gsiState.inMenu;
-    }
-
-    try {
-      const steamId = this.appInputManager.getSteamId();
-      const auth = this.appInputManager.getAuth();
-
-      logger.debug("CS2Manager", "Checking CS2 and lobby status for user", {
-        steamId,
-      });
-
-      if (!steamId || !auth) {
-        logger.warn("CS2Manager", "Missing steamId or auth for lobby check", {
-          hasSteamId: !!steamId,
-          hasAuth: !!auth,
-        });
-        return false;
-      }
-
-      const extractedAuth = Validators.extractApiKeyOrToken(auth);
-      const result = await SteamAPI.isPlayerInCS2(steamId, extractedAuth, true); // requireLobby = true
-
-      logger.info("CS2Manager", "CS2 and lobby status result", {
-        steamId,
-        result,
-      });
-      return result;
-    } catch (error) {
-      logger.error("CS2Manager", "Error checking CS2 and lobby status", {
-        error: error.message,
-      });
-      return null;
-    }
-  }
-
-  /**
    * Launch CS2 using Steam protocol
    */
   launchCS2() {
     try {
-      const launchUrl = "steam://run/730/";
-      if (window.electronAPI?.shell?.openExternal) {
-        window.electronAPI.shell.openExternal(launchUrl);
-      } else {
-        window.open(launchUrl);
-      }
-      logger.info("CS2Manager", "Launching CS2...", { launchUrl });
+      // The client's answer is not waited for: whether CS2 comes up is
+      // watched through the lobby poll and GSI
+      openSteamUrl(LAUNCH_CS2_URL);
+      logger.info("CS2Manager", "Launching CS2...", {
+        launchUrl: LAUNCH_CS2_URL,
+      });
     } catch (error) {
       logger.error("CS2Manager", "Error launching CS2", {
         error: error.message,
@@ -179,11 +148,8 @@ class CS2Manager {
     onStatusChange,
     intervalMs = API_CONFIG.CS2_LOBBY_POLL_MS
   ) {
-    if (!this.isInitialized || !this.appInputManager) {
-      logger.warn("CS2Manager", "Cannot start monitoring - not initialized", {
-        isInitialized: this.isInitialized,
-        hasAppInputManager: !!this.appInputManager,
-      });
+    if (!this.getCredentials) {
+      logger.warn("CS2Manager", "Cannot start monitoring - not configured");
       return false;
     }
 

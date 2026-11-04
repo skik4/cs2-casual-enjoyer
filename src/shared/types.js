@@ -21,7 +21,6 @@
  * @typedef {Object} JoinState
  * @property {string} status - Join status (waiting|connecting|joined|cancelled|missing)
  * @property {boolean} cancelled - Whether the join was cancelled
- * @property {number|null} interval - Interval ID for join loop
  * @property {string} [personaname] - Cached friend name
  */
 
@@ -59,7 +58,7 @@
  *   official: boolean,
  * }} PlayerPresence - Join facts plus where the match is played; `official`
  *   is true for a casual match on Valve's own servers, as rich presence and
- *   the server's account tell (SteamAPIUtils.isOfficialServer).
+ *   the server's account tell (isOfficialServer in steam/rich-presence.js).
  */
 
 /**

@@ -13,6 +13,7 @@ import mapFinder from "../game/map-finder.js";
 // UI and utilities
 import StatusManager from "../ui/status-manager.js";
 import NotificationManager from "../ui/notification-manager.js";
+import Cs2LaunchDialog from "../ui/cs2-launch-dialog.js";
 import AccountView from "../ui/account-view.js";
 import JoinBar from "../ui/join-bar.js";
 import GsiStatusIndicator from "../ui/gsi-status-indicator.js";
@@ -23,7 +24,6 @@ import FakeFriendsView from "../ui/fake-friends-view.js";
 import FakeFriendsManager from "../ui/fake-friends-manager.js";
 import tutorialManager from "../ui/tutorial/tutorial-manager.js";
 import DOMUtils from "../utils/dom-utils.js";
-import ErrorHandler from "../utils/error-handler.js";
 import logger from "../utils/logger.js";
 import {
   applyI18nToDom,
@@ -174,12 +174,21 @@ class App {
         // Pick the new ID up on the next poll so its real Steam status shows
         onAdded: () =>
           this.friendsManager.startAutoRefresh().catch((error) => {
-            ErrorHandler.logError("App.addFakeFriend", error);
+            logger.error("App", "Refresh after adding a fake friend failed", {
+              error: error.message,
+            });
           }),
       });
       logger.info("App", "Event listeners configured successfully");
 
-      logger.info("App", "Step 4: Configuring JoinManager UI callbacks");
+      logger.info("App", "Step 4: Configuring JoinManager");
+      // The credentials as the fields hold them now: trimmed, the token taken
+      // out of a pasted JSON
+      const getCredentials = () => ({
+        steamId: this.inputManager.getSteamId(),
+        auth: this.inputManager.getAuth(),
+      });
+      joinManager.configure({ getCredentials });
       // Setup JoinManager UI callbacks
       joinManager.setUICallbacks(
         (friendId, status) => {
@@ -191,10 +200,10 @@ class App {
       );
       logger.info("App", "JoinManager UI callbacks set");
 
-      logger.info("App", "Step 5: Initializing CS2Manager");
-      // Initialize CS2Manager first
-      this.cs2Manager.initialize(this.inputManager);
-      logger.info("App", "CS2Manager initialized");
+      logger.info("App", "Step 5: Configuring CS2Manager");
+      // The same credentials the join manager reads
+      this.cs2Manager.configure({ getCredentials });
+      logger.info("App", "CS2Manager configured");
 
       logger.info("App", "Step 5.1: Connecting to CS2 Game State Integration");
       // Not awaited: GSI is optional, and the main process finishes setting it
@@ -248,10 +257,8 @@ class App {
       logger.info("App", "JoinManager connected to CS2Manager");
 
       logger.info("App", "Step 7: Setting CS2 launch callback");
-      // Set CS2 launch callback
-      joinManager.setCS2LaunchCallback(async (friendId) => {
-        return NotificationManager.showCS2LaunchNotification(friendId, this.cs2Manager);
-      });
+      // The overlay that offers to launch CS2 before a join
+      joinManager.setCS2LaunchCallback(() => Cs2LaunchDialog.ask(this.cs2Manager));
       logger.info("App", "CS2 launch callback configured");
 
       logger.info("App", "Step 8: Loading saved settings from storage");

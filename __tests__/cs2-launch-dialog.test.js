@@ -10,10 +10,8 @@ jest.mock("../src/utils/logger.js", () => ({
   default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
-import NotificationManager from "../src/ui/notification-manager.js";
+import Cs2LaunchDialog from "../src/ui/cs2-launch-dialog.js";
 import { setLanguage, t } from "../src/i18n/i18n-manager.js";
-
-const FRIEND = "76561198000000002";
 
 const overlay = () => document.getElementById("cs2-launch-notification");
 const visible = () =>
@@ -57,7 +55,7 @@ beforeEach(() => {
   };
 });
 
-const ask = () => observe(NotificationManager.showCS2LaunchNotification(FRIEND, cs2Manager));
+const ask = () => observe(Cs2LaunchDialog.ask(cs2Manager));
 
 test("shows the overlay with its first texts and waits", () => {
   const answer = ask();
@@ -140,9 +138,7 @@ test("a launch that throws answers false", async () => {
 test("answers false when the page has no overlay", async () => {
   document.body.innerHTML = "";
 
-  await expect(
-    NotificationManager.showCS2LaunchNotification(FRIEND, cs2Manager)
-  ).resolves.toBe(false);
+  await expect(Cs2LaunchDialog.ask(cs2Manager)).resolves.toBe(false);
 });
 
 test("a language switch re-renders the phase it shows", async () => {

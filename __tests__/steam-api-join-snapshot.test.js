@@ -10,7 +10,11 @@ jest.mock("../src/utils/error-handler.js");
 
 import SteamAPIClient from "../src/steam/steam-api-client.js";
 import SteamAPIResponseProcessor from "../src/steam/steam-api-response-processor.js";
-import SteamAPIUtils from "../src/steam/steam-api-utils.js";
+import {
+  isInProtectedMatch,
+  isJoinAvailable,
+  isValidConnect,
+} from "../src/steam/rich-presence.js";
 import logger from "../src/utils/logger.js";
 
 const USER_ID = "76561198000000001";
@@ -202,7 +206,7 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
 
   describe("connect validation", () => {
     test("accepts a bare +gcconnect token", () => {
-      expect(SteamAPIUtils.isValidConnect(VALID_CONNECT)).toBe(true);
+      expect(isValidConnect(VALID_CONNECT)).toBe(true);
     });
 
     test.each([
@@ -219,17 +223,17 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
       ["null", null],
       ["a number", 12345],
     ])("rejects %s", (_label, connect) => {
-      expect(SteamAPIUtils.isValidConnect(connect)).toBe(false);
+      expect(isValidConnect(connect)).toBe(false);
     });
 
     test("isJoinAvailable requires a valid connect", () => {
       const richPresence = { game_mode: "casual", game_state: "game" };
 
       expect(
-        SteamAPIUtils.isJoinAvailable({ ...richPresence, connect: VALID_CONNECT })
+        isJoinAvailable({ ...richPresence, connect: VALID_CONNECT })
       ).toBe(true);
       expect(
-        SteamAPIUtils.isJoinAvailable({
+        isJoinAvailable({
           ...richPresence,
           connect: "+gcconnectG1A2B3C4D +exec autoexec",
         })
@@ -281,7 +285,7 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
         `"game:mode" "${mode}"` + (state ? ` "game:state" "${state}"` : "");
 
       expect(
-        SteamAPIUtils.isInProtectedMatch({ game_id: "730", rich_presence_kv })
+        isInProtectedMatch({ game_id: "730", rich_presence_kv })
       ).toBe(expected);
     });
 
@@ -291,7 +295,7 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
         const rich_presence_kv = `"game:mode" "${mode}" "game:state" "game" "game:server" "offline"`;
 
         expect(
-          SteamAPIUtils.isInProtectedMatch({ game_id: "730", rich_presence_kv })
+          isInProtectedMatch({ game_id: "730", rich_presence_kv })
         ).toBe(false);
       }
     );

@@ -10,7 +10,15 @@ jest.mock("../src/utils/error-handler.js");
 
 import SteamAPIClient from "../src/steam/steam-api-client.js";
 import SteamAPIResponseProcessor from "../src/steam/steam-api-response-processor.js";
-import SteamAPIUtils from "../src/steam/steam-api-utils.js";
+import {
+  connectKind,
+  isAnonymousGameServer,
+  isMatchOver,
+  isOfficialServer,
+  parseRichPresence,
+  parseRoundsPlayed,
+  richPresenceKey,
+} from "../src/steam/rich-presence.js";
 import Validators from "../src/utils/validators.js";
 
 const A = "76561198000000011";
@@ -69,7 +77,7 @@ describe("isOfficialServer", () => {
     ],
     ["the main menu", '"game:state" "lobby" "game:mode" "casual"', false],
   ])("%s", (_name, kv, expected) => {
-    expect(SteamAPIUtils.isOfficialServer(SteamAPIUtils.parseRichPresence(kv))).toBe(
+    expect(isOfficialServer(parseRichPresence(kv))).toBe(
       expected
     );
   });
@@ -77,10 +85,10 @@ describe("isOfficialServer", () => {
 
 describe("official server signals", () => {
   test("isAnonymousGameServer reads the account type from the server id", () => {
-    expect(SteamAPIUtils.isAnonymousGameServer("90295736594079769")).toBe(true);
-    expect(SteamAPIUtils.isAnonymousGameServer("85568392931758174")).toBe(false);
-    expect(SteamAPIUtils.isAnonymousGameServer(null)).toBe(false);
-    expect(SteamAPIUtils.isAnonymousGameServer("not a number")).toBe(false);
+    expect(isAnonymousGameServer("90295736594079769")).toBe(true);
+    expect(isAnonymousGameServer("85568392931758174")).toBe(false);
+    expect(isAnonymousGameServer(null)).toBe(false);
+    expect(isAnonymousGameServer("not a number")).toBe(false);
   });
 
   test("the server id can come from outside rich presence", async () => {
@@ -141,7 +149,7 @@ describe("status key", () => {
     });
 
   test("changes with any value and ignores the order Steam lists them in", () => {
-    const key = (kv) => SteamAPIUtils.richPresenceKey(kv);
+    const key = (kv) => richPresenceKey(kv);
 
     expect(key('"a" "1" "b" "2"')).toBe(key('"b" "2" "a" "1"'));
     expect(key('"a" "1" "b" "2"')).not.toBe(key('"a" "1" "b" "3"'));
@@ -149,7 +157,7 @@ describe("status key", () => {
   });
 
   test("a new join token alone is no change; a connect showing up or going away is", () => {
-    const key = (kv) => SteamAPIUtils.richPresenceKey(kv);
+    const key = (kv) => richPresenceKey(kv);
     // Seen live: only the token changed, as the user arrived on the server
     const before = '"connect" "+gcconnect62805B3F4B1347F135DF8FBE" "game:map" "de_dust2"';
     const after = '"connect" "+gcconnect0FB32A434B1347F1A291CB89" "game:map" "de_dust2"';
@@ -163,14 +171,14 @@ describe("status key", () => {
   });
 
   test("connectKind keeps what a connect joins and drops its token", () => {
-    expect(SteamAPIUtils.connectKind("+gcconnect62805B3F4B1347F135DF8FBE")).toBe(
+    expect(connectKind("+gcconnect62805B3F4B1347F135DF8FBE")).toBe(
       "+gcconnect"
     );
-    expect(SteamAPIUtils.connectKind("+gcconnectG4B1347F1")).toBe("+gcconnectG");
-    expect(SteamAPIUtils.connectKind("+gcconnectL0A0B0C0D0E0F0A0B0C0D0E0F")).toBe(
+    expect(connectKind("+gcconnectG4B1347F1")).toBe("+gcconnectG");
+    expect(connectKind("+gcconnectL0A0B0C0D0E0F0A0B0C0D0E0F")).toBe(
       "+gcconnectL"
     );
-    expect(SteamAPIUtils.connectKind(null)).toBeNull();
+    expect(connectKind(null)).toBeNull();
   });
 
   test("a player's key covers the whole rich presence and the server", () => {
@@ -194,19 +202,19 @@ describe("status key", () => {
 
 describe("parseRoundsPlayed", () => {
   test("adds both sides of the score", () => {
-    expect(SteamAPIUtils.parseRoundsPlayed("[ 3 : 1 ]")).toBe(4);
-    expect(SteamAPIUtils.parseRoundsPlayed("[ 12 : 10 ]")).toBe(22);
-    expect(SteamAPIUtils.parseRoundsPlayed(null)).toBeNull();
-    expect(SteamAPIUtils.parseRoundsPlayed("")).toBeNull();
+    expect(parseRoundsPlayed("[ 3 : 1 ]")).toBe(4);
+    expect(parseRoundsPlayed("[ 12 : 10 ]")).toBe(22);
+    expect(parseRoundsPlayed(null)).toBeNull();
+    expect(parseRoundsPlayed("")).toBeNull();
   });
 
   test("isMatchOver sees a side with the rounds a casual match needs", () => {
     // As the journal saw a match end
-    expect(SteamAPIUtils.isMatchOver("[ 8 : 2 ]")).toBe(true);
-    expect(SteamAPIUtils.isMatchOver("[ 7 : 8 ]")).toBe(true);
-    expect(SteamAPIUtils.isMatchOver("[ 7 : 7 ]")).toBe(false);
-    expect(SteamAPIUtils.isMatchOver(null)).toBe(false);
-    expect(SteamAPIUtils.isMatchOver("")).toBe(false);
+    expect(isMatchOver("[ 8 : 2 ]")).toBe(true);
+    expect(isMatchOver("[ 7 : 8 ]")).toBe(true);
+    expect(isMatchOver("[ 7 : 7 ]")).toBe(false);
+    expect(isMatchOver(null)).toBe(false);
+    expect(isMatchOver("")).toBe(false);
   });
 });
 

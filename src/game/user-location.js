@@ -5,7 +5,7 @@ import { GAME_MODES } from "../shared/constants.js";
 import gsiManager from "./gsi-manager.js";
 
 // Steam modules
-import SteamAPIUtils from "../steam/steam-api-utils.js";
+import { isMatchOver } from "../steam/rich-presence.js";
 
 // UI and utilities
 import logger from "../utils/logger.js";
@@ -80,7 +80,7 @@ class UserLocation {
       return own && gsi.mode === GAME_MODES.CASUAL && !own.over ? own.map : null;
     }
     const presence = this.steamPresence;
-    return presence?.official && !SteamAPIUtils.isMatchOver(presence.score)
+    return presence?.official && !isMatchOver(presence.score)
       ? presence.map
       : null;
   }
