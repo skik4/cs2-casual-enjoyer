@@ -59,7 +59,7 @@
  *   official: boolean,
  * }} PlayerPresence - Join facts plus where the match is played; `official`
  *   is true for a casual match on Valve's own servers, as rich presence and
- *   the server's account tell (SteamAPIUtils.isOfficialServer).
+ *   the server's account tell (isOfficialServer in steam/rich-presence.js).
  */
 
 /**

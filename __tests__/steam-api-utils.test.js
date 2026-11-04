@@ -1,78 +1,9 @@
 /**
- * Jest tests for SteamAPIUtils - rich presence, friends lists and HTTP errors
+ * Jest tests for SteamAPIUtils - friends lists, avatars and HTTP errors
  */
 
 import SteamAPIUtils from "../src/steam/steam-api-utils.js";
 import { ERROR_CODES } from "../src/shared/constants.js";
-
-const rp = (kv) => SteamAPIUtils.parseRichPresence(kv);
-
-describe("parseRichPresence", () => {
-  test("reads the keys the app uses", () => {
-    expect(
-      rp(
-        '"status" "Casual Dust II [ 3 : 1 ]" "game:state" "game" "game:mode" "casual" "game:map" "de_dust2" "game:score" "[ 3 : 1 ]" "connect" "+gcconnectG1A2B3C4D" "game_server_steam_id" "9001" "game:server" "kv" "steam_display" "#display_GameKnownMapScore"'
-      )
-    ).toEqual({
-      status: "Casual Dust II [ 3 : 1 ]",
-      game_state: "game",
-      game_mode: "casual",
-      game_map: "de_dust2",
-      game_score: "[ 3 : 1 ]",
-      connect: "+gcconnectG1A2B3C4D",
-      game_server_steam_id: "9001",
-      game_server: "kv",
-      steam_display: "#display_GameKnownMapScore",
-      addon: null,
-    });
-  });
-
-  test("treats a missing string as empty rich presence", () => {
-    expect(rp(undefined).game_mode).toBeNull();
-    expect(rp(null).connect).toBeNull();
-  });
-});
-
-describe("modes", () => {
-  test("only a running casual match is a supported mode", () => {
-    expect(SteamAPIUtils.isInSupportedMode(rp('"game:mode" "casual" "game:state" "game"'))).toBe(true);
-    expect(SteamAPIUtils.isInSupportedMode(rp('"game:mode" "casual" "game:state" "lobby"'))).toBe(false);
-    expect(SteamAPIUtils.isInSupportedMode(rp('"game:mode" "deathmatch" "game:state" "game"'))).toBe(false);
-    expect(SteamAPIUtils.isInSupportedMode(rp('"game:mode" "competitive" "game:state" "game"'))).toBe(false);
-  });
-
-  test("join needs a supported mode and a valid connect", () => {
-    expect(
-      SteamAPIUtils.isJoinAvailable(
-        rp('"game:mode" "casual" "game:state" "game" "connect" "+gcconnectG1A2B3C4D"')
-      )
-    ).toBe(true);
-    expect(
-      SteamAPIUtils.isJoinAvailable(rp('"game:mode" "casual" "game:state" "game"'))
-    ).toBe(false);
-  });
-
-  test("competitive or premier counts only once the match runs", () => {
-    const priv = (kv) => ({ game_id: "730", rich_presence_kv: kv });
-    expect(
-      SteamAPIUtils.isInProtectedMatch(
-        priv('"game:mode" "premier" "game:state" "game"')
-      )
-    ).toBe(true);
-    expect(
-      SteamAPIUtils.isInProtectedMatch(
-        priv('"game:mode" "competitive" "game:state" "lobby"')
-      )
-    ).toBe(false);
-    expect(SteamAPIUtils.isInProtectedMatch(null)).toBe(false);
-  });
-
-  test("isPlayerInCS2 checks the app id", () => {
-    expect(SteamAPIUtils.isPlayerInCS2({ game_id: "730" })).toBe(true);
-    expect(SteamAPIUtils.isPlayerInCS2({ game_id: "570" })).toBe(false);
-    expect(SteamAPIUtils.isPlayerInCS2(undefined)).toBe(false);
-  });
-});
 
 describe("friends lists", () => {
   test("keeps confirmed friends from a token response", () => {

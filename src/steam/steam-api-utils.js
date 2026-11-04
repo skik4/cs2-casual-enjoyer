@@ -2,21 +2,7 @@
 import { ERROR_CODES } from "../shared/constants.js";
 
 // Steam modules
-import {
-  connectKind,
-  isAnonymousGameServer,
-  isInCS2,
-  isInProtectedMatch,
-  isInSupportedMode,
-  isJoinAvailable,
-  isMatchOver,
-  isOfficialServer,
-  isOffline,
-  isValidConnect,
-  parseRichPresence,
-  parseRoundsPlayed,
-  richPresenceKey,
-} from "./rich-presence.js";
+import { isInSupportedMode, parseRichPresence } from "./rich-presence.js";
 
 // UI and utilities
 import ErrorHandler from "../utils/error-handler.js";
@@ -212,23 +198,5 @@ class SteamAPIUtils {
     return METHOD_ERROR_HANDLERS[method]?.[isToken ? "token" : "key"] || {};
   }
 }
-
-// Moved to rich-presence.js. SteamAPIUtils forwards to the functions for one
-// commit, until the importers follow; the next commit removes this.
-Object.assign(SteamAPIUtils, {
-  parseRichPresence,
-  richPresenceKey,
-  connectKind,
-  isValidConnect,
-  isPlayerInCS2: isInCS2,
-  isInSupportedMode,
-  isJoinAvailable,
-  isOffline,
-  isInProtectedMatch,
-  isOfficialServer,
-  isAnonymousGameServer,
-  parseRoundsPlayed,
-  isMatchOver,
-});
 
 export default SteamAPIUtils;

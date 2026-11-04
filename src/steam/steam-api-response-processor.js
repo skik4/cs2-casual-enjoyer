@@ -3,6 +3,17 @@ import { ERROR_CODES, LOG_LEVELS } from "../shared/constants.js";
 
 // Steam modules
 import SteamAPIUtils from "./steam-api-utils.js";
+import {
+  isInCS2,
+  isInProtectedMatch,
+  isInSupportedMode,
+  isJoinAvailable,
+  isOfficialServer,
+  isOffline,
+  isValidConnect,
+  parseRichPresence,
+  richPresenceKey,
+} from "./rich-presence.js";
 
 // UI and utilities
 import ErrorHandler from "../utils/error-handler.js";
@@ -170,23 +181,23 @@ class SteamAPIResponseProcessor {
     const account = rawData?.response?.accounts?.[0];
     const pub = account?.public_data || {};
     const priv = account?.private_data || {};
-    const richPresence = SteamAPIUtils.parseRichPresence(priv.rich_presence_kv);
+    const richPresence = parseRichPresence(priv.rich_presence_kv);
 
-    const inCS2 = SteamAPIUtils.isPlayerInCS2(priv);
+    const inCS2 = isInCS2(priv);
     const inProtectedMatch =
-      inCS2 && SteamAPIUtils.isInProtectedMatch(priv);
+      inCS2 && isInProtectedMatch(priv);
     // CS2 reports training in the mode picked for it; only Steam knows the
     // game is offline
     const offlineGame =
-      inCS2 && SteamAPIUtils.isOffline(richPresence)
+      inCS2 && isOffline(richPresence)
         ? { map: richPresence.game_map, mode: richPresence.game_mode }
         : null;
     const inSupportedMode =
-      inCS2 && SteamAPIUtils.isInSupportedMode(richPresence);
+      inCS2 && isInSupportedMode(richPresence);
 
     let connect = null;
     if (inSupportedMode && richPresence.connect) {
-      if (SteamAPIUtils.isValidConnect(richPresence.connect)) {
+      if (isValidConnect(richPresence.connect)) {
         connect = richPresence.connect;
       } else if (!this._reportedInvalidConnects.has(richPresence.connect)) {
         this._reportedInvalidConnects.add(richPresence.connect);
@@ -209,7 +220,7 @@ class SteamAPIResponseProcessor {
       inSupportedMode,
       connect,
       serverId,
-      statusKey: `${serverId ?? ""}\n${SteamAPIUtils.richPresenceKey(
+      statusKey: `${serverId ?? ""}\n${richPresenceKey(
         priv.rich_presence_kv
       )}`,
     };
@@ -223,7 +234,7 @@ class SteamAPIResponseProcessor {
    */
   static processPresenceResponse(rawData) {
     const account = rawData?.response?.accounts?.[0];
-    const richPresence = SteamAPIUtils.parseRichPresence(
+    const richPresence = parseRichPresence(
       account?.private_data?.rich_presence_kv
     );
     const info = this.processJoinInfoResponse(rawData);
@@ -236,7 +247,7 @@ class SteamAPIResponseProcessor {
       score: info.inCS2 ? richPresence.game_score : null,
       official:
         info.inSupportedMode &&
-        SteamAPIUtils.isOfficialServer(richPresence, info.serverId),
+        isOfficialServer(richPresence, info.serverId),
     };
   }
 
@@ -325,9 +336,9 @@ class SteamAPIResponseProcessor {
 
     const account = rawData.response.accounts[0];
     const priv = account.private_data || {};
-    const isInCS2 = SteamAPIUtils.isPlayerInCS2(priv);
+    const inCS2 = isInCS2(priv);
 
-    if (!isInCS2) {
+    if (!inCS2) {
       logger.info(
         "SteamAPIResponseProcessor",
         `Player ${steam_id} CS2 status: not playing`,
@@ -356,19 +367,19 @@ class SteamAPIResponseProcessor {
     }
 
     // Parse rich presence to check if user is in lobby
-    const richPresence = SteamAPIUtils.parseRichPresence(
+    const richPresence = parseRichPresence(
       priv.rich_presence_kv || ""
     );
     const isInLobby = richPresence.game_state === "lobby";
 
     logger.info(
       "SteamAPIResponseProcessor",
-      `Player ${steam_id} CS2 status: ${isInCS2 ? "playing" : "not playing"}, in lobby: ${isInLobby}`,
+      `Player ${steam_id} CS2 status: ${inCS2 ? "playing" : "not playing"}, in lobby: ${isInLobby}`,
       {
         steam_id,
         game_id: priv.game_id,
         game_state: richPresence.game_state,
-        isInCS2,
+        isInCS2: inCS2,
         isInLobby,
         requireLobby: true,
         richPresenceData: richPresence,
@@ -376,7 +387,7 @@ class SteamAPIResponseProcessor {
     );
 
     // Return true if player is in CS2 AND in lobby (when lobby is required)
-    return isInCS2 && isInLobby;
+    return inCS2 && isInLobby;
   }
 
   // Private helper methods
@@ -390,10 +401,10 @@ class SteamAPIResponseProcessor {
     return cs2Players
       .filter((acc) => {
         const priv = acc.private_data || {};
-        const richPresence = SteamAPIUtils.parseRichPresence(
+        const richPresence = parseRichPresence(
           priv.rich_presence_kv || ""
         );
-        return SteamAPIUtils.isInSupportedMode(richPresence);
+        return isInSupportedMode(richPresence);
       })
       .map((acc) => acc.public_data?.steamid)
       .filter(Boolean);
@@ -480,12 +491,12 @@ class SteamAPIResponseProcessor {
     return cs2Players.map((acc) => {
       const priv = acc.private_data || {};
       const pub = acc.public_data || {};
-      const richPresence = SteamAPIUtils.parseRichPresence(
+      const richPresence = parseRichPresence(
         priv.rich_presence_kv || ""
       );
       const status = richPresence.status || "";
-      const inSupportedMode = SteamAPIUtils.isInSupportedMode(richPresence);
-      const joinAvailable = SteamAPIUtils.isJoinAvailable(richPresence);
+      const inSupportedMode = isInSupportedMode(richPresence);
+      const joinAvailable = isJoinAvailable(richPresence);
 
       const steamid = pub.steamid || "";
       const avatar = SteamAPIUtils.extractBestAvatar(avatarMap[steamid]);

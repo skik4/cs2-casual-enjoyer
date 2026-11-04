@@ -6,7 +6,7 @@ import {
   STATUS_TYPES,
 } from "../shared/constants.js";
 import SteamAPI from "../steam/steam-api.js";
-import SteamAPIUtils from "../steam/steam-api-utils.js";
+import { connectKind, isMatchOver } from "../steam/rich-presence.js";
 import logger from "../utils/logger.js";
 
 // Game singletons
@@ -233,7 +233,7 @@ class JoinManager {
     const gsi = this.cs2Manager?.getGsiUserState?.() ?? null;
     const ownServerId = gsi && !gsi.inMatch ? null : user.serverId;
     const running = onMap.filter(
-      (player) => !SteamAPIUtils.isMatchOver(player.score)
+      (player) => !isMatchOver(player.score)
     );
     const joinable = running.filter(
       (player) => !ownServerId || player.serverId !== ownServerId
@@ -253,7 +253,7 @@ class JoinManager {
         connect: pick?.connect ?? null,
         joinAs: pick?.steamid ?? null,
         statusKey: pick
-          ? `${pick.steamid}\n${pick.statusKey ?? SteamAPIUtils.connectKind(pick.connect)}`
+          ? `${pick.steamid}\n${pick.statusKey ?? connectKind(pick.connect)}`
           : null,
         isJoined: (userInfo) => {
           if (target.serverId) {
@@ -275,7 +275,7 @@ class JoinManager {
           // Without CS2's state Steam's final score tells the same: the
           // user is on a server about to load another map, most likely the
           // one they were on when the attempt started
-          if (SteamAPIUtils.isMatchOver(userInfo.score)) return false;
+          if (isMatchOver(userInfo.score)) return false;
           // Any server of the map will do - even one whose known players
           // left as the user arrived
           return (
@@ -476,7 +476,7 @@ class JoinManager {
         // Any change in what Steam shows about the target makes the next
         // connect worth sending, even one that changes back
         const targetStatus =
-          target.statusKey ?? SteamAPIUtils.connectKind(target.connect);
+          target.statusKey ?? connectKind(target.connect);
         if (connectedOn !== null && targetStatus !== connectedOn) {
           connectedOn = null;
         }

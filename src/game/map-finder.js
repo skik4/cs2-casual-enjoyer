@@ -9,7 +9,7 @@ import userLocation from "./user-location.js";
 
 // UI and utilities
 import SteamAPI from "../steam/steam-api.js";
-import SteamAPIUtils from "../steam/steam-api-utils.js";
+import { isMatchOver, parseRoundsPlayed } from "../steam/rich-presence.js";
 import credentialState from "../steam/credential-state.js";
 import Validators from "../utils/validators.js";
 import logger from "../utils/logger.js";
@@ -50,8 +50,8 @@ export function buildServers(presences, statusSince = () => 0) {
     entries.push({
       player,
       since: statusSince(player.steamid) || 0,
-      over: SteamAPIUtils.isMatchOver(player.score),
-      rounds: SteamAPIUtils.parseRoundsPlayed(player.score),
+      over: isMatchOver(player.score),
+      rounds: parseRoundsPlayed(player.score),
     });
     byServer.set(player.serverId, entries);
   }
