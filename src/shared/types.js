@@ -21,7 +21,6 @@
  * @typedef {Object} JoinState
  * @property {string} status - Join status (waiting|connecting|joined|cancelled|missing)
  * @property {boolean} cancelled - Whether the join was cancelled
- * @property {number|null} interval - Interval ID for join loop
  * @property {string} [personaname] - Cached friend name
  */
 

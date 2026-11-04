@@ -344,18 +344,16 @@ class JoinManager {
 
       // The CS2 check above is a network round trip, during which the
       // button still reads Join - a second click would otherwise start a
-      // second loop and orphan the first interval.
+      // second loop.
       const existing = this.joinStates[join_id];
       if (existing && !existing.cancelled) {
         logger.info("JoinManager", "Join already in progress", { join_id });
         return;
       }
-      if (existing?.interval) clearInterval(existing.interval);
 
       state = {
         status: STATUS_TYPES.WAITING,
         cancelled: false,
-        interval: null,
       };
       if (personaname) state.personaname = personaname;
       this.joinStates[join_id] = state;
@@ -364,27 +362,6 @@ class JoinManager {
       if (this.onUpdateJoinButton)
         this.onUpdateJoinButton(join_id, STATUS_TYPES.WAITING);
       if (this.onUpdateDot) this.onUpdateDot(join_id, STATUS_TYPES.WAITING);
-
-      // Periodic UI re-assert. Closes over its own state and timer id so it
-      // always clears itself, never whichever id the current state holds.
-      const ownState = state;
-      ownState.interval = setInterval(() => {
-        if (this.joinStates[join_id] !== ownState) {
-          clearInterval(ownState.interval);
-          return;
-        }
-
-        if (this.onUpdateDot) this.onUpdateDot(join_id, ownState.status);
-        if (this.onUpdateJoinButton)
-          this.onUpdateJoinButton(join_id, ownState.status);
-
-        if (
-          ownState.status === STATUS_TYPES.JOINED ||
-          ownState.status === STATUS_TYPES.CANCELLED
-        ) {
-          clearInterval(ownState.interval);
-        }
-      }, 1000);
 
       // Start the join loop
       await this.joinLoop(join_id, state, steam_id, auth, resolveTarget);
@@ -655,12 +632,20 @@ class JoinManager {
     if (!state) return;
 
     const previousStatus = state.status;
+    const previousName = state.personaname ?? null;
     Object.assign(state, updates);
 
-    // Notify immediately. Without this the UI only catches up on the next
-    // 1s tick, so CONNECTING is never drawn and JOINED can be missed
-    // entirely inside its 1.5s display window.
-    if (updates.status !== undefined && updates.status !== previousStatus) {
+    // Notify at once on every change the UI shows: the status, which the row
+    // and the join bar draw, and the name the bar is titled with - a
+    // pinned-maps attempt is named after the pins, which change mid-join.
+    // Nothing else repaints a running attempt; the rows a refresh re-renders
+    // are built from the join states.
+    const statusChanged =
+      updates.status !== undefined && updates.status !== previousStatus;
+    const nameChanged =
+      "personaname" in updates &&
+      (updates.personaname ?? null) !== previousName;
+    if (statusChanged || nameChanged) {
       if (this.onUpdateDot) this.onUpdateDot(friend_id, state.status);
       if (this.onUpdateJoinButton)
         this.onUpdateJoinButton(friend_id, state.status);
@@ -676,9 +661,6 @@ class JoinManager {
     const state = this.joinStates[friend_id];
     if (!state) return;
 
-    if (state.interval) {
-      clearInterval(state.interval);
-    }
     this._forgetConnects(friend_id);
     this.journal.attemptEnded(friend_id, reason);
     // updateJoinState pushes the CANCELLED status to the UI
@@ -713,10 +695,6 @@ class JoinManager {
    */
   resetAll() {
     Object.keys(this.joinStates).forEach((friendId) => {
-      const state = this.joinStates[friendId];
-      if (state?.interval) {
-        clearInterval(state.interval);
-      }
       delete this.joinStates[friendId];
       this._forgetConnects(friendId);
       this.journal.attemptEnded(friendId, "reset");
