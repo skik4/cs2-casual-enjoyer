@@ -200,10 +200,10 @@ class App {
       );
       logger.info("App", "JoinManager UI callbacks set");
 
-      logger.info("App", "Step 5: Initializing CS2Manager");
-      // Initialize CS2Manager first
-      this.cs2Manager.initialize(this.inputManager);
-      logger.info("App", "CS2Manager initialized");
+      logger.info("App", "Step 5: Configuring CS2Manager");
+      // The same credentials the join manager reads
+      this.cs2Manager.configure({ getCredentials });
+      logger.info("App", "CS2Manager configured");
 
       logger.info("App", "Step 5.1: Connecting to CS2 Game State Integration");
       // Not awaited: GSI is optional, and the main process finishes setting it

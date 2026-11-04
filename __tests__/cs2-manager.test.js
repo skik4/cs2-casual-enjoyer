@@ -56,9 +56,8 @@ describe("CS2Manager", () => {
 
     global.window.electronAPI = { shell: { openExternal: jest.fn() } };
 
-    cs2Manager.initialize({
-      getSteamId: () => TEST_STEAM_ID,
-      getAuth: () => TEST_AUTH,
+    cs2Manager.configure({
+      getCredentials: () => ({ steamId: TEST_STEAM_ID, auth: TEST_AUTH }),
     });
   });
 
@@ -212,7 +211,9 @@ describe("CS2Manager", () => {
       });
 
       test("returns false when steamId or auth is missing", async () => {
-        cs2Manager.initialize({ getSteamId: () => "", getAuth: () => TEST_AUTH });
+        cs2Manager.configure({
+          getCredentials: () => ({ steamId: "", auth: TEST_AUTH }),
+        });
         await expect(cs2Manager[method]()).resolves.toBe(false);
         expect(SteamAPI.isPlayerInCS2).not.toHaveBeenCalled();
       });
