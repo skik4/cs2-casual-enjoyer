@@ -13,6 +13,7 @@ import mapFinder from "../game/map-finder.js";
 // UI and utilities
 import StatusManager from "../ui/status-manager.js";
 import NotificationManager from "../ui/notification-manager.js";
+import Cs2LaunchDialog from "../ui/cs2-launch-dialog.js";
 import AccountView from "../ui/account-view.js";
 import JoinBar from "../ui/join-bar.js";
 import GsiStatusIndicator from "../ui/gsi-status-indicator.js";
@@ -256,10 +257,8 @@ class App {
       logger.info("App", "JoinManager connected to CS2Manager");
 
       logger.info("App", "Step 7: Setting CS2 launch callback");
-      // Set CS2 launch callback
-      joinManager.setCS2LaunchCallback(async (friendId) => {
-        return NotificationManager.showCS2LaunchNotification(friendId, this.cs2Manager);
-      });
+      // The overlay that offers to launch CS2 before a join
+      joinManager.setCS2LaunchCallback(() => Cs2LaunchDialog.ask(this.cs2Manager));
       logger.info("App", "CS2 launch callback configured");
 
       logger.info("App", "Step 8: Loading saved settings from storage");
