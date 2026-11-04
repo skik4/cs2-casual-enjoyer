@@ -56,7 +56,7 @@ If you want to build the application yourself:
 
 ### Requirements
 
-- [Node.js](https://nodejs.org/) (v16 or higher recommended)
+- [Node.js](https://nodejs.org/) (v22.12 or higher, which Electron needs)
 - [Git](https://git-scm.com/) (optional, for cloning the repository)
 
 ### Installation
@@ -81,6 +81,8 @@ To start the application in development mode:
 ```sh
 npm start
 ```
+
+The first start downloads Electron itself (about 150 MB), since the `electron` package no longer does that at install time; later starts are instant.
 
 ### Building the App
 
