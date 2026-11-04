@@ -276,6 +276,22 @@ describe("JoinManager with CS2 Game State Integration", () => {
     expect(status()).toBe(STATUS_TYPES.CONNECTING);
   });
 
+  test("a connect CS2 loads no map for while the user plays elsewhere waits for a slot", async () => {
+    SteamAPI.getJoinSnapshot.mockResolvedValue({
+      user: userInfo({ serverId: "90071992547409999" }),
+      friend: friendInfo(),
+    });
+    // The user's own match, loaded before the connect: turned away, CS2
+    // stays where it was
+    cs2.gsiState = gsiMatch("casual", Date.now() - 60000);
+
+    joinManager.startJoin(FRIEND_ID);
+    await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOAD_WINDOW_MS + 1000);
+
+    expect(joinCalls()).toBe(1);
+    expect(status()).toBe(STATUS_TYPES.WAITING);
+  });
+
   test("a map loaded before the first connect does not hold anything", async () => {
     SteamAPI.getJoinSnapshot.mockResolvedValue({
       user: userInfo({ serverId: "90071992547409999" }),

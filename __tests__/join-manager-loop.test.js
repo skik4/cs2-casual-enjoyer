@@ -167,6 +167,35 @@ describe("JoinManager join loop", () => {
       expect(polls()).toBeGreaterThan(10);
     });
 
+    test("a connect CS2 never acts on turns into waiting for a slot, and a new status connects again", async () => {
+      // As on 2026-11-04: CS2 answered "Game is full", stayed in the menu, and
+      // the friend kept the same join token for over a minute
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      expect(status()).toBe(CONNECTING);
+
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOAD_WINDOW_MS - 1000);
+      expect(status()).toBe(CONNECTING);
+
+      await jest.advanceTimersByTimeAsync(1000);
+      expect(status()).toBe(WAITING);
+      // The row heard it too: the start, the connect, then the wait
+      expect(
+        reported(onUpdateDot).filter((seen, i, all) => seen !== all[i - 1])
+      ).toEqual([WAITING, CONNECTING, WAITING]);
+      expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
+
+      // The score changed: a new chance, taken at once
+      steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 1:0" });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+
+      expect(status()).toBe(CONNECTING);
+      expect(openedUrls()).toEqual([
+        joinUrl(FRIEND_ID, CONNECT),
+        joinUrl(FRIEND_ID, CONNECT),
+      ]);
+    });
+
     test("a new join token alone gets no second connect: the user's own arrival brings one", async () => {
       steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 7:3" });
       joinManager.startJoin(FRIEND_ID);

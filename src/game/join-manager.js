@@ -423,6 +423,8 @@ class JoinManager {
     // turned away again or - while CS2 is still connecting - run after the
     // join as a second connect, so the next one waits for a new status.
     let connectedOn = null;
+    // When the connect on connectedOn went out
+    let connectedAt = null;
     // Facts of the last snapshot written to the journal
     let journaled = null;
 
@@ -569,18 +571,30 @@ class JoinManager {
           continue;
         }
 
+        // The last connect went out on this very status: CS2 is connecting
+        // or was turned away, and nothing says another one would do better.
+        // Once CS2 has had the time to load a map for it and has not, it was
+        // turned away, so the user reads that the attempt waits for a slot.
+        if (connectedOn !== null) {
+          const mapLoadedSince = Boolean(
+            gsiState?.inMatch && gsiState.mapLoadedAt >= connectedAt
+          );
+          const turnedAway =
+            !mapLoadedSince &&
+            Date.now() - connectedAt >= API_CONFIG.JOIN_LOAD_WINDOW_MS;
+          this.updateJoinState(join_id, {
+            status: turnedAway ? STATUS_TYPES.WAITING : STATUS_TYPES.CONNECTING,
+            personaname,
+          });
+          await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+          continue;
+        }
+
         // We have connect info, try to join
         this.updateJoinState(join_id, {
           status: STATUS_TYPES.CONNECTING,
           personaname,
         });
-
-        // The last connect went out on this very status: CS2 is connecting
-        // or was turned away, and nothing says another one would do better
-        if (connectedOn !== null) {
-          await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
-          continue;
-        }
 
         // Another running attempt has just sent this very connect - a server
         // and its map joined at once through the same player. A second one
@@ -588,6 +602,7 @@ class JoinManager {
         const sender = this._sentConnects.get(target.connect);
         if (sender && sender !== join_id && this.isActive(this.joinStates[sender])) {
           connectedOn = targetStatus;
+          connectedAt = Date.now();
           await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
           continue;
         }
@@ -595,6 +610,7 @@ class JoinManager {
         // Attempt to join via Steam protocol through main process
         if (firstConnectAt === null) firstConnectAt = Date.now();
         connectedOn = targetStatus;
+        connectedAt = Date.now();
         this._sentConnects.set(target.connect, join_id);
         this.journal.record("connect", {
           join: join_id,
