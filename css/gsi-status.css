@@ -62,8 +62,4 @@
   color: var(--white);
 }
 
-/* Where the keyboard is, in Steam's blue */
-.gsi-status[role="button"]:focus-visible {
-  outline: var(--border-width) solid var(--blue-primary);
-  outline-offset: 1px;
-}
+/* Where the keyboard is: the app-wide frame in css/unified-buttons.css */

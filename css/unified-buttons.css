@@ -183,3 +183,13 @@
 .link-btn:hover {
   text-decoration: underline;
 }
+
+/* ===== KEYBOARD FOCUS ===== */
+/* Where the keyboard is, in Steam's blue, on every button and link of the
+   app: the buttons above drop the browser's own ring, and the rest would
+   show it in the browser's colours. :focus-visible only, because a mouse
+   click focuses a button too and must not leave a frame on it */
+:is(button, a[href], [role="button"]):focus-visible {
+  outline: var(--border-width) solid var(--blue-primary);
+  outline-offset: 1px;
+}
