@@ -1,7 +1,7 @@
 /* Main Styles File - Modular CSS Architecture */
 
-/* No web fonts: the text uses Steam's font stack (--font-family), whose
-   fonts come from the system */
+/* Motiva Sans, shipped with the app, for Steam's font stack (--font-family) */
+@import url("./fonts.css");
 
 /* CSS Variables and Design Tokens */
 @import url("./variables.css");

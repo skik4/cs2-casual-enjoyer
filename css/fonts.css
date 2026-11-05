@@ -1,0 +1,38 @@
+/* Motiva Sans, Steam's own typeface, shipped with the app in the faces
+   its styles use: 400, 500 and 700, and the 400 italic. The family has no
+   SemiBold, so weight 600 takes the Bold. Like Steam's own copy, it has no
+   Cyrillic: Russian text falls through to Arial in the stack, as it does in
+   Steam. The files sit in assets/fonts, so they load as fast as the
+   stylesheet itself and need no network. */
+
+@font-face {
+  font-family: "Motiva Sans";
+  src: url("../assets/fonts/MotivaSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Motiva Sans";
+  src: url("../assets/fonts/MotivaSans-RegularItalic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Motiva Sans";
+  src: url("../assets/fonts/MotivaSans-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Motiva Sans";
+  src: url("../assets/fonts/MotivaSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}

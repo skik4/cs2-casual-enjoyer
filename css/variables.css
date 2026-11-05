@@ -110,9 +110,8 @@
   /* ============================================= */
   /* ===== FONT FAMILY ===== */
   /* Steam's own stack, as the client's steamui stylesheets write it. Motiva
-     Sans comes packed inside Steam and is not ours to ship, so where it is
-     not installed the text falls back to Arial, as Steam's own does. Only
-     body names it; everything else inherits. */
+     Sans comes with the app (css/fonts.css); Arial stays behind it, as in
+     Steam's own stack. Only body names it; everything else inherits. */
   --font-family: "Motiva Sans", Arial, Helvetica, sans-serif;
 
   /* ===== TYPOGRAPHY SCALE ===== */
