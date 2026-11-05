@@ -108,7 +108,7 @@
                       target="_self"
                       data-i18n="account.openInSteam"
                       data-i18n-attr="text"
-                    >Open in Steam ↗</a>
+                    >Open in Steam</a>
                     <span class="step-hint" data-i18n="account.step1Hint" data-i18n-attr="text"></span>
                   </div>
                 </div>
@@ -169,13 +169,13 @@
               <span data-i18n="views.friends" data-i18n-attr="text">Friends</span>
               <span id="tab-count-friends" class="tab-count"></span>
             </button>
-            <button class="view-tab" data-view="fake" role="tab" aria-selected="false">
-              <span data-i18n="views.fakeFriends" data-i18n-attr="text">Fake Friends</span>
-              <span id="tab-count-fake" class="tab-count"></span>
-            </button>
             <button class="view-tab" data-view="maps" role="tab" aria-selected="false">
               <span data-i18n="views.maps" data-i18n-attr="text">Maps</span>
               <span id="tab-count-maps" class="tab-count"></span>
+            </button>
+            <button class="view-tab" data-view="fake" role="tab" aria-selected="false">
+              <span data-i18n="views.fakeFriends" data-i18n-attr="text">Fake Friends</span>
+              <span id="tab-count-fake" class="tab-count"></span>
             </button>
             <div class="view-tools">
               <input
@@ -237,13 +237,10 @@
             <div class="friend-list" id="maps-list"></div>
             <div id="maps-empty" class="view-empty hidden"></div>
             <div class="fof-key" id="fof-key-section">
+              <div id="map-sources" class="map-sources"></div>
               <div class="fof-line">
                 <span id="fof-summary" class="fof-summary"></span>
                 <button id="fof-key-toggle" class="link-btn"></button>
-              </div>
-              <div class="pool-clear-row">
-                <button id="pool-clear" class="link-btn clear-btn"></button>
-                <button id="fof-clear" class="link-btn clear-btn"></button>
               </div>
               <div id="fof-key-details" class="fof-key-details hidden">
                 <div class="fof-key-row" id="fof-key-row">

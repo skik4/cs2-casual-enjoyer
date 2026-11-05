@@ -64,6 +64,12 @@ export default {
         launchButton: "Try Again",
         closeButton: "Close",
       },
+      launchOnly: {
+        title: "Launch CS2?",
+        message:
+          "The app launches Counter-Strike 2 through Steam and waits for the game's main menu.",
+        hint: "This only launches the game, without joining anyone.",
+      },
     },
   },
 
@@ -82,7 +88,7 @@ export default {
       option2Body:
         "If you already know your <strong>SteamID64</strong> (17-digit number), you can enter it directly.",
       note:
-        "Your SteamID64 used to identify your account in Steam Web API requests.",
+        "Your SteamID64 is used to identify your account in Steam Web API requests.",
     },
     apiKey: {
       title: "How to Get Your Steam API Token or Key",
@@ -145,7 +151,7 @@ export default {
     panelIntro:
       "Needed about once a day: a Steam token lives for about 24 hours. Your friends load by themselves.",
     step1: "Open the token page in Steam",
-    openInSteam: "Open in Steam ↗",
+    openInSteam: "Open in Steam",
     step1Hint: "The page may look black, that is fine.",
     step2: "Copy everything and paste it here",
     step2Hint: "Ctrl+A, Ctrl+C on the Steam page, then Ctrl+V in the field.",
@@ -194,20 +200,45 @@ export default {
       one: "searching {count} player",
       other: "searching {count} players",
     },
-    sources: "Pool: {pool} · their friends: {poolFriends} · friends of friends: {fof}",
-    poolFriendsCrawling: "reading pool players' friends…",
-    clearPool: "Clear the pool",
-    clearPoolTitle: "Forget the pool's players and their friends",
-    clearFof: "Clear friends of friends",
-    clearFofTitle: "Forget friends of friends. With an API key the list is read again",
+    source: {
+      pool: "Pool",
+      poolTitle:
+        "Players the app has seen on official casual servers in the last two weeks",
+      poolFriends: "Friends of pool players",
+      poolFriendsTitle: "Friends of pool players, from their public friends lists",
+      fof: "Friends of friends",
+      fofTitle: "Your friends' friends, from their public friends lists",
+    },
+    read: {
+      button: "Read lists",
+      poolFriends:
+        "Read the friends lists of pool players whose lists were not read in the last day: {count}",
+      poolFriendsNone: "Every pool player's list was read in the last day",
+      fof: "Read your friends' friends lists: {count}",
+      fofNone: "No friends in your list yet",
+      needsKey: "Needs a Steam Web API key: a token cannot read other people's friends lists",
+      progress: "reading {done} of {total}…",
+      failed: "no list could be read",
+      at: "read {date}",
+    },
+    clear: "Clear",
+    clearPoolTitle: "Remove players from the pool: all of them, or only those without a sign of Prime",
+    clearPoolAsk: "Remove from the pool:",
+    clearPoolAll: "everyone",
+    clearPoolNoPrime: "without a sign of Prime ({count})",
+    clearPoolNoPrimeTitle:
+      "Keep only the players seen with a sign of Prime: CS2 XP or a Premier match. The others may have Prime too; it just was not seen",
+    cancel: "cancel",
+    clearPoolFriendsTitle:
+      "Forget the friends of pool players. The next read takes every pool player's list again",
+    clearFofTitle: "Forget friends of friends. Read lists brings them back",
     confirmClear: "Sure? Click again",
     keyNotSet: "API key not set",
     keySaved: "API key saved",
-    keyMain: "your main API key is used",
+    keyMain: "Your main API key is used",
     setKey: "Set key",
     changeKey: "Change key",
     hideKey: "Hide",
-    fofCrawling: "reading friends of friends…",
     searching: "searching…",
     updatedAt: "updated {time}",
     needAuth: "Enter your Steam Web API token or key and SteamID64 first.",
@@ -220,10 +251,10 @@ export default {
     fofNeedsKey:
       "Reading friends lists - your friends' and the pool players' - needs a Steam Web API key: a token cannot read other people's lists.",
     fofKeySaved:
-      "API key saved. Friends lists are read once a day; without the key the players found stay, but no new ones come through friends.",
+      "API key saved. Friends lists are read only when you click Read lists; without the key the players found stay, but no new ones come through friends.",
     fofKeyDelete: "Delete key",
     fofKeptWithoutKey:
-      "Friends of friends ({count}) are kept and checked without a key. A key is only needed to read the list again.",
+      "Friends of friends ({count}) are kept and checked without a key. A key is only needed to read the lists again.",
     fofUsesMainKey: "Your main API key is used for friends lists.",
     fofKeyInvalid: "That is not an API key: it should be 32 letters and digits.",
     fofKeyError: "No friends list could be read with this key. Check the key.",
@@ -233,7 +264,8 @@ export default {
     primeTag: "Prime",
     primeTagTitle:
       "Players with a sign of Prime here: {count}. The sign is CS2 XP or a Premier match; it does not promise that everyone here has Prime.",
-    withPrime: "with Prime: {count}",
+    primeServersTag: "Prime: {count}",
+    primeServersTitle: "Servers where a player with a sign of Prime is seen: {count} of {total}",
     noPrimeServers:
       "No server with a visible Prime player right now. The others are hidden by “Prime only”. Still searching.",
   },
@@ -259,6 +291,7 @@ export default {
       "CS2 installation not found, so Game State Integration is off. The app uses the Steam Web API instead.",
     error:
       "Could not set up CS2 Game State Integration. The app uses the Steam Web API instead.",
+    launchHint: "Click to launch CS2.",
   },
 
   errors: {
@@ -330,5 +363,7 @@ export default {
     step10ContentNote1: "Hope you find it useful.",
     step10ContentNote2: "If you like it, please share with your friends.",
     githubReleases: "GitHub Releases",
+    linkCopied: "Link copied",
+    copyFailed: "Copy failed",
   },
 };

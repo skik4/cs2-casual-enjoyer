@@ -42,8 +42,7 @@ beforeAll(() => {
     <span id="fof-summary"></span>
     <div id="fof-key-details" class="hidden"></div>
     <button id="fof-key-toggle"></button>
-    <button id="pool-clear"></button>
-    <button id="fof-clear"></button>`;
+    <div id="map-sources"></div>`;
   MapFinderView.initialize({ getMainAuth: () => "" });
 });
 

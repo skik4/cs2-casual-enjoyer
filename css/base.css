@@ -15,7 +15,7 @@ body {
 }
 
 body {
-  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-family);
   color: var(--text-primary);
   min-height: 100vh;
   margin: 0;

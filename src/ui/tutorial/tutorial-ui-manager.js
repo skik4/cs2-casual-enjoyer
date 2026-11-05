@@ -76,7 +76,6 @@ export class TutorialUIManager {
     if (!this.modal) return;
 
     const modalContent = TUTORIAL_TEMPLATES.MODAL_CONTENT(
-      step.icon,
       step.title,
       currentStepNumber,
       totalSteps,

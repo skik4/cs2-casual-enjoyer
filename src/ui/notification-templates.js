@@ -6,31 +6,49 @@
 import { ICON_PATHS } from "../shared/icon-paths.js";
 import DOMUtils from "../utils/dom-utils.js";
 import { t } from "../i18n/i18n-manager.js";
-import { emojiImg } from "./emoji.js";
 
 /**
- * The emoji that heads a help text
- * @param {string} emoji - Unicode emoji
- * @returns {string} HTML span with the emoji
+ * One way to do what a help text explains: its name, the Steam link that
+ * starts it, what to do there and what to expect. The look is all in
+ * notifications.css, so every help text reads the same.
+ * @param {Object} section
+ * @param {string} section.title - Name of the way
+ * @param {string} [section.link] - Link HTML
+ * @param {string[]} section.texts - Paragraphs
+ * @param {string[]} [section.points] - Short points after them
+ * @returns {string} Section HTML
  */
-function notificationEmoji(emoji) {
-  const image = emojiImg(emoji, "emoji-svg", "margin-right: 0.5rem;");
-  return `<span class="notification-emoji">${image}</span>`;
+function helpSection({ title, link = "", texts, points = [] }) {
+  const paragraphs = texts
+    .map((text) => `<p class="notification-text">${text}</p>`)
+    .join("");
+  const list = points.length
+    ? `<ul class="notification-list">${points.map((point) => `<li>${point}</li>`).join("")}</ul>`
+    : "";
+  return `
+        <div class="notification-section">
+            <div class="notification-section-title">${title}</div>
+            ${link}
+            ${paragraphs}
+            ${list}
+        </div>`;
 }
 
 export const NOTIFICATION_TEMPLATES = {
   /**
-   * Close button for notifications
+   * Close button for notifications: the app's square button, as the
+   * account bar's refresh is
    */
   CLOSE_BUTTON: () =>
-    `<div class="notification-header"><span class="notification-close-btn" title="${t("notifications.closeButtonTitle")}"><img src="${ICON_PATHS.CLOSE_BOLD}" alt="×" style="width: 14px; height: 14px;"></span></div>`,
+    `<div class="notification-header"><button type="button" class="icon-btn notification-close-btn" title="${t("notifications.closeButtonTitle")}"><img src="${ICON_PATHS.CLOSE}" alt="×" class="icon-16"></button></div>`,
 
   /**
    * Error message display
    * @param {string} errorMessage - Error message
    * @returns {string} Error message HTML
-   */ ERROR_MESSAGE: (errorMessage) => `
-        <div class="notification-main-text" style="color:var(--red-light);font-weight:500;">${DOMUtils.escapeHtml(errorMessage)}</div>
+   */
+  ERROR_MESSAGE: (errorMessage) => `
+        <div class="notification-main-text">${DOMUtils.escapeHtml(errorMessage)}</div>
     `,
 
   /**
@@ -39,24 +57,18 @@ export const NOTIFICATION_TEMPLATES = {
    * @returns {string} Privacy link HTML
    */
   PRIVACY_LINK: (privacyUrl) => `
-        <a href="${DOMUtils.escapeHtml(privacyUrl)}" class="privacy-link" target="_self" title="${t("notifications.privacy.linkTitle")}">${t("notifications.privacy.linkText")}</a>
+        <a href="${DOMUtils.escapeHtml(privacyUrl)}" class="link-btn privacy-link" target="_self" title="${t("notifications.privacy.linkTitle")}">${t("notifications.privacy.linkText")}</a>
     `,
 
   /**
    * Privacy warning with instructions
-   * @param {string} linkHtml - Privacy link HTML
+   * @param {string} linkHtml - Privacy link HTML, empty without a SteamID64
    * @returns {string} Privacy warning HTML
    */
   PRIVACY_WARNING: (linkHtml) => `
-        <div class="notification-main-text" style="color:var(--red-light);font-weight:500;">
-            ${t("notifications.privacy.warningMain")}
-        </div>            
-        <div style="margin:8px 0 8px 0;">
-            ${linkHtml}
-        </div>            
-        <div class="note" style="color:var(--text-secondary);font-size:0.95em;margin-bottom:2px;margin-top:15px;border-top:1px solid var(--border-color);padding-top:10px;">
-            ${t("notifications.privacy.note")}
-        </div>
+        <div class="notification-main-text">${t("notifications.privacy.warningMain")}</div>
+        ${linkHtml ? `<div class="notification-section">${linkHtml}</div>` : ""}
+        <div class="note">${t("notifications.privacy.note")}</div>
     `,
 
   /**
@@ -121,96 +133,50 @@ export const HELP_TEMPLATES = {
   /**
    * Help for getting Steam ID
    */
-  STEAM_ID_HELP: () => {
-    const keyEmoji = notificationEmoji("🆔");
-    return `
-            <div class="notification-main-text" style="color:var(--blue-primary);font-weight:500;">
-                ${keyEmoji} ${t("help.steamId.title")}
-            </div>
-            <div style="margin:10px 0;text-align:left;">
-                <div style="margin-bottom:15px;">
-                    <div style="color:var(--blue-primary);font-weight:600;margin-bottom:6px;">
-                        ${t("help.steamId.option1Title")}
-                    </div>                  
-                    <div style="margin-bottom:8px;">
-                        <a href="steam://url/SteamIDMyProfile" class="steam-profile-link" target="_self" title="${t("help.steamId.openProfileLinkTitle")}">${t("help.steamId.openProfileLinkText")}</a>
-                    </div>
-                    <div style="margin-bottom:8px;color:var(--text-primary);">
-                        ${t("help.steamId.option1Body")}
-                    </div>                
-                    <ul style="color:var(--text-secondary);font-size:0.95em;margin-left:10px;padding-left:20px;">
-                        <li>${t("help.steamId.option1Bullet1")}</li>
-                        <li>${t("help.steamId.option1Bullet2")}</li>
-                        <li>${t("help.steamId.option1Bullet3")}</li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <div style="color:var(--blue-primary);font-weight:600;margin-bottom:6px;">
-                        ${t("help.steamId.option2Title")}
-                    </div>
-                    <div style="margin-bottom:8px;color:var(--text-primary);">
-                        ${t("help.steamId.option2Body")}
-                    </div>
-                </div>
-            </div>            
-            <div class="note" style="color:var(--text-secondary);font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid var(--border-color);padding-top:10px;">
-                ${t("help.steamId.note")}
-            </div>
-        `;
-  },
+  STEAM_ID_HELP: () => `
+        <div class="notification-main-text">${t("help.steamId.title")}</div>
+        ${helpSection({
+          title: t("help.steamId.option1Title"),
+          link: `<a href="steam://url/SteamIDMyProfile" class="link-btn steam-profile-link" target="_self" title="${t("help.steamId.openProfileLinkTitle")}">${t("help.steamId.openProfileLinkText")}</a>`,
+          texts: [t("help.steamId.option1Body")],
+          points: [
+            t("help.steamId.option1Bullet1"),
+            t("help.steamId.option1Bullet2"),
+            t("help.steamId.option1Bullet3"),
+          ],
+        })}
+        ${helpSection({
+          title: t("help.steamId.option2Title"),
+          texts: [t("help.steamId.option2Body")],
+        })}
+        <div class="note">${t("help.steamId.note")}</div>
+    `,
 
   /**
    * Help for getting API key
    */
-  API_KEY_HELP: () => {
-    const keyEmoji = notificationEmoji("🔑");
-    return `
-        <div class="notification-main-text" style="color:var(--blue-primary);font-weight:500;">
-            ${keyEmoji} ${t("help.apiKey.title")}
-        </div>
-                <div style="margin:10px 0;text-align:left;">
-            <div style="margin-bottom:15px;">                
-            <div style="color:var(--blue-primary);font-weight:600;margin-bottom:6px;">
-                    ${t("help.apiKey.option1Title")}
-                </div>                  
-                <div style="margin-bottom:8px;">
-                    <a id="steam-token-help-link" href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="steam-token-link" target="_self" title="${t("help.apiKey.getTokenLinkTitle")}">${t("help.apiKey.getTokenLinkText")}</a>
-                </div>
-                <div style="margin-bottom:8px;color:var(--text-primary);">
-                    ${t("help.apiKey.option1Body")}
-                </div>                
-                <ul style="color:var(--text-secondary);font-size:0.95em;margin-left:10px;padding-left:20px;">
-                    <li>${t("help.apiKey.option1Bullet1")}</li>
-                    <li>${t("help.apiKey.option1Bullet2")}</li>
-                    <li>${t("help.apiKey.option1Bullet3")}</li>
-                </ul>
-            </div>
-            
-            <div>
-                <div style="color:var(--blue-primary);font-weight:600;margin-bottom:6px;">
-                    ${t("help.apiKey.option2Title")}
-                </div>                  
-                <div style="margin-bottom:8px;">
-                    <a href="steam://openurl/https://steamcommunity.com/dev/apikey" class="steam-apikey-link" target="_self" title="${t("help.apiKey.getApiKeyLinkTitle")}">${t("help.apiKey.getApiKeyLinkText")}</a>
-                </div>
-                <div style="margin-bottom:8px;color:var(--text-primary);">
-                    ${t("help.apiKey.option2Body1")}
-                </div>
-                <div style="margin-bottom:8px;color:var(--text-primary);">
-                    ${t("help.apiKey.option2Body2")}
-                </div>                
-                <ul style="color:var(--text-secondary);font-size:0.95em;margin-left:10px;padding-left:20px;">
-                    <li>${t("help.apiKey.option2Bullet1")}</li>
-                    <li>${t("help.apiKey.option2Bullet2")}</li>
-                    <li>${t("help.apiKey.option2Bullet3")}</li>
-                </ul>
-            </div>
-        </div>            
-        <div class="note" style="color:var(--text-secondary);font-size:0.95em;margin-top:15px;text-align:center;border-top:1px solid var(--border-color);padding-top:10px;">
-            ${t("help.apiKey.note1")}<br>
-            ${t("help.apiKey.note2")}
-        </div>
-        `;
-  },
+  API_KEY_HELP: () => `
+        <div class="notification-main-text">${t("help.apiKey.title")}</div>
+        ${helpSection({
+          title: t("help.apiKey.option1Title"),
+          link: `<a id="steam-token-help-link" href="steam://openurl/https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" class="link-btn steam-token-link" target="_self" title="${t("help.apiKey.getTokenLinkTitle")}">${t("help.apiKey.getTokenLinkText")}</a>`,
+          texts: [t("help.apiKey.option1Body")],
+          points: [
+            t("help.apiKey.option1Bullet1"),
+            t("help.apiKey.option1Bullet2"),
+            t("help.apiKey.option1Bullet3"),
+          ],
+        })}
+        ${helpSection({
+          title: t("help.apiKey.option2Title"),
+          link: `<a href="steam://openurl/https://steamcommunity.com/dev/apikey" class="link-btn steam-apikey-link" target="_self" title="${t("help.apiKey.getApiKeyLinkTitle")}">${t("help.apiKey.getApiKeyLinkText")}</a>`,
+          texts: [t("help.apiKey.option2Body1"), t("help.apiKey.option2Body2")],
+          points: [
+            t("help.apiKey.option2Bullet1"),
+            t("help.apiKey.option2Bullet2"),
+            t("help.apiKey.option2Bullet3"),
+          ],
+        })}
+        <div class="note">${t("help.apiKey.note1")} ${t("help.apiKey.note2")}</div>
+    `,
 };

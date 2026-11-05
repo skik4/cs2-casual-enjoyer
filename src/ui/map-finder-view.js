@@ -25,10 +25,24 @@ import {
 import DOMUtils from "../utils/dom-utils.js";
 import Validators from "../utils/validators.js";
 import logger from "../utils/logger.js";
-import { t, tPlural, onLanguageChange } from "../i18n/i18n-manager.js";
+import {
+  t,
+  tPlural,
+  getLanguage,
+  onLanguageChange,
+} from "../i18n/i18n-manager.js";
 
 // Names and scores come from other players
 const escapeHtml = DOMUtils.escapeHtml;
+
+/**
+ * A count with its thousands set apart as the user's language writes them
+ * @param {number} count
+ * @returns {string} - E.g. "19 510" in Russian, "19,510" in English
+ */
+function formatCount(count) {
+  return Number(count || 0).toLocaleString(getLanguage() === "ru" ? "ru-RU" : "en-US");
+}
 
 // A clear button waits this long for its second click, as a fake friend's
 // remove button does
@@ -45,8 +59,11 @@ class MapFinderView {
   static keyDetailsOpen = false;
   static _initialized = false;
   static _lastListHtml = null;
-  // Clear buttons waiting for their second click: id -> timer
+  static _lastSourcesHtml = null;
+  // Clear buttons waiting for their second click: source -> timer
   static _armedClear = new Map();
+  // Whether the pool's clear asks whom to forget
+  static _poolClearAsk = false;
 
   /**
    * Wire the view once
@@ -83,12 +100,12 @@ class MapFinderView {
     DOMUtils.getElementById("fof-key-delete")?.addEventListener("click", () =>
       this.deleteFofKey()
     );
-    DOMUtils.getElementById("pool-clear")?.addEventListener("click", () =>
-      this.confirmClear("pool-clear", () => mapFinder.clearPool())
-    );
-    DOMUtils.getElementById("fof-clear")?.addEventListener("click", () =>
-      this.confirmClear("fof-clear", () => mapFinder.restartFof())
-    );
+    DOMUtils.getElementById("map-sources")?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action]");
+      if (button && !button.disabled) {
+        this.handleSourceAction(button.dataset.source, button.dataset.action);
+      }
+    });
     DOMUtils.getElementById("fof-key-toggle")?.addEventListener("click", () => {
       this.keyDetailsOpen = !this.keyDetailsOpen;
       this.renderFofKey();
@@ -223,8 +240,7 @@ class MapFinderView {
     input.value = "";
     input.classList.remove("invalid-input");
     this.keyDetailsOpen = false;
-    // A new key reads the friends lists again
-    mapFinder.restartFof();
+    // Nothing is read yet: lists are read when the user asks
     this.render();
   }
 
@@ -279,7 +295,7 @@ class MapFinderView {
     this.renderStatus();
     this.renderPrimeOnly();
     this.renderFofKey();
-    this.renderClearButtons();
+    this.renderSources();
   }
 
   /**
@@ -294,47 +310,229 @@ class MapFinderView {
   }
 
   /**
-   * Clear on a second click within a few seconds; the first only asks
-   * @param {string} id - Button id
-   * @param {Function} clear - What the button clears
+   * A click on a source's button
+   * @param {"pool"|"poolFriends"|"fof"} source - Whose row
+   * @param {string} action - read, clear, clear-all, clear-no-prime or cancel
    */
-  static confirmClear(id, clear) {
-    const timer = this._armedClear.get(id);
-    if (timer) {
-      clearTimeout(timer);
-      this._armedClear.delete(id);
-      clear();
-    } else {
-      this._armedClear.set(
-        id,
-        setTimeout(() => {
-          this._armedClear.delete(id);
-          this.renderClearButtons();
-        }, CLEAR_CONFIRM_MS)
+  static handleSourceAction(source, action) {
+    if (action === "read") {
+      if (source === "poolFriends") mapFinder.readPoolFriends();
+      else if (source === "fof") mapFinder.readFof();
+      return;
+    }
+    if (source === "pool") {
+      // The pool asks whom to forget rather than for a second click
+      this._poolClearAsk = action === "clear";
+      if (action === "clear-all") mapFinder.clearPool();
+      if (action === "clear-no-prime") mapFinder.clearPool({ keepPrime: true });
+      this.renderSources();
+      return;
+    }
+    if (action === "clear") {
+      this.confirmClear(source, () =>
+        source === "fof" ? mapFinder.clearFof() : mapFinder.clearPoolFriends()
       );
     }
-    this.renderClearButtons();
   }
 
   /**
-   * The clear buttons: idle, or asking for the second click. One with
-   * nothing to clear is off.
+   * Clear on a second click within a few seconds; the first only asks
+   * @param {string} source - Whose clear button
+   * @param {Function} clear - What the button clears
    */
-  static renderClearButtons() {
-    const status = mapFinder.getStatus();
-    const buttons = [
-      ["pool-clear", "clearPool", status.poolSize + status.poolFriendsSize],
-      ["fof-clear", "clearFof", status.fofSize],
-    ];
-    for (const [id, key, count] of buttons) {
-      const button = DOMUtils.getElementById(id);
-      if (!button) continue;
-      const armed = this._armedClear.has(id);
-      button.textContent = t(armed ? "mapFinder.confirmClear" : `mapFinder.${key}`);
-      button.title = t(`mapFinder.${key}Title`);
-      button.classList.toggle("armed", armed);
-      button.disabled = !count && !armed;
+  static confirmClear(source, clear) {
+    const timer = this._armedClear.get(source);
+    if (timer) {
+      clearTimeout(timer);
+      this._armedClear.delete(source);
+      clear();
+    } else {
+      this._armedClear.set(
+        source,
+        setTimeout(() => {
+          this._armedClear.delete(source);
+          this.renderSources();
+        }, CLEAR_CONFIRM_MS)
+      );
     }
+    this.renderSources();
+  }
+
+  /**
+   * Where the players come from, one row per source: how many, what is
+   * being read, and the buttons. Reading lists takes the key and a click.
+   */
+  static renderSources() {
+    const box = DOMUtils.getElementById("map-sources");
+    if (!box) return;
+    const status = mapFinder.getStatus();
+    const hasKey = Boolean(this.getFofKey());
+    const rows = [
+      this._sourceRow("pool", status.poolSize, "", this._poolActions(status)),
+      this._sourceRow(
+        "poolFriends",
+        status.poolFriendsSize,
+        this._readingText(status.poolFriends, status.poolFriendsProgress),
+        this._readButton("poolFriends", {
+          hasKey,
+          running: status.poolFriends === "crawling",
+          lists: status.poolFriendsDue,
+        }) + this._clearButton("poolFriends", status.poolFriendsSize)
+      ),
+      this._sourceRow(
+        "fof",
+        status.fofSize,
+        this._readingText(status.fof, status.fofProgress) ||
+          this._fofReadAt(status.fofFetchedAt),
+        this._readButton("fof", {
+          hasKey,
+          running: status.fof === "crawling",
+          lists: status.fofLists,
+        }) + this._clearButton("fof", status.fofSize)
+      ),
+    ];
+    const html = rows.join("");
+    if (html !== this._lastSourcesHtml) {
+      box.innerHTML = html;
+      this._lastSourcesHtml = html;
+    }
+  }
+
+  /**
+   * @param {string} source - pool, poolFriends or fof
+   * @param {number} count - Players it holds
+   * @param {string} state - What is going on, may be empty
+   * @param {string} actions - Its buttons
+   * @returns {string}
+   * @private
+   */
+  static _sourceRow(source, count, state, actions) {
+    const name = t(`mapFinder.source.${source}`);
+    const title = t(`mapFinder.source.${source}Title`);
+    return `
+      <div class="source-row" data-source-row="${source}">
+        <span class="source-name" title="${escapeHtml(title)}">${escapeHtml(name)}</span>
+        <span class="source-count">${escapeHtml(formatCount(count))}</span>
+        <span class="source-state">${escapeHtml(state)}</span>
+        <span class="source-actions">${actions}</span>
+      </div>`;
+  }
+
+  /**
+   * The pool's clear: one button, or once clicked, whom to forget
+   * @param {Object} status - mapFinder.getStatus()
+   * @returns {string}
+   * @private
+   */
+  static _poolActions(status) {
+    if (!this._poolClearAsk) {
+      return this._button("pool", "clear", t("mapFinder.clear"), {
+        title: t("mapFinder.clearPoolTitle"),
+        className: "clear-btn",
+        disabled: !status.poolSize,
+      });
+    }
+    const withoutPrime = status.poolSize - status.poolPrimeSize;
+    return `
+      <span>${escapeHtml(t("mapFinder.clearPoolAsk"))}</span>
+      ${this._button("pool", "clear-all", t("mapFinder.clearPoolAll"), { className: "clear-btn armed" })}
+      ${this._button("pool", "clear-no-prime", t("mapFinder.clearPoolNoPrime", { count: withoutPrime }), {
+        title: t("mapFinder.clearPoolNoPrimeTitle"),
+        className: "clear-btn armed",
+        disabled: !withoutPrime,
+      })}
+      ${this._button("pool", "cancel", t("mapFinder.cancel"))}`;
+  }
+
+  /**
+   * "Read lists": off without a key or with no list to read, gone while a
+   * read runs
+   * @param {string} source - poolFriends or fof
+   * @param {{hasKey: boolean, running: boolean, lists: number}} facts -
+   *   lists: how many lists a read would take
+   * @returns {string}
+   * @private
+   */
+  static _readButton(source, { hasKey, running, lists }) {
+    if (running) return "";
+    let title = t(`mapFinder.read.${source}`, { count: lists });
+    if (!hasKey) title = t("mapFinder.read.needsKey");
+    else if (!lists) title = t(`mapFinder.read.${source}None`);
+    return this._button(source, "read", t("mapFinder.read.button"), {
+      title,
+      disabled: !hasKey || !lists,
+    });
+  }
+
+  /**
+   * A clear that takes a second click
+   * @param {string} source - poolFriends or fof
+   * @param {number} count - Players it would forget
+   * @returns {string}
+   * @private
+   */
+  static _clearButton(source, count) {
+    const armed = this._armedClear.has(source);
+    return this._button(
+      source,
+      "clear",
+      t(armed ? "mapFinder.confirmClear" : "mapFinder.clear"),
+      {
+        title: t(source === "fof" ? "mapFinder.clearFofTitle" : "mapFinder.clearPoolFriendsTitle"),
+        className: `clear-btn${armed ? " armed" : ""}`,
+        disabled: !count && !armed,
+      }
+    );
+  }
+
+  /**
+   * @param {string} source
+   * @param {string} action
+   * @param {string} text
+   * @param {{title?: string, className?: string, disabled?: boolean}} [options]
+   * @returns {string}
+   * @private
+   */
+  static _button(source, action, text, options = {}) {
+    const { title = "", className = "", disabled = false } = options;
+    const classes = ["link-btn", className].filter(Boolean).join(" ");
+    const attrs = [
+      `class="${classes}"`,
+      `data-source="${source}"`,
+      `data-action="${action}"`,
+      title ? `title="${escapeHtml(title)}"` : "",
+      disabled ? "disabled" : "",
+    ].filter(Boolean);
+    return `<button ${attrs.join(" ")}>${escapeHtml(text)}</button>`;
+  }
+
+  /**
+   * @param {string} state - The read's state
+   * @param {{done: number, total: number}} progress
+   * @returns {string} - "reading 5 of 40…", or nothing when no read runs
+   * @private
+   */
+  static _readingText(state, progress) {
+    if (state === "crawling") {
+      return t("mapFinder.read.progress", {
+        done: progress.done,
+        total: progress.total,
+      });
+    }
+    return state === "error" ? t("mapFinder.read.failed") : "";
+  }
+
+  /**
+   * @param {number} fetchedAt - When friends of friends were last read
+   * @returns {string}
+   * @private
+   */
+  static _fofReadAt(fetchedAt) {
+    if (!fetchedAt) return "";
+    const date = new Date(fetchedAt)
+      .toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit" })
+      .replace("/", ".");
+    return t("mapFinder.read.at", { date });
   }
 
   /**
@@ -376,12 +574,19 @@ class MapFinderView {
    */
   static renderMapCard(entry, joinStates) {
     const expanded = this.expanded.has(entry.map);
-    let where = tPlural("mapFinder.servers", entry.servers);
-    // With every server listed, say how many show a sign of Prime; with
-    // Prime only on, all of them do
-    if (!mapFinder.primeOnly && entry.primeServers) {
-      where += ` · ${t("mapFinder.withPrime", { count: entry.primeServers })}`;
-    }
+    const where = tPlural("mapFinder.servers", entry.servers);
+    // With every server listed, a tag says how many show a sign of Prime;
+    // with Prime only on, all of them do. A tag rather than more words, so
+    // its count does not run into the free slots' count beside it.
+    const prime =
+      !mapFinder.primeOnly && entry.primeServers
+        ? `<span class="prime-tag" title="${escapeHtml(
+            t("mapFinder.primeServersTitle", {
+              count: entry.primeServers,
+              total: entry.servers,
+            })
+          )}">${escapeHtml(t("mapFinder.primeServersTag", { count: entry.primeServers }))}</span>`
+        : "";
     const joinId = getMapJoinId(entry.map);
     const free = entry.freeServers > 0;
     const here = entry.map === userLocation.getMap();
@@ -405,7 +610,7 @@ class MapFinderView {
           <span class="map-expander" aria-hidden="true">${expanded ? "▾" : "▸"}</span>
           <div class="friend-info">
             <span class="personaname">${escapeHtml(entry.label)}</span>
-            <span class="game-line"><span class="game-where">${escapeHtml(where)}</span>${this.renderLabel(joinId, joinStates, slot)}</span>
+            <span class="game-line"><span class="game-where">${escapeHtml(where)}</span>${prime}${this.renderLabel(joinId, joinStates, slot)}</span>
           </div>
           ${this.renderKeepButton(entry.map)}
           ${this.renderJoinButton(joinId, joinStates, slot)}
@@ -535,16 +740,13 @@ class MapFinderView {
     if (status.polled) {
       parts.push(tPlural("mapFinder.searchingAmong", status.polled));
     }
-    if (status.fof === "crawling") parts.push(t("mapFinder.fofCrawling"));
-    if (status.poolFriends === "crawling") {
-      parts.push(t("mapFinder.poolFriendsCrawling"));
-    }
+    // A read of friends lists shows in its own source row, where it has room
     DOMUtils.setText("map-finder-status", parts.join(" · "));
   }
 
   /**
-   * One line on where the players come from and the friends-of-friends key;
-   * the key field opens on request or when the key failed
+   * One line on the key that reads friends lists; the key field opens on
+   * request or when the key failed
    */
   static renderFofKey() {
     const mainIsKey = Validators.isApiKey(this.getMainAuth());
@@ -554,14 +756,7 @@ class MapFinderView {
     let keyText = t("mapFinder.keyNotSet");
     if (mainIsKey) keyText = t("mapFinder.keyMain");
     else if (savedKey) keyText = t("mapFinder.keySaved");
-    DOMUtils.setText(
-      "fof-summary",
-      `${t("mapFinder.sources", {
-        pool: status.poolSize,
-        poolFriends: status.poolFriendsSize,
-        fof: status.fofSize,
-      })} · ${keyText}`
-    );
+    DOMUtils.setText("fof-summary", keyText);
 
     const open = !mainIsKey && (this.keyDetailsOpen || status.fof === "error");
     DOMUtils.toggleClass("fof-key-details", "hidden", !open);

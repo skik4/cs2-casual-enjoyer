@@ -1,9 +1,7 @@
 /* Main Styles File - Modular CSS Architecture */
 
-/* Import Inter and Noto Color Emoji locally */
-@import url("../node_modules/@fontsource/inter/index.css");
-/* @import url('../node_modules/@fontsource/noto-emoji/index.css');
-@import url('../node_modules/@fontsource/noto-color-emoji/index.css'); */
+/* No web fonts: the text uses Steam's font stack (--font-family), whose
+   fonts come from the system */
 
 /* CSS Variables and Design Tokens */
 @import url("./variables.css");

@@ -105,9 +105,10 @@ export function buildServers(
  * map, the score and - when there is a free slot - the connect string.
  * Players come from the user's friends, a pool of people seen on official
  * servers before, the friends of those pool players and friends of friends
- * (both API key only), and whoever CS2 shows or lists in the user's own
- * matches. The pool is polled every round; the friends lists, far bigger and
- * far fewer of them in casual, a slice each round in turn.
+ * (both read with an API key, and only when the user asks), and whoever CS2
+ * shows or lists in the user's own matches. The pool is polled every round;
+ * the friends lists, far bigger and far fewer of them in casual, a slice each
+ * round in turn.
  *
  * Whoever shows a sign of Prime is remembered for good, since Prime is never
  * taken away. A server with one of them on it is marked, and with "Prime
@@ -129,13 +130,7 @@ class MapFinder {
     this.seeds = new Set();
     /** @type {import('../shared/types.js').MapServer[]} */
     this.servers = [];
-    this.status = {
-      refreshing: false,
-      lastRefreshAt: 0,
-      polled: 0,
-      fof: "no-key",
-      poolFriends: "idle",
-    };
+    this.status = this._idleStatus();
     this.deps = null;
     this.active = false;
     this.listeners = new Set();
@@ -144,10 +139,11 @@ class MapFinder {
     this._timer = null;
     this._saveTimer = null;
     this._fofRunning = false;
-    // When a crawl last read not one list; tried again after FOF_RETRY_MS
-    this._fofFailedAt = 0;
+    // Changes when friends of friends are cleared, so a read under way stops
+    this._fofGeneration = 0;
     this._poolFriendsRunning = false;
-    // Changes when the pool is cleared, so a crawl under way stops
+    // Changes when the pool or its players' friends are cleared, so a read
+    // under way stops
     this._poolGeneration = 0;
     this._candidateOffset = 0;
     this._refreshAgain = false;
@@ -583,27 +579,61 @@ class MapFinder {
   }
 
   /**
-   * Forget friends of friends and read them again, e.g. after a new API key
+   * Read the friends lists of the user's friends, at the user's word. It
+   * takes an API key: Steam lets a token read no one else's list.
+   * @returns {boolean} - Whether a read started
    */
-  restartFof() {
+  readFof() {
+    if (!this.deps?.getFofKey?.() || this._fofRunning) return false;
+    this._crawlFof();
+    return true;
+  }
+
+  /**
+   * Read the friends lists of the pool players whose list was not read in
+   * the last day, at the user's word. It takes an API key.
+   * @returns {boolean} - Whether a read started
+   */
+  readPoolFriends() {
+    if (!this.deps?.getFofKey?.() || this._poolFriendsRunning) return false;
+    if (!this._poolPlayersToRead(Date.now()).length) return false;
+    this._crawlPoolFriends();
+    return true;
+  }
+
+  /**
+   * Forget friends of friends, at the user's word. A read under way stops,
+   * and they are read again only when the user asks.
+   */
+  clearFof() {
+    this._fofGeneration++;
     this.fof = { ids: [], fetchedAt: 0, friendsCount: 0 };
-    this._fofFailedAt = 0;
-    this.status.fof = this.deps?.getFofKey?.() ? "pending" : "no-key";
+    this.status.fof = "idle";
+    this._candidateOffset = 0;
     this._scheduleSave();
-    if (this.active && this._fofDue()) this._crawlFof();
     this._notify();
   }
 
   /**
-   * Counters for the status line
-   * @returns {{refreshing: boolean, lastRefreshAt: number, polled: number, fof: string, poolFriends: string, poolSize: number, poolFriendsSize: number, fofSize: number, primeSize: number, hiddenServers: number}}
+   * Counters for the status line and the sources
+   * @returns {Object} - The status fields, plus poolSize, poolPrimeSize,
+   *   poolFriendsSize, poolFriendsDue, fofSize, fofFetchedAt, fofLists,
+   *   primeSize and hiddenServers
    */
   getStatus() {
+    let poolPrimeSize = 0;
+    for (const id of this.pool.keys()) if (this.prime.has(id)) poolPrimeSize++;
     return {
       ...this.status,
       poolSize: this.pool.size,
+      poolPrimeSize,
       poolFriendsSize: this.poolFriends.ids.length,
+      // Pool players whose friends list a read would take now
+      poolFriendsDue: this._poolPlayersToRead(Date.now()).length,
       fofSize: this.fof.ids.length,
+      fofFetchedAt: this.fof.fetchedAt,
+      // The user's friends, whose lists a read of friends of friends takes
+      fofLists: (this.deps?.getRealFriendIds?.() || []).length,
       primeSize: this.prime.size,
       // Known servers that Prime only leaves out
       hiddenServers:
@@ -612,14 +642,41 @@ class MapFinder {
   }
 
   /**
-   * Forget the pool and the friends found through it, at the user's word.
-   * Players seen in this run's matches may join it again.
+   * Forget pool players, at the user's word: all of them, or only those who
+   * never showed a sign of Prime. Players seen in this run's matches may
+   * join it again. A read of pool players' friends under way stops.
+   * @param {{keepPrime?: boolean}} [options]
+   * @returns {number} - How many players were forgotten
    */
-  clearPool() {
+  clearPool({ keepPrime = false } = {}) {
     this._poolGeneration++;
-    this.pool = new Map();
-    this.poolFriends = { ids: [], crawled: {} };
+    const before = this.pool.size;
+    if (keepPrime) {
+      for (const id of [...this.pool.keys()]) {
+        if (!this.prime.has(id)) this.pool.delete(id);
+      }
+    } else {
+      this.pool = new Map();
+    }
+    // A read mark goes with its player
+    for (const id of Object.keys(this.poolFriends.crawled)) {
+      if (!this.pool.has(id)) delete this.poolFriends.crawled[id];
+    }
     this._checkedSeeds = new Set();
+    this._candidateOffset = 0;
+    this._scheduleSave();
+    this._notify();
+    return before - this.pool.size;
+  }
+
+  /**
+   * Forget the friends of pool players, at the user's word, and when each
+   * list was read, so that the next read takes every pool player's list
+   * again. A read under way stops.
+   */
+  clearPoolFriends() {
+    this._poolGeneration++;
+    this.poolFriends = { ids: [], crawled: {} };
     this._candidateOffset = 0;
     this._scheduleSave();
     this._notify();
@@ -649,16 +706,10 @@ class MapFinder {
     this.poolFriends = { ids: [], crawled: {} };
     this.seeds = new Set();
     this.servers = [];
-    this.status = {
-      refreshing: false,
-      lastRefreshAt: 0,
-      polled: 0,
-      fof: "no-key",
-      poolFriends: "idle",
-    };
+    this.status = this._idleStatus();
     this._loading = null;
     this._fofRunning = false;
-    this._fofFailedAt = 0;
+    this._fofGeneration = 0;
     this._poolFriendsRunning = false;
     this._poolGeneration = 0;
     this._candidateOffset = 0;
@@ -671,12 +722,30 @@ class MapFinder {
   }
 
   /**
-   * One periodic step: read friends of friends when due, then refresh
+   * The status before anything has run
+   * @returns {Object}
+   * @private
+   */
+  _idleStatus() {
+    return {
+      refreshing: false,
+      lastRefreshAt: 0,
+      polled: 0,
+      // Each read of friends lists: "idle", "crawling" or "error"
+      fof: "idle",
+      poolFriends: "idle",
+      // Lists a read under way has taken, of how many
+      fofProgress: { done: 0, total: 0 },
+      poolFriendsProgress: { done: 0, total: 0 },
+    };
+  }
+
+  /**
+   * One periodic step. Friends lists are not read here: only when the user
+   * asks, since every list is a request on their key.
    * @private
    */
   _tick() {
-    if (this._fofDue()) this._crawlFof();
-    if (this._poolFriendsDue()) this._crawlPoolFriends();
     this.refresh();
   }
 
@@ -718,31 +787,8 @@ class MapFinder {
   }
 
   /**
-   * @returns {boolean}
-   * @private
-   */
-  _fofDue() {
-    if (!this.deps?.getFofKey?.()) {
-      // Without a key the lists cannot be read again, but whatever was read
-      // before is still polled - the key may have been used once and deleted
-      this.status.fof = this.fof.ids.length ? "ready" : "no-key";
-      return false;
-    }
-    if (this._fofRunning) return false;
-    // A crawl that read nothing is not repeated on the very next refresh
-    if (Date.now() - this._fofFailedAt < MAP_FINDER_CONFIG.FOF_RETRY_MS) {
-      return false;
-    }
-    const friendsCount = (this.deps.getRealFriendIds?.() || []).length;
-    return (
-      Date.now() - this.fof.fetchedAt >= MAP_FINDER_CONFIG.FOF_REFRESH_MS ||
-      this.fof.friendsCount !== friendsCount
-    );
-  }
-
-  /**
-   * Read the friends lists of the user's friends. Kept for a day: friends
-   * lists change slowly, and one pass costs a request per friend.
+   * Read the friends lists of the user's friends. One pass costs a request
+   * per friend, so it runs only when the user asks.
    * @private
    */
   async _crawlFof() {
@@ -751,29 +797,37 @@ class MapFinder {
     const friendIds = (this.deps.getRealFriendIds?.() || []).map(String);
     const own = new Set([userId, ...friendIds]);
     const found = new Set();
+    const generation = this._fofGeneration;
     let listsRead = 0;
 
     this._fofRunning = true;
     this.status.fof = "crawling";
+    this.status.fofProgress = { done: 0, total: friendIds.length };
     this._notify();
     try {
       for (const friendId of friendIds) {
         if (found.size >= MAP_FINDER_CONFIG.FOF_MAX_IDS) break;
         const ids = await SteamAPI.getFriendIdsOf(friendId, key);
+        // Cleared meanwhile: what this read found is no longer wanted
+        if (this._fofGeneration !== generation) return;
         if (ids.length) listsRead++;
         for (const id of ids) {
           if (!own.has(id) && found.size < MAP_FINDER_CONFIG.FOF_MAX_IDS) {
             found.add(id);
           }
         }
+        this.status.fofProgress = {
+          done: this.status.fofProgress.done + 1,
+          total: friendIds.length,
+        };
+        this._notify();
         await sleep(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS);
       }
 
-      // Not one readable list: most likely a wrong key - try again after
-      // FOF_RETRY_MS rather than settle on an empty result for a day
+      // Not one readable list: most likely a wrong key. What was read
+      // before stays.
       if (friendIds.length && listsRead === 0) {
         this.status.fof = "error";
-        this._fofFailedAt = Date.now();
         return;
       }
       this.fof = {
@@ -781,28 +835,18 @@ class MapFinder {
         fetchedAt: Date.now(),
         friendsCount: friendIds.length,
       };
-      this._fofFailedAt = 0;
-      this.status.fof = "ready";
       this._scheduleSave();
     } catch (error) {
       logger.error("MapFinder", "Friends of friends failed", {
         error: error.message,
       });
       this.status.fof = "error";
-      this._fofFailedAt = Date.now();
     } finally {
       this._fofRunning = false;
+      if (this.status.fof === "crawling") this.status.fof = "idle";
+      this.status.fofProgress = { done: 0, total: 0 };
       this._notify();
     }
-  }
-
-  /**
-   * @returns {boolean} - Whether a pool player's friends list waits to be read
-   * @private
-   */
-  _poolFriendsDue() {
-    if (!this.deps?.getFofKey?.() || this._poolFriendsRunning) return false;
-    return this._poolPlayersToRead(Date.now()).length > 0;
   }
 
   /**
@@ -823,11 +867,11 @@ class MapFinder {
   }
 
   /**
-   * Read the friends lists of pool players. Their friends sat on official
-   * casual servers about three times as often as friends of the user's
-   * friends (0.69% against 0.21%, measured 2026-10-25), and whoever turns up
-   * there joins the pool and brings friends of their own. A list is read
-   * again after a day.
+   * Read the friends lists of pool players, when the user asks. Their
+   * friends sat on official casual servers about three times as often as
+   * friends of the user's friends (0.69% against 0.21%, measured
+   * 2026-10-25), and whoever turns up there joins the pool and brings
+   * friends of their own. A list read in the last day is not read again.
    * @private
    */
   async _crawlPoolFriends() {
@@ -838,6 +882,7 @@ class MapFinder {
 
     this._poolFriendsRunning = true;
     this.status.poolFriends = "crawling";
+    this.status.poolFriendsProgress = { done: 0, total: players.length };
     this._notify();
     try {
       for (const playerId of players) {
@@ -846,16 +891,23 @@ class MapFinder {
         if (this._poolGeneration !== generation) return;
         this.poolFriends.crawled[playerId] = Date.now();
         this._addPoolFriends(ids, userId);
+        this.status.poolFriendsProgress = {
+          done: this.status.poolFriendsProgress.done + 1,
+          total: players.length,
+        };
+        this._notify();
         await sleep(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS);
       }
-      this._scheduleSave();
     } catch (error) {
       logger.error("MapFinder", "Friends of pool players failed", {
         error: error.message,
       });
     } finally {
+      // Whatever was read before a stop or a failure is kept
+      this._scheduleSave();
       this._poolFriendsRunning = false;
       this.status.poolFriends = "idle";
+      this.status.poolFriendsProgress = { done: 0, total: 0 };
       this._notify();
     }
   }
@@ -948,7 +1000,6 @@ class MapFinder {
         fetchedAt: Number(data.fof.fetchedAt) || 0,
         friendsCount: Number(data.fof.friendsCount) || 0,
       };
-      if (this.fof.ids.length) this.status.fof = "ready";
     }
     if (Array.isArray(data?.poolFriends?.ids)) {
       const crawled = {};

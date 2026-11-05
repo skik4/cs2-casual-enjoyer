@@ -8,8 +8,7 @@
 .tutorial-btn-help img,
 .tutorial-btn img,
 .action-btn img,
-.window-btn img,
-.notification-close-btn img {
+.window-btn img {
   filter: brightness(0) saturate(100%) invert(75%) sepia(13%) saturate(456%)
     hue-rotate(202deg) brightness(91%) contrast(93%);
   transition: filter var(--anim-duration);
@@ -25,15 +24,6 @@
 .window-btn:hover img,
 .tutorial-btn-help:hover img {
   filter: brightness(0) saturate(100%) invert(100%);
-}
-
-.notification-close-btn img {
-  opacity: 0.7;
-}
-
-.notification-close-btn:hover img {
-  filter: brightness(0) saturate(100%) invert(100%);
-  opacity: 0.8;
 }
 
 /* ===== BASE BUTTON ===== */
@@ -161,39 +151,6 @@
   background: var(--red-primary);
 }
 
-/* Notification close button - minimal styling */
-.notification-close-btn {
-  position: absolute;
-  top: var(--position-sm);
-  right: var(--position-md);
-  font-size: var(--font-size-xl);
-  font-weight: bold;
-  color: var(--gray-300);
-  opacity: 0.7;
-  background: transparent;
-  border: none;
-  z-index: 2;
-  transition:
-    color var(--anim-duration),
-    opacity var(--anim-duration),
-    background var(--anim-duration);
-  line-height: 1;
-  padding: 4px;
-  border-radius: var(--border-radius-sm);
-  user-select: none;
-  margin-left: auto;
-  cursor: pointer;
-  width: auto;
-  height: auto;
-  min-width: auto;
-}
-
-.notification-close-btn:hover:not(:disabled) {
-  opacity: 1;
-  color: var(--white);
-  background: rgba(255, 255, 255, 0.1);
-}
-
 /* ===== ICON BUTTONS ===== */
 .icon-btn img {
   width: 18px;
@@ -210,6 +167,8 @@
 }
 
 /* ===== LINKS ===== */
+/* The app's one link look, for buttons and for <a> alike: an <a> loses its
+   default underline until hovered, as a button has none */
 .link-btn {
   padding: 0;
   background: none;
@@ -217,6 +176,7 @@
   color: var(--blue-primary);
   font-family: inherit;
   font-size: 13px;
+  text-decoration: none;
   cursor: pointer;
 }
 

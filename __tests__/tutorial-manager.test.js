@@ -12,7 +12,6 @@ jest.mock("../src/ui/tutorial/tutorial-templates.js", () => ({
         title: `step ${i}`,
         content: "",
         target: null,
-        icon: "",
       })),
     MODAL_CONTENT: () => "",
   },

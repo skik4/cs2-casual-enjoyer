@@ -1,6 +1,6 @@
-import { emojiImg } from "../emoji.js";
 import { TUTORIAL_TIMING } from "./tutorial-timing.js";
 import { TUTORIAL_STEPS } from "./tutorial-steps.js";
+import { t } from "../../i18n/i18n-manager.js";
 import logger from "../../utils/logger.js";
 
 /**
@@ -99,36 +99,28 @@ export class TutorialEventManager {
     this.handleGithubLinkClick = async (event) => {
       event.preventDefault();
       const link = event.currentTarget;
-      const originalText = link.textContent;
+      // The feedback shows in words and colour for a moment. The link then
+      // takes its text from the locale again, so a second click during the
+      // feedback cannot keep the feedback, and its .link-btn colour back
+      const showFor = (text, color) => {
+        link.style.color = color;
+        link.textContent = text;
+        setTimeout(() => {
+          link.style.color = "";
+          link.textContent = t("tutorial.githubReleases");
+        }, TUTORIAL_TIMING.COPY_FEEDBACK_MS);
+      };
 
       try {
         await navigator.clipboard.writeText(
           "https://github.com/skik4/cs2-casual-enjoyer/releases"
         );
-
-        // Update visual feedback
-        link.style.color = "var(--green-primary)";
-        link.style.textDecoration = "none";
-
-        const clipboard = emojiImg("📋", "emoji-svg copy-success");
-        link.innerHTML = `${clipboard} Copied to clipboard!`;
-
-        setTimeout(() => {
-          link.style.color = "var(--blue-primary)";
-          link.style.textDecoration = "underline";
-          link.textContent = originalText;
-        }, TUTORIAL_TIMING.COPY_FEEDBACK_MS);
+        showFor(t("tutorial.linkCopied"), "var(--green-primary)");
       } catch (err) {
         logger.error("TutorialEventManager", "Failed to copy to clipboard", {
           error: err.message,
         });
-        // Fallback visual feedback even if clipboard fails
-        link.style.color = "var(--red-light)";
-        link.textContent = "Copy failed";
-        setTimeout(() => {
-          link.style.color = "var(--blue-primary)";
-          link.textContent = originalText;
-        }, TUTORIAL_TIMING.COPY_FEEDBACK_MS);
+        showFor(t("tutorial.copyFailed"), "var(--red-light)");
       }
     };
 

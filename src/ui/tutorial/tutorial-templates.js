@@ -3,11 +3,11 @@
  */
 
 import { t } from "../../i18n/i18n-manager.js";
-import { emojiImg } from "../emoji.js";
 
 export const TUTORIAL_TEMPLATES = {
   /**
-   * The tutorial steps, in the current language
+   * The tutorial steps, in the current language. A step is named in words
+   * only, without a picture.
    * @returns {Array} Tutorial steps
    */
   getSteps() {
@@ -15,19 +15,17 @@ export const TUTORIAL_TEMPLATES = {
       {
         title: t("tutorial.step1Title"),
         content: `
-                    ${t("tutorial.step1Content")}               
+                    ${t("tutorial.step1Content")}
                     <div style='color:var(--text-secondary);font-size:0.95em;text-align:center;margin-top:15px;'>
                         ${t("tutorial.keyHint")}
                     </div>
                 `,
         target: null,
-        icon: "🎮",
       },
       {
         title: t("tutorial.step2Title"),
         content: t("tutorial.step2Content"),
         target: "#api-key-help",
-        icon: "🔑",
       },
       {
         title: t("tutorial.step3Title"),
@@ -35,7 +33,6 @@ export const TUTORIAL_TEMPLATES = {
                     ${t("tutorial.step3Content")}
                 `,
         target: "#steam-token-help-link",
-        icon: "🌐",
       },
       {
         title: t("tutorial.step4Title"),
@@ -43,25 +40,21 @@ export const TUTORIAL_TEMPLATES = {
                     ${t("tutorial.step4Content")}
                 `,
         target: "#auth",
-        icon: "📋",
       },
       {
         title: t("tutorial.step5Title"),
         content: t("tutorial.step5Content"),
         target: "#update-friends-btn",
-        icon: "🔄",
       },
       {
         title: t("tutorial.step6Title"),
         content: t("tutorial.step6Content"),
         target: "#friend-filter-input",
-        icon: "🔍",
       },
       {
         title: t("tutorial.step7Title"),
         content: t("tutorial.step7Content"),
         target: "#friends",
-        icon: "👥",
       },
       {
         title: t("tutorial.step8Title"),
@@ -69,7 +62,6 @@ export const TUTORIAL_TEMPLATES = {
                     ${t("tutorial.step8Content")}
                 `,
         target: ".friend .action-btn",
-        icon: "🚀",
       },
       {
         title: t("tutorial.step9Title"),
@@ -82,7 +74,6 @@ export const TUTORIAL_TEMPLATES = {
                     </div>
                 `,
         target: ".friend .status-label",
-        icon: "🟡",
       },
       {
         title: t("tutorial.step10Title"),
@@ -92,14 +83,11 @@ export const TUTORIAL_TEMPLATES = {
                         ${t("tutorial.step10ContentNote1")}<br>
                         ${t("tutorial.step10ContentNote2")}
                     </div>
-                    <div style='color:var(--text-secondary);font-size:0.95em;text-align:center;margin-top:15px;'>
-                        <span id='github-releases-link' style='color:var(--blue-primary);cursor:pointer;text-decoration:underline;'>
-                            ${t("tutorial.githubReleases")}
-                        </span>
+                    <div style='text-align:center;margin-top:15px;'>
+                        <button type='button' id='github-releases-link' class='link-btn'>${t("tutorial.githubReleases")}</button>
                     </div>
                 `,
         target: null,
-        icon: "🎉",
       },
     ];
 
@@ -108,7 +96,6 @@ export const TUTORIAL_TEMPLATES = {
 
   /**
    * Tutorial modal content
-   * @param {string} icon - Tutorial step icon (Unicode emoji)
    * @param {string} title - Tutorial step title
    * @param {number} currentStepNumber - Current step number (1-based)
    * @param {number} totalSteps - Total number of steps
@@ -118,7 +105,6 @@ export const TUTORIAL_TEMPLATES = {
    * @returns {string} Tutorial modal HTML
    */
   MODAL_CONTENT: (
-    icon,
     title,
     currentStepNumber,
     totalSteps,
@@ -126,14 +112,9 @@ export const TUTORIAL_TEMPLATES = {
     isFirstStep,
     isLastStep
   ) => {
-    const processedIcon = emojiImg(icon || "📖", "emoji-svg");
-
     return `
         <div class="tutorial-header">
-            <h3 class="tutorial-title">
-                <span class="tutorial-icon">${processedIcon}</span>
-                ${title}
-            </h3>
+            <h3 class="tutorial-title">${title}</h3>
             <div class="tutorial-progress">
                 <span class="tutorial-step-counter">${t("tutorial.stepCounter", { current: currentStepNumber, total: totalSteps })}</span>
                 <div class="tutorial-progress-bar">

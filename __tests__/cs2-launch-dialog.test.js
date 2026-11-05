@@ -2,7 +2,8 @@
  * @jest-environment jsdom
  *
  * Jest tests for the overlay that offers to launch CS2 before a join: what
- * its promise answers, and when the overlay stays up
+ * its promise answers, and when the overlay stays up. The same overlay
+ * offers the launch alone, with no join waiting, from the GSI status.
  */
 
 jest.mock("../src/utils/logger.js", () => ({
@@ -17,6 +18,9 @@ const overlay = () => document.getElementById("cs2-launch-notification");
 const visible = () =>
   overlay().style.display === "flex" && !overlay().classList.contains("hidden");
 const title = () => overlay().querySelector(".cs2-launch-title").textContent;
+const message = () =>
+  overlay().querySelector(".cs2-launch-message").textContent;
+const hint = () => overlay().querySelector(".cs2-launch-hint").textContent;
 const launchButton = () => document.getElementById("launch-cs2-btn");
 const closeButton = () => document.getElementById("close-cs2-launch");
 
@@ -150,4 +154,131 @@ test("a language switch re-renders the phase it shows", async () => {
 
   expect(title()).toBe(t("notifications.cs2Launch.launching.title"));
   expect(title()).not.toBe("Launching CS2...");
+});
+
+describe("with no join waiting", () => {
+  const offer = () =>
+    observe(Cs2LaunchDialog.ask(cs2Manager, { mode: "launch" }));
+
+  // An offer left up would step aside for the next test's first question
+  afterEach(() => closeButton()?.click());
+
+  test("offers the launch alone, in texts that speak of no join", () => {
+    const answer = offer();
+
+    expect(visible()).toBe(true);
+    expect(title()).toBe("Launch CS2?");
+    expect(message()).toBe(t("notifications.cs2Launch.launchOnly.message"));
+    expect(message()).not.toBe(t("notifications.cs2Launch.initial.message"));
+    expect(hint()).toBe(t("notifications.cs2Launch.launchOnly.hint"));
+    expect(launchButton().textContent).toBe("Launch CS2");
+    expect(closeButton().textContent).toBe("Close");
+    // The keyboard follows the offer
+    expect(document.activeElement).toBe(launchButton());
+    expect(answer.settled).toBe(false);
+    expect(cs2Manager.launchAndWaitForLobby).not.toHaveBeenCalled();
+  });
+
+  test("Launch takes the join's launch and answers true in the lobby", async () => {
+    const answer = offer();
+
+    launchButton().click();
+    expect(cs2Manager.launchAndWaitForLobby).toHaveBeenCalledTimes(1);
+    expect(title()).toBe("Launching CS2...");
+    expect(launchButton().disabled).toBe(true);
+
+    finishLaunch(true);
+    await settle();
+
+    expect(answer.value).toBe(true);
+    expect(visible()).toBe(false);
+  });
+
+  test("Close before Launch changes nothing", async () => {
+    const answer = offer();
+
+    closeButton().click();
+    await settle();
+
+    expect(answer.value).toBe(false);
+    expect(visible()).toBe(false);
+    expect(cs2Manager.launchAndWaitForLobby).not.toHaveBeenCalled();
+    expect(cs2Manager.cancelLaunchOperations).not.toHaveBeenCalled();
+  });
+
+  test("Close during the launch calls it off, as in a join", async () => {
+    const answer = offer();
+    launchButton().click();
+
+    closeButton().click();
+    await settle();
+
+    expect(answer.value).toBe(false);
+    expect(cs2Manager.cancelLaunchOperations).toHaveBeenCalledTimes(1);
+    expect(visible()).toBe(false);
+  });
+
+  test("never opens over the join's own offer", async () => {
+    const join = ask();
+    const joinLaunch = launchButton();
+
+    const launchOnly = offer();
+    await settle();
+
+    expect(launchOnly.value).toBe(false);
+    expect(launchButton()).toBe(joinLaunch);
+    expect(title()).toBe("Launch CS2 First");
+
+    // The join's offer is still up, and still answers
+    launchButton().click();
+    finishLaunch(true);
+    await settle();
+    expect(join.value).toBe(true);
+  });
+
+  test("does not cover an offer of its own either", async () => {
+    const first = offer();
+    const second = offer();
+    await settle();
+
+    expect(second.value).toBe(false);
+    expect(first.settled).toBe(false);
+    expect(visible()).toBe(true);
+  });
+
+  test("a join's question takes the overlay over, a launch under way included", async () => {
+    const launchOnly = offer();
+    launchButton().click();
+    const finishOfferLaunch = finishLaunch;
+
+    const join = ask();
+    await settle();
+
+    expect(launchOnly.value).toBe(false);
+    expect(cs2Manager.cancelLaunchOperations).toHaveBeenCalledTimes(1);
+    expect(visible()).toBe(true);
+    expect(title()).toBe("Launch CS2 First");
+
+    // The called-off launch ending late leaves the join's overlay alone
+    finishOfferLaunch(true);
+    await settle();
+    expect(visible()).toBe(true);
+    expect(join.settled).toBe(false);
+
+    launchButton().click();
+    finishLaunch(true);
+    await settle();
+    expect(join.value).toBe(true);
+    expect(visible()).toBe(false);
+  });
+
+  test("a language switch keeps the texts without a join", async () => {
+    offer();
+
+    setLanguage("ru");
+    await settle();
+
+    expect(title()).toBe(t("notifications.cs2Launch.launchOnly.title"));
+    expect(title()).not.toBe("Launch CS2?");
+  });
 });

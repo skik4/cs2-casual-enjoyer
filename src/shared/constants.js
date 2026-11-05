@@ -80,12 +80,10 @@ export const MAP_FINDER_CONFIG = {
   REFRESH_INTERVAL_MS: 30000,
   // At 100 ids per request this caps one refresh at 30 requests
   MAX_IDS_PER_REFRESH: 3000,
+  // A pool player's friends list read this recently is not read again when
+  // the user asks for the lists: friends lists change slowly, and each one
+  // is a request on the user's key
   FOF_REFRESH_MS: 24 * 60 * 60 * 1000,
-  // A crawl that could read not one list - a wrong key, every list private,
-  // Steam refusing - is tried again after this long, not on the next
-  // refresh: that cost a request per friend every 30 seconds for as long as
-  // the finder ran. A new key is tried at once.
-  FOF_RETRY_MS: 60 * 60 * 1000,
   FOF_MAX_IDS: 5000,
   FOF_REQUEST_DELAY_MS: 250,
   POOL_MAX: 5000,

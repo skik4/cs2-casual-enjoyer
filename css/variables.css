@@ -108,6 +108,13 @@
   /* ============================================= */
   /* TYPOGRAPHY TOKENS                           */
   /* ============================================= */
+  /* ===== FONT FAMILY ===== */
+  /* Steam's own stack, as the client's steamui stylesheets write it. Motiva
+     Sans comes packed inside Steam and is not ours to ship, so where it is
+     not installed the text falls back to Arial, as Steam's own does. Only
+     body names it; everything else inherits. */
+  --font-family: "Motiva Sans", Arial, Helvetica, sans-serif;
+
   /* ===== TYPOGRAPHY SCALE ===== */
   --font-size-xs: 0.9em;
   /* ~14px */
@@ -179,7 +186,7 @@
   --button-font-size: 0.844rem;
   /* 13.5px */
   /* Every long button has one size, every square one another; the width
-     fits the longest label, "Открыть в Steam ↗" */
+     fits the longest label, "Загрузить друзей" (124px in Arial) */
   --button-width: 9rem;
   /* 144px */
   --button-height: 2rem;
@@ -192,11 +199,6 @@
   --border-color-strong: #3d4450;
   /* Rows and panels are flat, as in Steam */
   --panel-outline: transparent;
-
-  /* ===== WARNING COLORS ===== */
-  --warning-bg: #fffbe6;
-  --warning-text: #b26a00;
-  --warning-border: #ffe58f;
 
   /* ============================================= */
   /* MODULE-SPECIFIC TOKENS                      */

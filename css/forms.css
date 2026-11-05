@@ -24,7 +24,6 @@ input:focus {
 }
 
 input[type="password"] {
-  font-family: "Inter", "Segoe UI", Arial, sans-serif;
   letter-spacing: 0.15em;
 }
 

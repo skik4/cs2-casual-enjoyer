@@ -164,7 +164,7 @@ class Logger {
     const formattedMessage = this.formatMessage("TRACE", context, message);
 
     // Use console.trace for stack trace and grouping for large data
-    console.groupCollapsed(`🔍 ${formattedMessage}`);
+    console.groupCollapsed(formattedMessage);
     if (data) {
       if (typeof data === "object") {
         console.table(data);
@@ -194,7 +194,7 @@ class Logger {
       this.shouldLog(LOG_LEVELS.DEBUG)
     ) {
       const timestamp = this.getTimestamp();
-      console.groupCollapsed(`🔄 [${timestamp}] State Change: ${key}`);
+      console.groupCollapsed(`[${timestamp}] State Change: ${key}`);
       console.log("Previous:", oldValue);
       console.log("Current:", newValue);
       if (typeof oldValue === "object" && typeof newValue === "object") {

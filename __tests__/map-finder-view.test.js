@@ -60,8 +60,7 @@ beforeAll(() => {
     <span id="fof-summary"></span>
     <div id="fof-key-details" class="hidden"></div>
     <button id="fof-key-toggle"></button>
-    <button id="pool-clear"></button>
-    <button id="fof-clear"></button>`;
+    <div id="map-sources"></div>`;
   MapFinderView.initialize({ getMainAuth: () => "head.payload.signature" });
 });
 
@@ -174,55 +173,149 @@ test("pinned maps gather in a row whose Join takes any of them", () => {
   expect(row(".pinned-row")).toBeNull();
 });
 
-describe("clear buttons", () => {
+describe("sources", () => {
+  const A = "76561198000000011";
+  const B = "76561198000000012";
+  const KEY = "ABCDEF0123456789ABCDEF0123456789";
+  const sourceRow = (source) => document.querySelector(`[data-source-row="${source}"]`);
+  const sourceButton = (source, action) =>
+    document.querySelector(`#map-sources [data-source="${source}"][data-action="${action}"]`);
+  let deps;
+
+  beforeEach(() => {
+    deps = mapFinder.deps;
+    mapFinder.deps = { getRealFriendIds: () => [B] };
+  });
+
   afterEach(() => {
+    mapFinder.deps = deps;
     mapFinder.pool = new Map();
+    mapFinder.prime = new Map();
     mapFinder.poolFriends = { ids: [], crawled: {} };
     mapFinder.fof = { ids: [], fetchedAt: 0, friendsCount: 0 };
+    mapFinder.status = mapFinder._idleStatus();
+    MapFinderView._poolClearAsk = false;
+    MapFinderView._lastSourcesHtml = null;
   });
 
-  test("ask on the first click and clear on the second", () => {
-    const clearPool = jest.spyOn(mapFinder, "clearPool").mockImplementation(() => {});
-    mapFinder.pool.set("76561198000000011", { lastSeen: Date.now(), map: "de_dust2" });
+  test("each source shows how many players it holds", () => {
+    mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
+    mapFinder.poolFriends = {
+      ids: Array.from({ length: 1234 }, (_, i) => String(76561198100000000n + BigInt(i))),
+      crawled: {},
+    };
+
     MapFinderView.render();
-    const button = document.getElementById("pool-clear");
-    expect(button.textContent).toBe("Clear the pool");
 
-    button.click();
-    expect(button.textContent).toBe("Sure? Click again");
-    expect(clearPool).not.toHaveBeenCalled();
-
-    button.click();
-    expect(clearPool).toHaveBeenCalledTimes(1);
-    expect(button.textContent).toBe("Clear the pool");
+    expect(sourceRow("pool").querySelector(".source-count").textContent).toBe("1");
+    expect(sourceRow("poolFriends").querySelector(".source-count").textContent).toBe("1,234");
+    expect(sourceRow("fof").querySelector(".source-count").textContent).toBe("0");
   });
 
-  test("forget the first click after a few seconds", () => {
+  test("the pool's clear asks whom to forget: everyone, or those without a sign of Prime", () => {
+    const clearPool = jest.spyOn(mapFinder, "clearPool").mockImplementation(() => 0);
+    mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
+    mapFinder.pool.set(B, { lastSeen: Date.now(), map: "de_dust2" });
+    mapFinder.prime.set(A, Date.now());
+    MapFinderView.render();
+
+    click(sourceButton("pool", "clear"));
+    expect(sourceButton("pool", "clear-no-prime").textContent).toBe(
+      "without a sign of Prime (1)"
+    );
+    expect(clearPool).not.toHaveBeenCalled();
+    click(sourceButton("pool", "clear-no-prime"));
+    expect(clearPool).toHaveBeenCalledWith({ keepPrime: true });
+    // Back to the one button
+    expect(sourceButton("pool", "clear-all")).toBeNull();
+
+    click(sourceButton("pool", "clear"));
+    click(sourceButton("pool", "clear-all"));
+    expect(clearPool).toHaveBeenLastCalledWith();
+
+    click(sourceButton("pool", "clear"));
+    click(sourceButton("pool", "cancel"));
+    expect(clearPool).toHaveBeenCalledTimes(2);
+    expect(sourceButton("pool", "clear")).not.toBeNull();
+  });
+
+  test("the other clears ask on the first click and clear on the second", () => {
+    const clearPoolFriends = jest
+      .spyOn(mapFinder, "clearPoolFriends")
+      .mockImplementation(() => {});
+    mapFinder.poolFriends = { ids: [B], crawled: {} };
+    MapFinderView.render();
+    expect(sourceButton("poolFriends", "clear").textContent).toBe("Clear");
+
+    click(sourceButton("poolFriends", "clear"));
+    expect(sourceButton("poolFriends", "clear").textContent).toBe("Sure? Click again");
+    expect(clearPoolFriends).not.toHaveBeenCalled();
+
+    click(sourceButton("poolFriends", "clear"));
+    expect(clearPoolFriends).toHaveBeenCalledTimes(1);
+    expect(sourceButton("poolFriends", "clear").textContent).toBe("Clear");
+  });
+
+  test("a clear forgets its first click after a few seconds", () => {
     jest.useFakeTimers();
     try {
-      const restartFof = jest.spyOn(mapFinder, "restartFof").mockImplementation(() => {});
-      mapFinder.fof = { ids: ["76561198000000021"], fetchedAt: 1, friendsCount: 1 };
+      const clearFof = jest.spyOn(mapFinder, "clearFof").mockImplementation(() => {});
+      mapFinder.fof = { ids: [B], fetchedAt: 1, friendsCount: 1 };
       MapFinderView.render();
-      const button = document.getElementById("fof-clear");
 
-      button.click();
+      click(sourceButton("fof", "clear"));
       jest.advanceTimersByTime(3000);
-      expect(button.textContent).toBe("Clear friends of friends");
+      expect(sourceButton("fof", "clear").textContent).toBe("Clear");
 
-      button.click();
-      expect(restartFof).not.toHaveBeenCalled();
-      button.click();
-      expect(restartFof).toHaveBeenCalledTimes(1);
+      click(sourceButton("fof", "clear"));
+      expect(clearFof).not.toHaveBeenCalled();
+      click(sourceButton("fof", "clear"));
+      expect(clearFof).toHaveBeenCalledTimes(1);
     } finally {
       jest.useRealTimers();
     }
   });
 
-  test("are off with nothing to clear", () => {
+  test("clears are off with nothing to clear", () => {
     MapFinderView.render();
 
-    expect(document.getElementById("pool-clear").disabled).toBe(true);
-    expect(document.getElementById("fof-clear").disabled).toBe(true);
+    expect(sourceButton("pool", "clear").disabled).toBe(true);
+    expect(sourceButton("poolFriends", "clear").disabled).toBe(true);
+    expect(sourceButton("fof", "clear").disabled).toBe(true);
+  });
+
+  test("lists are read only on a click, and only with a key", () => {
+    const readFof = jest.spyOn(mapFinder, "readFof").mockReturnValue(true);
+    const readPoolFriends = jest.spyOn(mapFinder, "readPoolFriends").mockReturnValue(true);
+    mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
+
+    MapFinderView.render();
+    expect(sourceButton("poolFriends", "read").disabled).toBe(true);
+    expect(sourceButton("fof", "read").title).toContain("API key");
+
+    jest.spyOn(MapFinderView, "getFofKey").mockReturnValue(KEY);
+    MapFinderView.render();
+    expect(sourceButton("poolFriends", "read").title).toContain(": 1");
+
+    click(sourceButton("poolFriends", "read"));
+    expect(readPoolFriends).toHaveBeenCalledTimes(1);
+    click(sourceButton("fof", "read"));
+    expect(readFof).toHaveBeenCalledTimes(1);
+  });
+
+  test("a read under way shows in its row, not next to the tabs", () => {
+    mapFinder.status.poolFriends = "crawling";
+    mapFinder.status.poolFriendsProgress = { done: 3, total: 40 };
+
+    MapFinderView.render();
+
+    expect(sourceRow("poolFriends").querySelector(".source-state").textContent).toBe(
+      "reading 3 of 40…"
+    );
+    expect(sourceButton("poolFriends", "read")).toBeNull();
+    expect(document.getElementById("map-finder-status").textContent).not.toContain(
+      "reading"
+    );
   });
 });
 
@@ -241,14 +334,16 @@ describe("Prime", () => {
 
     MapFinderView.render();
 
-    const tags = list().querySelectorAll(".prime-tag");
-    expect(tags).toHaveLength(1);
-    expect(tags[0].textContent).toBe("Prime");
-    expect(tags[0].title).toContain(": 2.");
-    expect(row('[data-map="de_dust2"] .game-where').textContent).toBe(
-      "2 servers · with Prime: 1"
-    );
-    expect(row('[data-map="de_mirage"] .game-where').textContent).toBe("1 server");
+    const serverTags = list().querySelectorAll(".server-row .prime-tag");
+    expect(serverTags).toHaveLength(1);
+    expect(serverTags[0].textContent).toBe("Prime");
+    expect(serverTags[0].title).toContain(": 2.");
+    // The map's own tag counts its servers with Prime, apart from the slots
+    const mapTag = row('[data-map="de_dust2"] .map-row .prime-tag');
+    expect(mapTag.textContent).toBe("Prime: 1");
+    expect(mapTag.title).toContain("1 of 2");
+    expect(row('[data-map="de_dust2"] .game-where').textContent).toBe("2 servers");
+    expect(row('[data-map="de_mirage"] .prime-tag')).toBeNull();
   });
 
   test("Prime only leaves out the other servers, and the switch shows it is on", () => {
@@ -262,7 +357,7 @@ describe("Prime", () => {
 
     expect(row('[data-map="de_mirage"]')).toBeNull();
     // Every server listed has Prime, so the map does not count them
-    expect(row('[data-map="de_dust2"] .game-where').textContent).toBe("1 server");
+    expect(row('[data-map="de_dust2"] .map-row .prime-tag')).toBeNull();
     expect(document.getElementById("maps-prime-only").getAttribute("aria-pressed")).toBe("true");
     expect(document.getElementById("tab-count-maps").textContent).toBe("1");
   });

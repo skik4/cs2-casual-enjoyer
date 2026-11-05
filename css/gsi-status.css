@@ -37,3 +37,33 @@
 .gsi-status[data-state="error"] .gsi-status-dot {
   background: var(--red-primary);
 }
+
+/* "Waiting for CS2" offers to launch the game. It lights up under the
+   pointer as the window bar's glyphs do, while the other states stay plain
+   text. */
+.gsi-status[role="button"] {
+  /* The shade hugs the dot and the label: part of the footer offset moves
+     into the margin, so the text stays where the other states have it */
+  margin-left: calc(var(--space-md) - var(--space-xs));
+  padding: var(--space-xxs) var(--space-xs);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition:
+    background-color var(--anim-duration),
+    color var(--anim-duration);
+}
+
+.gsi-status[role="button"]:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--white) var(--opacity-10),
+    transparent
+  );
+  color: var(--white);
+}
+
+/* Where the keyboard is, in Steam's blue */
+.gsi-status[role="button"]:focus-visible {
+  outline: var(--border-width) solid var(--blue-primary);
+  outline-offset: 1px;
+}

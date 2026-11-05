@@ -21,6 +21,8 @@ describe("NotificationManager.showUpdateError", () => {
     expect(link?.getAttribute("href")).toBe(
       `steam://openurl/https://steamcommunity.com/profiles/${STEAM_ID}/edit/settings/`
     );
+    // Styled as the app's other links
+    expect(link.classList.contains("link-btn")).toBe(true);
   });
 
   test("reads the id from the input when none is given", () => {

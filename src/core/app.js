@@ -206,9 +206,13 @@ class App {
       logger.info("App", "CS2Manager configured");
 
       logger.info("App", "Step 5.1: Connecting to CS2 Game State Integration");
+      // "Waiting for CS2" offers the launch a join with CS2 closed offers,
+      // with no join waiting on it
+      GsiStatusIndicator.initialize({
+        onLaunch: () => Cs2LaunchDialog.ask(this.cs2Manager, { mode: "launch" }),
+      });
       // Not awaited: GSI is optional, and the main process finishes setting it
       // up on its own time - everything falls back to the Steam Web API
-      GsiStatusIndicator.initialize();
       gsiManager
         .initialize(() => this.inputManager.getSteamId())
         .catch((error) =>

@@ -1,27 +1,9 @@
 /* Notifications Component */
 
+/* Holds one card at a time; the card itself is .notification-content */
 #notifications {
   display: none;
-  background: var(--bg-item);
-  color: var(--text-primary);
-  border-radius: var(--border-radius-lg);
-  padding: 1em 1.5em 1em 1.2em;
-  padding-top: 0.5em;
-  margin-bottom: 0.7em;
-  font-size: var(--font-size-sm);
   position: relative;
-}
-
-/* Warning Notifications */
-.warning {
-  background: var(--warning-bg);
-  color: var(--warning-text);
-  border: 1px solid var(--warning-border);
-  border-radius: var(--border-radius-md);
-  padding: var(--space-md);
-  margin-bottom: var(--space-md);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
 }
 
 /* CS2 Launch Notification Overlay */
@@ -105,73 +87,88 @@
   }
 }
 
-/* Additional Notification Styles */
+/* ===== Cards: errors, the privacy warning, the help texts ===== */
+/* A flat card in the page, as the account panel and the rows are, in the
+   rows' sizes: a 14.5px title, 13px text and links, 12.5px lists and notes.
+   The text starts 18px in, level with the account panel's below it */
 .notification-content {
-  border: var(--border-width) solid var(--blue-primary);
-  border-radius: var(--border-radius-md);
-  padding: 1em 1.2em 1em 1.2em;
-  background: transparent;
-  text-align: center;
-  margin-bottom: var(--space-xxs);
-  position: relative;
-  min-height: 32px;
-  max-width: 700px;
-  margin-left: auto;
-  margin-right: auto;
-  z-index: var(--z-base);
-  display: block;
-  transition: opacity var(--anim-duration);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: 12px 18px 18px;
+  background: var(--bg-item);
+  border-radius: var(--border-radius-xl);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary);
 }
 
+/* An error has a red line on the left, as the join bar marks its state */
 .notification-content.error {
-  border-color: var(--red-primary);
+  box-shadow: inset 3px 0 0 var(--red-primary);
 }
 
-.notification-content.info {
-  border-color: var(--blue-primary);
-}
-
+/* The close button, the app's square one, in the card's top right corner */
 .notification-header {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+/* The card's title, or the error itself. As tall as the close button, so
+   the two sit level, and kept clear of it */
+.notification-main-text {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  min-height: 1.5em;
-  margin-bottom: 0.2em;
-}
-
-.notification-main-text {
-  color: var(--blue-primary);
-  font-weight: 500;
-  margin-bottom: 0.4em;
+  min-height: var(--icon-button-size);
+  padding-right: calc(var(--icon-button-size) + var(--space-xs));
+  font-size: 14.5px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.3;
+  color: var(--text-primary);
 }
 
 .notification-content.error .notification-main-text {
   color: var(--red-light);
 }
 
-/* Notification list styles */
-.notification-content ul {
+/* One way to do what the card explains: its name, the Steam link and the
+   steps */
+.notification-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.notification-section-title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.notification-text {
   margin: 0;
-  text-align: left;
 }
 
-.notification-content li {
-  margin-bottom: var(--space-xxs);
+/* Keys to press and field names stand out, as the map name does in a row */
+.notification-content strong {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
-.notification-content li:last-child {
-  margin-bottom: 0;
+.notification-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
 }
 
-.note {
-  color: var(--gray-500);
-  font-size: var(--font-size-xs);
-  margin-bottom: 2px;
+.notification-list li + li {
+  margin-top: 2px;
 }
 
-.notification-emoji {
-  /* font-family: 'Noto Color Emoji'; */
-  font-size: 1.2em;
-  display: inline-block;
-  animation: tutorialIconBounce 2s ease-in-out infinite;
+/* A closing remark, set off by a rule as the account panel's foot is */
+.notification-content .note {
+  padding-top: var(--space-sm);
+  border-top: var(--border-width) solid var(--border-color);
+  font-size: 12.5px;
 }

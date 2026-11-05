@@ -20,6 +20,8 @@
   font-family: inherit;
   font-size: 15px;
   font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  flex-shrink: 0;
   cursor: pointer;
   transition:
     color var(--anim-duration),
@@ -58,7 +60,12 @@
   padding-bottom: 6px;
 }
 
+/* A narrow window cuts the status short rather than pushing it past the
+   edge or squeezing the tabs */
 .map-finder-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 13px;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -236,16 +243,68 @@
   padding: var(--space-sm) 2px 0;
 }
 
-/* Clearing the pool or friends of friends takes a second click */
-.pool-clear-row {
+/* Where the map finder's players come from: one row per source, with what
+   can be done about it. Lists are read and cleared only on a click. */
+.map-sources {
+  margin-bottom: 6px;
+  padding: 2px 12px;
+  background: var(--bg-item);
+  border-radius: var(--border-radius-lg);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.source-row {
   display: flex;
-  gap: 18px;
-  padding: 6px 14px 0;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+}
+
+.source-row:not(:last-child) {
+  border-bottom: 1px solid var(--bg-dark);
+}
+
+.source-name {
+  flex-shrink: 0;
+  width: 175px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.source-count {
+  flex-shrink: 0;
+  width: 64px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.source-state {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.link-btn:disabled {
+  color: var(--text-secondary);
+  opacity: 0.5;
+  text-decoration: none;
+  cursor: default;
 }
 
 /* Quieter than the other links: these throw data away */
 .link-btn.clear-btn {
-  font-size: 12.5px;
   color: var(--text-secondary);
 }
 
@@ -256,11 +315,6 @@
 .link-btn.clear-btn.armed {
   color: color-mix(in srgb, var(--red-primary) 80%, var(--white));
   font-weight: var(--font-weight-semibold);
-}
-
-.clear-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 .fof-key-row {

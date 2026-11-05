@@ -1,24 +1,8 @@
 /* Links and Additional Components */
 
-/* Steam link styles - unified styling for all Steam-related links */
-.steam-link,
-.privacy-link,
-.steam-token-link,
-.steam-profile-link,
-.steam-apikey-link {
-  color: var(--blue-primary) !important;
-  text-decoration: underline !important;
-  font-weight: 500;
-  transition: color var(--anim-duration);
-}
-
-.steam-link:hover,
-.privacy-link:hover,
-.steam-token-link:hover,
-.steam-profile-link:hover,
-.steam-apikey-link:hover {
-  color: var(--blue-dark) !important;
-}
+/* The Steam links in the notifications and help texts carry .link-btn, the
+   app's one link look (unified-buttons.css); their own classes only name
+   them */
 
 /* Inline-link look for neutral color with underline */
 .link-underline {

@@ -510,76 +510,79 @@ describe("friends of friends", () => {
     );
     expect(mapFinder.fof.ids.sort()).toEqual([A, B, C].sort());
     expect(mapFinder.fof.friendsCount).toBe(2);
-    expect(mapFinder.getStatus().fof).toBe("ready");
+    expect(mapFinder.getStatus().fof).toBe("idle");
   });
 
-  test("not one readable list counts as an error, tried again after a while", async () => {
+  test("not one readable list counts as an error, and what was read before stays", async () => {
     jest.useFakeTimers();
     try {
       configure({
         getRealFriendIds: () => [FRIEND_1, FRIEND_2],
         getFofKey: () => "ABCDEF0123456789ABCDEF0123456789",
       });
+      mapFinder.fof = { ids: [A], fetchedAt: 123, friendsCount: 2 };
 
       const crawl = mapFinder._crawlFof();
       await jest.advanceTimersByTimeAsync(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS * 2);
       await crawl;
 
       expect(mapFinder.getStatus().fof).toBe("error");
-      expect(mapFinder.fof.fetchedAt).toBe(0);
-      // Not on the very next refresh: a wrong key would then cost a request
-      // per friend every refresh for as long as the finder ran
-      expect(mapFinder._fofDue()).toBe(false);
-
-      jest.advanceTimersByTime(MAP_FINDER_CONFIG.FOF_RETRY_MS);
-      expect(mapFinder._fofDue()).toBe(true);
+      expect(mapFinder.fof).toEqual({ ids: [A], fetchedAt: 123, friendsCount: 2 });
     } finally {
       jest.useRealTimers();
     }
   });
 
-  test("a new key is tried at once after a failed crawl", async () => {
-    jest.useFakeTimers();
-    try {
-      configure({
-        getRealFriendIds: () => [FRIEND_1],
-        getFofKey: () => "ABCDEF0123456789ABCDEF0123456789",
-      });
-
-      const crawl = mapFinder._crawlFof();
-      await jest.advanceTimersByTimeAsync(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS);
-      await crawl;
-      expect(mapFinder._fofDue()).toBe(false);
-
-      mapFinder.restartFof();
-      expect(mapFinder._fofDue()).toBe(true);
-    } finally {
-      jest.useRealTimers();
-    }
-  });
-
-  test("is not due without a key, and due again a day later", () => {
+  test("are read only when the user asks, and only with a key", async () => {
     configure({ getRealFriendIds: () => [FRIEND_1] });
-    expect(mapFinder._fofDue()).toBe(false);
-    expect(mapFinder.getStatus().fof).toBe("no-key");
+    expect(mapFinder.readFof()).toBe(false);
 
+    // The periodic step reads no list, key or not
     configure({
       getRealFriendIds: () => [FRIEND_1],
       getFofKey: () => "ABCDEF0123456789ABCDEF0123456789",
     });
-    mapFinder.fof = { ids: [A], fetchedAt: Date.now(), friendsCount: 1 };
-    expect(mapFinder._fofDue()).toBe(false);
+    mapFinder._tick();
+    await Promise.resolve();
+    expect(SteamAPI.getFriendIdsOf).not.toHaveBeenCalled();
 
-    mapFinder.fof.fetchedAt = Date.now() - MAP_FINDER_CONFIG.FOF_REFRESH_MS;
-    expect(mapFinder._fofDue()).toBe(true);
+    SteamAPI.getFriendIdsOf.mockResolvedValue([A]);
+    expect(mapFinder.readFof()).toBe(true);
+    // One read at a time
+    expect(mapFinder.readFof()).toBe(false);
+    expect(mapFinder.getStatus().fofProgress).toEqual({ done: 0, total: 1 });
+    expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledWith(
+      FRIEND_1,
+      "ABCDEF0123456789ABCDEF0123456789"
+    );
+  });
+
+  test("clearing them stops a read under way, which then adds nothing", async () => {
+    configure({
+      getRealFriendIds: () => [FRIEND_1],
+      getFofKey: () => "ABCDEF0123456789ABCDEF0123456789",
+    });
+    mapFinder.fof = { ids: [A], fetchedAt: 1, friendsCount: 1 };
+    let answer;
+    SteamAPI.getFriendIdsOf.mockImplementation(
+      () => new Promise((resolve) => (answer = resolve))
+    );
+
+    mapFinder.readFof();
+    mapFinder.clearFof();
+    answer([B, C]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mapFinder.fof.ids).toEqual([]);
+    expect(mapFinder.getStatus()).toMatchObject({ fof: "idle", fofSize: 0 });
   });
 
   test("after the key is deleted, friends of friends read before stay in use", async () => {
     configure({ getFriendIds: () => [], getRealFriendIds: () => [FRIEND_1] });
     mapFinder.fof = { ids: [A, B], fetchedAt: 1, friendsCount: 1 };
 
-    expect(mapFinder._fofDue()).toBe(false);
-    expect(mapFinder.getStatus()).toMatchObject({ fof: "ready", fofSize: 2 });
+    expect(mapFinder.readFof()).toBe(false);
+    expect(mapFinder.getStatus()).toMatchObject({ fof: "idle", fofSize: 2 });
 
     await mapFinder.refresh();
     expect(SteamAPI.getPresence.mock.calls[0][0].sort()).toEqual([A, B].sort());
@@ -678,7 +681,7 @@ describe("friends of pool players", () => {
   const Y = "76561198000000032";
   const Z = "76561198000000033";
 
-  test("are read with a key, the most recently seen pool player first, once a day", async () => {
+  test("are read on the user's word, the most recently seen pool player first, once a day", async () => {
     jest.useFakeTimers();
     try {
       configure({ getFofKey: () => KEY });
@@ -688,28 +691,34 @@ describe("friends of pool players", () => {
         id === A ? [X, Y, USER, B] : [Y, Z]
       );
 
-      const crawl = mapFinder._crawlPoolFriends();
+      expect(mapFinder.getStatus().poolFriendsDue).toBe(2);
+      expect(mapFinder.readPoolFriends()).toBe(true);
+      expect(mapFinder.getStatus().poolFriendsProgress).toEqual({ done: 0, total: 2 });
       await jest.advanceTimersByTimeAsync(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS * 2);
-      await crawl;
 
       expect(SteamAPI.getFriendIdsOf.mock.calls.map(([id]) => id)).toEqual([A, B]);
       expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledWith(A, KEY);
       // Neither the user nor someone already in the pool
       expect(mapFinder.poolFriends.ids).toEqual([X, Y, Z]);
-      expect(mapFinder._poolFriendsDue()).toBe(false);
+      expect(mapFinder.getStatus()).toMatchObject({ poolFriends: "idle", poolFriendsDue: 0 });
+      expect(mapFinder.readPoolFriends()).toBe(false);
 
       jest.advanceTimersByTime(MAP_FINDER_CONFIG.FOF_REFRESH_MS);
-      expect(mapFinder._poolFriendsDue()).toBe(true);
+      expect(mapFinder.getStatus().poolFriendsDue).toBe(2);
     } finally {
       jest.useRealTimers();
     }
   });
 
-  test("are not read without a key", () => {
+  test("are not read without a key, nor by the periodic step", async () => {
     configure();
     mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
+    expect(mapFinder.readPoolFriends()).toBe(false);
 
-    expect(mapFinder._poolFriendsDue()).toBe(false);
+    configure({ getFofKey: () => KEY });
+    mapFinder._tick();
+    await Promise.resolve();
+    expect(SteamAPI.getFriendIdsOf).not.toHaveBeenCalled();
   });
 
   test("past the limit the oldest go", () => {
@@ -744,7 +753,7 @@ describe("friends of pool players", () => {
     }
   });
 
-  test("clearing the pool forgets its players and their friends, and stops a crawl under way", async () => {
+  test("clearing the pool forgets its players and their read marks, and stops a read under way", async () => {
     configure({ getFofKey: () => KEY });
     mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
     mapFinder.poolFriends = { ids: [X], crawled: {} };
@@ -754,13 +763,40 @@ describe("friends of pool players", () => {
     );
 
     const crawl = mapFinder._crawlPoolFriends();
-    mapFinder.clearPool();
+    expect(mapFinder.clearPool()).toBe(1);
     answer([Y, Z]);
     await crawl;
 
     expect(mapFinder.pool.size).toBe(0);
+    // The friends found before stay until they are cleared on their own
+    expect(mapFinder.poolFriends).toEqual({ ids: [X], crawled: {} });
+    expect(mapFinder.getStatus()).toMatchObject({ poolSize: 0, poolFriendsSize: 1 });
+  });
+
+  test("clearing the pool can keep the players seen with a sign of Prime", () => {
+    mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
+    mapFinder.pool.set(B, { lastSeen: Date.now(), map: "de_dust2" });
+    mapFinder.poolFriends = { ids: [], crawled: { [A]: 1, [B]: 1 } };
+    mapFinder.prime.set(A, Date.now());
+    expect(mapFinder.getStatus().poolPrimeSize).toBe(1);
+
+    expect(mapFinder.clearPool({ keepPrime: true })).toBe(1);
+
+    expect([...mapFinder.pool.keys()]).toEqual([A]);
+    expect(mapFinder.poolFriends.crawled).toEqual({ [A]: 1 });
+  });
+
+  test("clearing pool players' friends forgets them and when each list was read", () => {
+    configure({ getFofKey: () => KEY });
+    mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
+    mapFinder.poolFriends = { ids: [X, Y], crawled: { [A]: Date.now() } };
+    expect(mapFinder.getStatus().poolFriendsDue).toBe(0);
+
+    mapFinder.clearPoolFriends();
+
     expect(mapFinder.poolFriends).toEqual({ ids: [], crawled: {} });
-    expect(mapFinder.getStatus()).toMatchObject({ poolSize: 0, poolFriendsSize: 0 });
+    expect(mapFinder.getStatus().poolFriendsDue).toBe(1);
+    expect(mapFinder.pool.has(A)).toBe(true);
   });
 
   test("are saved and loaded with the pool", async () => {

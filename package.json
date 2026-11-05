@@ -68,8 +68,5 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.0.0"
-  },
-  "dependencies": {
-    "@fontsource/inter": "^5.2.6"
   }
 }
