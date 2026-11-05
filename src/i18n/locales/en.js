@@ -270,6 +270,12 @@ export default {
       "No server with a visible Prime player right now. The others are hidden by “Prime only”. Still searching.",
   },
 
+  update: {
+    downloading: "Downloading update {version}… {percent}%",
+    ready: "Update {version} is ready — restart",
+    readyTitle: "The app closes, updates and opens again",
+  },
+
   gsi: {
     label: {
       active: "CS2 connected",

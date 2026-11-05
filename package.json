@@ -35,8 +35,17 @@
       "assets/**/*"
     ],
     "win": {
-      "target": "portable",
+      "target": "nsis",
       "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Casual Enjoyer",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "icon": "assets/icon.ico",
     "asar": true,
@@ -48,7 +57,12 @@
       "onlyLoadAppFromAsar": true
     },
     "compression": "maximum",
-    "publish": null
+    "publish": {
+      "provider": "github",
+      "owner": "skik4",
+      "repo": "cs2-casual-enjoyer",
+      "releaseType": "release"
+    }
   },
   "author": "skik4",
   "license": "MIT",
@@ -68,5 +82,8 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.0.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
   }
 }

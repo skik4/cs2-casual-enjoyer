@@ -93,6 +93,42 @@ const electronAPI = {
   },
 
   /**
+   * Updates of the installed app, from the GitHub releases
+   */
+  updates: {
+    getStatus: async () => {
+      try {
+        return await ipcRenderer.invoke("update-get-status");
+      } catch (error) {
+        console.error("Failed to get the update status:", error);
+        return null;
+      }
+    },
+    /**
+     * Subscribe to the updater's status
+     * @param {Function} callback - Called with each status
+     * @returns {Function} - Unsubscribe
+     */
+    onStatus: (callback) => {
+      const listener = (_event, status) => callback(status);
+      ipcRenderer.on("update-status", listener);
+      return () => ipcRenderer.removeListener("update-status", listener);
+    },
+    /**
+     * Restart into the downloaded version
+     * @returns {Promise<boolean>} - Whether there was one to install
+     */
+    install: async () => {
+      try {
+        return await ipcRenderer.invoke("update-install");
+      } catch (error) {
+        console.error("Failed to install the update:", error);
+        return false;
+      }
+    },
+  },
+
+  /**
    * Map finder: the player pool on disk
    */
   mapFinder: {

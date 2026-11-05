@@ -1,7 +1,9 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
+import electronUpdater from "electron-updater";
 import path from "path";
 import { fileURLToPath } from "url";
 import { JOIN_JOURNAL_CONFIG, WINDOW_CONFIG } from "../shared/constants.js";
+import AppUpdater from "./app-updater.js";
 import GsiService from "./gsi-service.js";
 import SettingsStore from "./settings-store.js";
 import { isAllowedExternalUrl } from "./external-links.js";
@@ -174,10 +176,15 @@ class IPCManager {
   /**
    * Setup all IPC handlers
    * @param {GsiService} gsiService - CS2 Game State Integration service
+   * @param {AppUpdater} appUpdater - Updates the installed app
    */
-  static setupHandlers(gsiService) {
+  static setupHandlers(gsiService, appUpdater) {
     // GSI setup status; resolves once the service has finished starting
     ipcMain.handle("gsi-get-status", () => gsiService.getStatus());
+
+    // Updates: what the updater is doing, and the restart into a new version
+    ipcMain.handle("update-get-status", () => appUpdater.getStatus());
+    ipcMain.handle("update-install", () => appUpdater.install());
 
     // Map finder: the player pool and friends of friends kept between runs
     ipcMain.handle("map-finder-load", () =>
@@ -242,6 +249,17 @@ class AppManager {
       storePath: GSI_STORE_PATH,
       logger: MainLogger,
     });
+    this.appUpdater = new AppUpdater({
+      updater: electronUpdater.autoUpdater,
+      isPackaged: app.isPackaged,
+      logger: MainLogger,
+      send: (status) => {
+        const win = this.mainWindow;
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("update-status", status);
+        }
+      },
+    });
   }
 
   /**
@@ -249,7 +267,7 @@ class AppManager {
    */
   async initialize() {
     // Setup IPC handlers
-    IPCManager.setupHandlers(this.gsiService);
+    IPCManager.setupHandlers(this.gsiService, this.appUpdater);
 
     // Create main window
     this.mainWindow = WindowManager.createMainWindow();
@@ -265,6 +283,10 @@ class AppManager {
         win.webContents.send("gsi-state", state);
       }
     });
+
+    // In the background as well: the window asks for the status once it
+    // has loaded, and hears every change after that
+    this.appUpdater.start();
   }
 }
 
@@ -285,4 +307,5 @@ app.on("window-all-closed", () => {
 
 app.on("will-quit", () => {
   appManager.gsiService.stop();
+  appManager.appUpdater.stop();
 });

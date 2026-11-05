@@ -17,6 +17,7 @@ import Cs2LaunchDialog from "../ui/cs2-launch-dialog.js";
 import AccountView from "../ui/account-view.js";
 import JoinBar from "../ui/join-bar.js";
 import GsiStatusIndicator from "../ui/gsi-status-indicator.js";
+import UpdateNotice from "../ui/update-notice.js";
 import ViewTabs from "../ui/view-tabs.js";
 import MapFinderView from "../ui/map-finder-view.js";
 import FriendsView from "../ui/friends-view.js";
@@ -211,6 +212,10 @@ class App {
       GsiStatusIndicator.initialize({
         onLaunch: () => Cs2LaunchDialog.ask(this.cs2Manager, { mode: "launch" }),
       });
+      // A newer version downloading or ready, beside the version in the footer
+      UpdateNotice.initialize().catch((error) =>
+        logger.warn("App", "Update notice failed", error?.message)
+      );
       // Not awaited: GSI is optional, and the main process finishes setting it
       // up on its own time - everything falls back to the Steam Web API
       gsiManager

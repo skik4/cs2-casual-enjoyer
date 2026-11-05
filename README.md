@@ -27,8 +27,10 @@
 
 ## How to Run
 
-The easiest way to use the application is to download the prebuilt `.exe` from the [Releases](https://github.com/skik4/cs2-casual-enjoyer/releases) page and run it directly.  
+The easiest way to use the application is to download `Casual-Enjoyer-Setup-<version>.exe` from the [Releases](https://github.com/skik4/cs2-casual-enjoyer/releases) page and run it. It installs for your Windows user only, with no administrator rights, and adds desktop and Start menu shortcuts.  
 **No installation of Node.js or other dependencies is required.**
+
+The app then keeps itself up to date. It checks the Releases page when it starts and every few hours, downloads a newer version in the background, and shows "Update … is ready — restart" in the footer. Click it to restart into the new version, or the update goes in the next time you close the app. Your settings stay as they are.
 
 ## How to Use
 
@@ -84,11 +86,23 @@ npm start
 
 ### Building the App
 
-To build a portable version of the application for Windows:
+To build the Windows installer:
 
 ```sh
 npm run dist
 ```
+
+It writes three files to `dist/`: `Casual-Enjoyer-Setup-<version>.exe`, its `.blockmap`, and `latest.yml`.
+
+### Releasing an Update
+
+Installed apps update themselves from the latest GitHub release, so a release must carry all three files:
+
+1. Raise `version` in `package.json`; the installed apps compare against it.
+2. Run `npm run dist`.
+3. Create a GitHub release tagged `v<version>` and attach `Casual-Enjoyer-Setup-<version>.exe`, `Casual-Enjoyer-Setup-<version>.exe.blockmap` and `latest.yml`. Publish it: drafts and pre-releases are not offered as updates.
+
+The `.blockmap` lets an installed app download only the parts that changed.
 
 ## 📄 License
 

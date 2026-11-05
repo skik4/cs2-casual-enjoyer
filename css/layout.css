@@ -84,6 +84,23 @@
   margin-left: var(--space-xs);
 }
 
+/* A newer version downloading, then ready to restart into: beside the
+   version but outside its dimmed block, so it is not missed */
+.update-notice {
+  margin-right: var(--space-sm);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.link-btn.update-notice:disabled {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+
+.link-btn.update-notice.ready {
+  color: var(--steam-in-game);
+}
+
 .footer-social-link {
   display: inline-flex;
   align-items: center;
