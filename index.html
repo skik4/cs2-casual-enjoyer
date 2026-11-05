@@ -3,7 +3,17 @@
   <head>
     <title>Casual Enjoyer</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.steampowered.com; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'; navigate-to 'self' https: steam:; upgrade-insecure-requests">
+    <!-- img-src: the app's own icons ('self'), the placeholder avatar a fake
+         friend shows until Steam answers (data:), and Steam avatars.
+         GetPlayerSummaries and GetUserSummaries hand out avatar URLs on
+         Valve's own static domain: avatars.steamstatic.com and its akamai,
+         fastly and cloudflare variants, which Valve moves between, so
+         *.steamstatic.com takes any of them and nothing outside Valve. The
+         older steamcdn-a.akamaihd.net is named in full: akamaihd.net is
+         shared by every Akamai customer.
+         No navigate-to: Chromium never shipped it, and the main process
+         stops every navigation itself (will-navigate, setWindowOpenHandler). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.steamstatic.com https://steamcdn-a.akamaihd.net; font-src 'self' data:; connect-src 'self' https://api.steampowered.com; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
     <link rel="stylesheet" href="css/styles.css" />
   </head>
 
