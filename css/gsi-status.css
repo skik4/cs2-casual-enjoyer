@@ -62,4 +62,10 @@
   color: var(--white);
 }
 
+/* Pressed, it first asks Steam whether CS2 runs already: the pointer shows
+   that the press was taken while the answer is on its way */
+.gsi-status[role="button"][aria-busy="true"] {
+  cursor: progress;
+}
+
 /* Where the keyboard is: the app-wide frame in css/unified-buttons.css */

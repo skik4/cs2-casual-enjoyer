@@ -21,6 +21,21 @@ function launchOnlyTexts() {
 }
 
 /**
+ * The texts in place of the offer when Steam shows CS2 running already. The
+ * hint names the GSI status in the badge's own words.
+ * @returns {{title: string, message: string, hint: string}}
+ */
+function runningTexts() {
+  return {
+    title: t("notifications.cs2Launch.running.title"),
+    message: t("notifications.cs2Launch.running.message"),
+    hint: t("notifications.cs2Launch.running.hint", {
+      connected: t("gsi.label.active"),
+    }),
+  };
+}
+
+/**
  * The overlay that offers to launch CS2 before a join. ask() answers the
  * join manager's one question - may the join go on - and the overlay stays
  * up until the user has settled it one way or the other. The GSI status
@@ -36,6 +51,14 @@ class Cs2LaunchDialog {
   static _withdrawOffer = null;
 
   /**
+   * Whether an offer with no join waiting is asking Steam about CS2 before
+   * it opens. A second press meanwhile sends no second request.
+   * @type {boolean}
+   * @private
+   */
+  static _checking = false;
+
+  /**
    * Offer to launch CS2 and wait for the user's answer
    * @param {CS2Manager} cs2Manager - Launches CS2 and waits for its lobby
    * @param {Object} [options]
@@ -44,12 +67,15 @@ class Cs2LaunchDialog {
    *   only offers to launch CS2: its first texts say so, a Close before
    *   Launch leaves everything as it was, it never opens over an overlay
    *   that is up already, and a join's question takes the overlay from it.
+   *   It asks Steam first, and with the user in CS2 already the overlay
+   *   says that CS2 runs and offers only Close.
    * @returns {Promise<boolean>} - True once CS2 has reached its lobby. False
    *   when the user closes the overlay, when the launch fails, or when the
    *   page has no overlay to ask with; in the "launch" mode also when the
-   *   overlay is up already or a join takes it over. A launch that times
-   *   out keeps the overlay up for another try and answers nothing until
-   *   the user acts.
+   *   overlay is up already, while an earlier offer still waits for Steam,
+   *   when CS2 reports meanwhile, or when a join takes the overlay over. A
+   *   launch that times out keeps the overlay up for another try and
+   *   answers nothing until the user acts.
    */
   static ask(cs2Manager, { mode = "join" } = {}) {
     const launchOnly = mode === "launch";
@@ -60,6 +86,83 @@ class Cs2LaunchDialog {
         : "Offering to launch CS2"
     );
 
+    return launchOnly
+      ? this._offerLaunch(cs2Manager)
+      : this._show(cs2Manager, { launchOnly: false });
+  }
+
+  /**
+   * The offer with no join waiting. "Waiting for CS2" only says that CS2
+   * has posted no game state for a while, which a CS2 still starting up
+   * does as well, so Steam is asked first. When Steam cannot be asked, the
+   * launch is offered as before.
+   * @param {CS2Manager} cs2Manager - Asks Steam, launches CS2
+   * @returns {Promise<boolean>} - As ask() answers
+   * @private
+   */
+  static async _offerLaunch(cs2Manager) {
+    if (this._checking) {
+      logger.info("Cs2LaunchDialog", "Steam is being asked about CS2 already");
+      return false;
+    }
+    // An offer that could not open is not worth a request: _show turns it
+    // down as before
+    if (!this._overlay() || this.isOpen()) {
+      return this._show(cs2Manager, { launchOnly: true });
+    }
+
+    // Where the keyboard was, to put it back once the overlay goes. It
+    // reads as busy while Steam answers, which takes a moment.
+    const opener = document.activeElement;
+    const busy = opener && opener !== document.body ? opener : null;
+    this._checking = true;
+    busy?.setAttribute("aria-busy", "true");
+    const running = await this._isCs2Running(cs2Manager);
+    this._checking = false;
+    busy?.removeAttribute("aria-busy");
+
+    // CS2 has posted its state meanwhile: nothing to launch or wait for
+    if (cs2Manager.getGsiUserState()) {
+      logger.info("Cs2LaunchDialog", "CS2 reported while Steam was asked");
+      return false;
+    }
+    return this._show(cs2Manager, {
+      launchOnly: true,
+      running: running === true,
+      opener,
+    });
+  }
+
+  /**
+   * Whether Steam shows the user in CS2
+   * @param {CS2Manager} cs2Manager - Asks Steam
+   * @returns {Promise<boolean|null>} - Null when Steam could not be asked
+   * @private
+   */
+  static async _isCs2Running(cs2Manager) {
+    try {
+      return await cs2Manager.checkUserInCS2();
+    } catch (error) {
+      logger.warn("Cs2LaunchDialog", "Could not ask Steam about CS2", {
+        error: error.message,
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Put the overlay up and wait for its answer
+   * @param {CS2Manager} cs2Manager - Launches CS2 and waits for its lobby
+   * @param {Object} options
+   * @param {boolean} options.launchOnly - No join waits on the answer
+   * @param {boolean} [options.running] - Steam shows CS2 running: the
+   *   overlay says so in place of the offer, with only Close
+   * @param {Element|null} [options.opener] - Gets the keyboard back once a
+   *   launch-only overlay goes
+   * @returns {Promise<boolean>} - As ask() answers
+   * @private
+   */
+  static _show(cs2Manager, { launchOnly, running = false, opener = null }) {
     return new Promise((resolve) => {
       const overlay = this._overlay();
       if (!overlay) {
@@ -92,14 +195,12 @@ class Cs2LaunchDialog {
       // One answer only: a lobby reached, a Close or a failed launch, whichever
       // comes first; a launch under way keeps a second click from starting one
       const state = { isLaunching: false, isResolved: false };
-      // Where the keyboard was, to put it back once the offer goes
-      const opener = launchOnly ? document.activeElement : null;
 
       if (launchOnly) {
         // Kept on the content, so a language switch renders the same texts
         const content = overlay.querySelector(".cs2-launch-content");
-        if (content) content.dataset.mode = mode;
-        this.render("initial");
+        if (content) content.dataset.mode = "launch";
+        this.render(running ? "running" : "initial");
       }
 
       overlay.classList.remove("hidden");
@@ -119,7 +220,8 @@ class Cs2LaunchDialog {
       };
 
       const handleLaunch = async () => {
-        if (state.isLaunching || state.isResolved) return;
+        // A CS2 that runs already has nothing to launch; its button is hidden
+        if (running || state.isLaunching || state.isResolved) return;
         state.isLaunching = true;
         this.render("launching");
 
@@ -180,8 +282,9 @@ class Cs2LaunchDialog {
       closeBtn.addEventListener("click", handleClose);
       if (launchOnly) {
         this._withdrawOffer = withdraw;
-        // The keyboard follows the offer: Enter launches, Tab reaches Close
-        launchBtn.focus();
+        // The keyboard follows the offer: Enter launches, Tab reaches Close.
+        // With CS2 running, Close is all there is.
+        (running ? closeBtn : launchBtn).focus();
       }
     });
   }
@@ -199,7 +302,8 @@ class Cs2LaunchDialog {
    * Render a phase of the overlay. The phase is stored on the content
    * element so a language switch can re-render it instead of guessing it
    * from the launch button state; the mode is read from there too.
-   * @param {"initial"|"launching"|"timeout"} phase - Phase to render
+   * @param {"initial"|"launching"|"timeout"|"running"} phase - Phase to
+   *   render; "running" says CS2 runs already, with Close alone
    */
   static render(phase) {
     const overlay = this._overlay();
@@ -212,6 +316,8 @@ class Cs2LaunchDialog {
       tpl = templates.LAUNCHING();
     } else if (phase === "timeout") {
       tpl = templates.TIMEOUT();
+    } else if (phase === "running") {
+      tpl = { ...templates.INITIAL(), ...runningTexts() };
     } else if (content?.dataset.mode === "launch") {
       tpl = { ...templates.INITIAL(), ...launchOnlyTexts() };
     } else {
@@ -231,6 +337,7 @@ class Cs2LaunchDialog {
     if (launchBtn) {
       launchBtn.innerHTML = tpl.launchButton;
       launchBtn.disabled = phase === "launching";
+      launchBtn.classList.toggle("hidden", phase === "running");
     }
     if (closeBtn) closeBtn.textContent = tpl.closeButton;
   }

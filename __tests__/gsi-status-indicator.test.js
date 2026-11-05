@@ -3,7 +3,9 @@
  *
  * Jest tests for the GSI status in the footer. "Waiting for CS2" is a button
  * that offers to launch CS2 through the overlay and the launch a join uses
- * when CS2 is closed; every other state stays plain text.
+ * when CS2 is closed; every other state stays plain text. CS2 also posts
+ * nothing while it starts up, so the button asks Steam first and, with the
+ * user in CS2, says so instead of offering a launch.
  */
 
 jest.mock("../src/utils/logger.js", () => ({
@@ -103,8 +105,9 @@ describe("Waiting for CS2", () => {
     expect(badge().title).toBe(`${t("gsi.waiting")}\n${t("gsi.launchHint")}`);
   });
 
-  test("a click opens the offer to launch CS2, and nothing launches yet", () => {
+  test("a click opens the offer to launch CS2, and nothing launches yet", async () => {
     badge().click();
+    await jest.advanceTimersByTimeAsync(0);
 
     expect(overlayUp()).toBe(true);
     expect(overlayTitle()).toBe(t("notifications.cs2Launch.launchOnly.title"));
@@ -115,9 +118,10 @@ describe("Waiting for CS2", () => {
   test.each([
     ["Enter", "Enter"],
     ["Space", " "],
-  ])("%s opens the offer from the keyboard", (name, key) => {
+  ])("%s opens the offer from the keyboard", async (name, key) => {
     badge().focus();
     const keydown = press(key);
+    await jest.advanceTimersByTimeAsync(0);
 
     expect(overlayUp()).toBe(true);
     // Kept from the page: no scroll, and no press of the Launch button the
@@ -127,9 +131,80 @@ describe("Waiting for CS2", () => {
     expect(window.electronAPI.shell.openExternal).not.toHaveBeenCalled();
   });
 
+  test("while Steam shows CS2 running, it says so and offers no launch", async () => {
+    SteamAPI.isPlayerInCS2.mockResolvedValue(true);
+    badge().focus();
+    press("Enter");
+    await jest.advanceTimersByTimeAsync(0);
+
+    // Steam was asked whether CS2 runs, not whether it is in its menu
+    expect(SteamAPI.isPlayerInCS2).toHaveBeenCalledTimes(1);
+    expect(SteamAPI.isPlayerInCS2).toHaveBeenCalledWith(USER_ID, "test_api_key", false);
+    expect(overlayUp()).toBe(true);
+    expect(overlayTitle()).toBe(t("notifications.cs2Launch.running.title"));
+    expect(element("launch-cs2-btn").classList.contains("hidden")).toBe(true);
+    expect(document.activeElement).toBe(element("close-cs2-launch"));
+
+    element("close-cs2-launch").click();
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(overlayUp()).toBe(false);
+    expect(window.electronAPI.shell.openExternal).not.toHaveBeenCalled();
+    expect(cs2Manager.isMonitoring).toBe(false);
+    // Still waiting for CS2 to report, and still a button
+    expect(badge().dataset.state).toBe("waiting");
+    expect(document.activeElement).toBe(badge());
+  });
+
+  test("when Steam cannot be asked, the launch is offered as before", async () => {
+    SteamAPI.isPlayerInCS2.mockResolvedValue(null);
+    badge().click();
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(overlayTitle()).toBe(t("notifications.cs2Launch.launchOnly.title"));
+    expect(element("launch-cs2-btn").classList.contains("hidden")).toBe(false);
+  });
+
+  test("reads as busy while Steam answers, and a second press sends no second request", async () => {
+    let answerSteam;
+    SteamAPI.isPlayerInCS2.mockReturnValue(
+      new Promise((resolve) => (answerSteam = resolve))
+    );
+    badge().focus();
+    press("Enter");
+    press("Enter");
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(badge().getAttribute("aria-busy")).toBe("true");
+    expect(overlayUp()).toBe(false);
+    expect(SteamAPI.isPlayerInCS2).toHaveBeenCalledTimes(1);
+
+    answerSteam(false);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(badge().hasAttribute("aria-busy")).toBe(false);
+    expect(overlayUp()).toBe(true);
+  });
+
+  test("CS2 reporting while Steam answers opens nothing", async () => {
+    let answerSteam;
+    SteamAPI.isPlayerInCS2.mockReturnValue(
+      new Promise((resolve) => (answerSteam = resolve))
+    );
+    badge().click();
+
+    gsiManager.handlePayload(menuPayload());
+    answerSteam(true);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(overlayUp()).toBe(false);
+    expect(badge().dataset.state).toBe("active");
+  });
+
   test("Launch launches CS2 as a join does, and the offer goes once CS2 is in its menu", async () => {
     const launch = jest.spyOn(cs2Manager, "launchAndWaitForLobby");
     badge().click();
+    await jest.advanceTimersByTimeAsync(0);
 
     element("launch-cs2-btn").click();
     expect(launch).toHaveBeenCalledTimes(1);
@@ -154,6 +229,7 @@ describe("Waiting for CS2", () => {
     const cancel = jest.spyOn(cs2Manager, "cancelLaunchOperations");
     badge().focus();
     press("Enter");
+    await jest.advanceTimersByTimeAsync(0);
 
     element("close-cs2-launch").click();
     await jest.advanceTimersByTimeAsync(0);
@@ -162,7 +238,8 @@ describe("Waiting for CS2", () => {
     expect(launch).not.toHaveBeenCalled();
     expect(cancel).not.toHaveBeenCalled();
     expect(window.electronAPI.shell.openExternal).not.toHaveBeenCalled();
-    expect(SteamAPI.isPlayerInCS2).not.toHaveBeenCalled();
+    // The one question before the offer, whether CS2 runs, and no more
+    expect(SteamAPI.isPlayerInCS2).toHaveBeenCalledTimes(1);
     expect(jest.getTimerCount()).toBe(0);
     // Still waiting and still offering, with the keyboard back on it
     expect(badge().dataset.state).toBe("waiting");

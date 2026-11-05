@@ -3,7 +3,8 @@
  *
  * Jest tests for the overlay that offers to launch CS2 before a join: what
  * its promise answers, and when the overlay stays up. The same overlay
- * offers the launch alone, with no join waiting, from the GSI status.
+ * offers the launch alone, with no join waiting, from the GSI status; that
+ * offer asks Steam first and, with CS2 running already, only says so.
  */
 
 jest.mock("../src/utils/logger.js", () => ({
@@ -49,13 +50,16 @@ beforeEach(() => {
   setLanguage("en");
   document.body.innerHTML =
     '<div id="cs2-launch-notification" class="cs2-launch-overlay hidden"></div>';
-  // Stands in for CS2Manager: the test ends each launch itself
+  // Stands in for CS2Manager: the test ends each launch itself. Steam shows
+  // no CS2 and CS2 has reported nothing, unless a test says otherwise.
   cs2Manager = {
     launchAndWaitForLobby: jest.fn((progress) => {
       onProgress = progress;
       return new Promise((resolve) => (finishLaunch = resolve));
     }),
     cancelLaunchOperations: jest.fn(),
+    checkUserInCS2: jest.fn().mockResolvedValue(false),
+    getGsiUserState: jest.fn(() => null),
   };
 });
 
@@ -157,14 +161,32 @@ test("a language switch re-renders the phase it shows", async () => {
 });
 
 describe("with no join waiting", () => {
-  const offer = () =>
+  /** Ask with no join waiting, and let Steam's answer about CS2 come in */
+  const offer = async () => {
+    const answer = observe(Cs2LaunchDialog.ask(cs2Manager, { mode: "launch" }));
+    await settle();
+    return answer;
+  };
+  const askLaunchOnly = () =>
     observe(Cs2LaunchDialog.ask(cs2Manager, { mode: "launch" }));
+
+  /**
+   * Keep Steam's answer about CS2 back until the test gives it
+   * @returns {(inCS2: boolean|null) => void} - Gives the answer
+   */
+  const holdSteam = () => {
+    let answer;
+    cs2Manager.checkUserInCS2.mockReturnValue(
+      new Promise((resolve) => (answer = resolve))
+    );
+    return (inCS2) => answer(inCS2);
+  };
 
   // An offer left up would step aside for the next test's first question
   afterEach(() => closeButton()?.click());
 
-  test("offers the launch alone, in texts that speak of no join", () => {
-    const answer = offer();
+  test("offers the launch alone, in texts that speak of no join", async () => {
+    const answer = await offer();
 
     expect(visible()).toBe(true);
     expect(title()).toBe("Launch CS2?");
@@ -172,15 +194,121 @@ describe("with no join waiting", () => {
     expect(message()).not.toBe(t("notifications.cs2Launch.initial.message"));
     expect(hint()).toBe(t("notifications.cs2Launch.launchOnly.hint"));
     expect(launchButton().textContent).toBe("Launch CS2");
+    expect(launchButton().classList.contains("hidden")).toBe(false);
     expect(closeButton().textContent).toBe("Close");
     // The keyboard follows the offer
     expect(document.activeElement).toBe(launchButton());
     expect(answer.settled).toBe(false);
+    // Steam was asked about CS2 first, once
+    expect(cs2Manager.checkUserInCS2).toHaveBeenCalledTimes(1);
     expect(cs2Manager.launchAndWaitForLobby).not.toHaveBeenCalled();
   });
 
+  test("says CS2 runs already, with Close alone, when Steam shows it", async () => {
+    cs2Manager.checkUserInCS2.mockResolvedValue(true);
+    const answer = await offer();
+
+    expect(visible()).toBe(true);
+    expect(title()).toBe("CS2 Is Already Running");
+    expect(message()).toBe(t("notifications.cs2Launch.running.message"));
+    // In the words the GSI status uses once CS2 reports
+    expect(hint()).toContain("“CS2 connected”");
+    expect(launchButton().classList.contains("hidden")).toBe(true);
+    expect(closeButton().textContent).toBe("Close");
+    expect(document.activeElement).toBe(closeButton());
+
+    // The hidden Launch starts nothing, even clicked from code
+    launchButton().click();
+    expect(cs2Manager.launchAndWaitForLobby).not.toHaveBeenCalled();
+
+    closeButton().click();
+    await settle();
+    expect(answer.value).toBe(false);
+    expect(visible()).toBe(false);
+    expect(cs2Manager.cancelLaunchOperations).not.toHaveBeenCalled();
+  });
+
+  test("a language switch keeps saying CS2 runs", async () => {
+    cs2Manager.checkUserInCS2.mockResolvedValue(true);
+    await offer();
+
+    setLanguage("ru");
+    await settle();
+
+    expect(title()).toBe(t("notifications.cs2Launch.running.title"));
+    expect(title()).not.toBe("CS2 Is Already Running");
+    expect(hint()).toContain(`«${t("gsi.label.active")}»`);
+    expect(launchButton().classList.contains("hidden")).toBe(true);
+  });
+
+  test.each([
+    ["shows no CS2", () => Promise.resolve(false)],
+    ["cannot be asked", () => Promise.resolve(null)],
+    ["fails to answer", () => Promise.reject(new Error("Steam is down"))],
+  ])("offers the launch as before when Steam %s", async (_, steam) => {
+    cs2Manager.checkUserInCS2.mockImplementation(steam);
+    await offer();
+
+    expect(title()).toBe("Launch CS2?");
+    expect(launchButton().classList.contains("hidden")).toBe(false);
+    expect(document.activeElement).toBe(launchButton());
+  });
+
+  test("the control pressed reads as busy while Steam answers, and a second press asks nothing", async () => {
+    const answerSteam = holdSteam();
+    document.body.insertAdjacentHTML("beforeend", '<button id="opener">GSI</button>');
+    const opener = document.getElementById("opener");
+    opener.focus();
+
+    const answer = askLaunchOnly();
+    const second = askLaunchOnly();
+    await settle();
+
+    expect(opener.getAttribute("aria-busy")).toBe("true");
+    expect(visible()).toBe(false);
+    expect(second.value).toBe(false);
+    expect(cs2Manager.checkUserInCS2).toHaveBeenCalledTimes(1);
+
+    answerSteam(false);
+    await settle();
+    expect(opener.hasAttribute("aria-busy")).toBe(false);
+    expect(visible()).toBe(true);
+
+    // Closed, the keyboard goes back where it was
+    closeButton().click();
+    await settle();
+    expect(answer.value).toBe(false);
+    expect(document.activeElement).toBe(opener);
+  });
+
+  test("a join that asks while Steam answers keeps the overlay", async () => {
+    const answerSteam = holdSteam();
+    const launchOnly = askLaunchOnly();
+
+    const join = ask();
+    answerSteam(true);
+    await settle();
+
+    expect(launchOnly.value).toBe(false);
+    expect(title()).toBe("Launch CS2 First");
+    expect(launchButton().classList.contains("hidden")).toBe(false);
+    expect(join.settled).toBe(false);
+  });
+
+  test("CS2 reporting while Steam answers leaves the overlay down", async () => {
+    const answerSteam = holdSteam();
+    const launchOnly = askLaunchOnly();
+
+    cs2Manager.getGsiUserState.mockReturnValue({ inMenu: true });
+    answerSteam(true);
+    await settle();
+
+    expect(launchOnly.value).toBe(false);
+    expect(visible()).toBe(false);
+  });
+
   test("Launch takes the join's launch and answers true in the lobby", async () => {
-    const answer = offer();
+    const answer = await offer();
 
     launchButton().click();
     expect(cs2Manager.launchAndWaitForLobby).toHaveBeenCalledTimes(1);
@@ -195,7 +323,7 @@ describe("with no join waiting", () => {
   });
 
   test("Close before Launch changes nothing", async () => {
-    const answer = offer();
+    const answer = await offer();
 
     closeButton().click();
     await settle();
@@ -207,7 +335,7 @@ describe("with no join waiting", () => {
   });
 
   test("Close during the launch calls it off, as in a join", async () => {
-    const answer = offer();
+    const answer = await offer();
     launchButton().click();
 
     closeButton().click();
@@ -222,10 +350,11 @@ describe("with no join waiting", () => {
     const join = ask();
     const joinLaunch = launchButton();
 
-    const launchOnly = offer();
-    await settle();
+    const launchOnly = await offer();
 
     expect(launchOnly.value).toBe(false);
+    // Turned down before asking Steam anything
+    expect(cs2Manager.checkUserInCS2).not.toHaveBeenCalled();
     expect(launchButton()).toBe(joinLaunch);
     expect(title()).toBe("Launch CS2 First");
 
@@ -237,17 +366,17 @@ describe("with no join waiting", () => {
   });
 
   test("does not cover an offer of its own either", async () => {
-    const first = offer();
-    const second = offer();
-    await settle();
+    const first = await offer();
+    const second = await offer();
 
     expect(second.value).toBe(false);
     expect(first.settled).toBe(false);
     expect(visible()).toBe(true);
+    expect(cs2Manager.checkUserInCS2).toHaveBeenCalledTimes(1);
   });
 
   test("a join's question takes the overlay over, a launch under way included", async () => {
-    const launchOnly = offer();
+    const launchOnly = await offer();
     launchButton().click();
     const finishOfferLaunch = finishLaunch;
 
@@ -273,7 +402,7 @@ describe("with no join waiting", () => {
   });
 
   test("a language switch keeps the texts without a join", async () => {
-    offer();
+    await offer();
 
     setLanguage("ru");
     await settle();

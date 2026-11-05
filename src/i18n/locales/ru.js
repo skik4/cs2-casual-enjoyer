@@ -73,6 +73,13 @@ export default {
           "Запустим Counter-Strike 2 через Steam и подождём, пока игра дойдёт до главного меню.",
         hint: "Это только запуск игры, без подключения к кому-либо.",
       },
+      // In place of the offer, when Steam shows CS2 running already
+      running: {
+        title: "CS2 уже запущен",
+        message:
+          "Steam показывает, что ты в Counter-Strike 2, так что запускать нечего. Приложение ждёт, когда игра выйдет на связь.",
+        hint: "Обычно CS2 ещё загружается; когда игра отзовётся, внизу появится «{connected}».",
+      },
     },
   },
 

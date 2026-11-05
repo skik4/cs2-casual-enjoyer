@@ -70,6 +70,13 @@ export default {
           "The app launches Counter-Strike 2 through Steam and waits for the game's main menu.",
         hint: "This only launches the game, without joining anyone.",
       },
+      // In place of the offer, when Steam shows CS2 running already
+      running: {
+        title: "CS2 Is Already Running",
+        message:
+          "Steam shows you in Counter-Strike 2, so there is nothing to launch. The app is waiting for the game to report.",
+        hint: "Usually CS2 is still loading; once it reports, the footer reads “{connected}”.",
+      },
     },
   },
 
