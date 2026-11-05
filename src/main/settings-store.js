@@ -18,7 +18,9 @@ const SECRET_FIELDS = ["auth", "fof_api_key"];
  * Electron's safeStorage does it with the operating system's own keys -
  * DPAPI on Windows - so the file is of no use to another Windows account,
  * or to the same account on another PC, instead of handing the token to
- * whoever can read it. On disk a plain value is a string and an encrypted
+ * whoever can read it. Its asynchronous calls are used: the synchronous
+ * ones are deprecated since Electron 45 and go away in 46, and a value
+ * they wrote still decrypts here. On disk a plain value is a string and an encrypted
  * one is an object with the single key "encrypted" holding the ciphertext
  * as base64, so the two can never be confused: a file written before
  * encryption existed still reads, and is encrypted by its next write. A
@@ -73,7 +75,7 @@ class SettingsStore {
       }
       await fs.writeFile(
         this.filePath,
-        JSON.stringify(this._encryptSecrets(next), null, 2),
+        JSON.stringify(await this._encryptSecrets(next), null, 2),
         "utf-8"
       );
       this.logger.info("Settings saved", { keys: Object.keys(patch || {}) });
@@ -92,14 +94,14 @@ class SettingsStore {
    * The settings as they go to disk: every credential that is a string is
    * encrypted. Anything else in those fields is left as it came.
    * @param {Object} settings - Settings with plain credentials
-   * @returns {Object} - A copy with the credentials encrypted
+   * @returns {Promise<Object>} - A copy with the credentials encrypted
    * @private
    */
-  _encryptSecrets(settings) {
+  async _encryptSecrets(settings) {
     const result = { ...settings };
     for (const field of SECRET_FIELDS) {
       if (typeof result[field] !== "string") continue;
-      const encrypted = this._encrypt(result[field], field);
+      const encrypted = await this._encrypt(result[field], field);
       if (encrypted) result[field] = encrypted;
     }
     return result;
@@ -108,11 +110,11 @@ class SettingsStore {
   /**
    * @param {string} value - Credential
    * @param {string} field - Its field, for the log
-   * @returns {{encrypted: string}|null} - The stored shape, or null to keep the value as it is
+   * @returns {Promise<{encrypted: string}|null>} - The stored shape, or null to keep the value as it is
    * @private
    */
-  _encrypt(value, field) {
-    if (!safeStorage.isEncryptionAvailable()) {
+  async _encrypt(value, field) {
+    if (!(await safeStorage.isAsyncEncryptionAvailable())) {
       // Said once: the app goes on as it did before encryption existed
       if (!this._saidPlainText) {
         this._saidPlainText = true;
@@ -123,7 +125,8 @@ class SettingsStore {
       return null;
     }
     try {
-      return { encrypted: safeStorage.encryptString(value).toString("base64") };
+      const buffer = await safeStorage.encryptStringAsync(value);
+      return { encrypted: buffer.toString("base64") };
     } catch (error) {
       // The field name and the reason only: a credential never goes to the log
       this.logger.error(`Could not encrypt ${field}, keeping it in plain text`, {
@@ -137,17 +140,17 @@ class SettingsStore {
    * The settings as the app sees them: encrypted credentials decrypted, and
    * one that cannot be decrypted left out
    * @param {*} stored - What the file holds
-   * @returns {*} - The same, with plain credentials
+   * @returns {Promise<*>} - The same, with plain credentials
    * @private
    */
-  _decryptSecrets(stored) {
+  async _decryptSecrets(stored) {
     if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
       return stored;
     }
     const result = { ...stored };
     for (const field of SECRET_FIELDS) {
       if (!isEncrypted(result[field])) continue;
-      const value = this._decrypt(result[field], field);
+      const value = await this._decrypt(result[field], field);
       if (value === null) delete result[field];
       else result[field] = value;
     }
@@ -157,15 +160,21 @@ class SettingsStore {
   /**
    * @param {{encrypted: string}} stored - Encrypted value as it is on disk
    * @param {string} field - Its field, for the log
-   * @returns {string|null} - The credential, or null when it cannot be read
+   * @returns {Promise<string|null>} - The credential, or null when it cannot be read
    * @private
    */
-  _decrypt(stored, field) {
+  async _decrypt(stored, field) {
     try {
-      if (!safeStorage.isEncryptionAvailable()) {
+      if (!(await safeStorage.isAsyncEncryptionAvailable())) {
         throw new Error("encryption is not available on this system");
       }
-      return safeStorage.decryptString(Buffer.from(stored.encrypted, "base64"));
+      // shouldReEncrypt, the other half of the answer, needs no handling:
+      // every write encrypts afresh, so a rotated key is picked up by the
+      // next one
+      const { result } = await safeStorage.decryptStringAsync(
+        Buffer.from(stored.encrypted, "base64")
+      );
+      return result;
     } catch (error) {
       // Most likely a settings file copied from another Windows account or
       // PC, whose keys this one does not have: the app asks for it again

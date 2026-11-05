@@ -6,7 +6,7 @@ Thank you for your interest in contributing to CS2 Casual Enjoyer! This document
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v16 or higher)
+- [Node.js](https://nodejs.org/) (v22.12 or higher, which Electron needs)
 - [Git](https://git-scm.com/)
 - Basic knowledge of JavaScript/Electron
 

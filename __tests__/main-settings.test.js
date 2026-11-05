@@ -13,12 +13,12 @@ jest.mock("electron", () => {
   const MARK = "safe:";
   return {
     safeStorage: {
-      isEncryptionAvailable: jest.fn(() => true),
-      encryptString: jest.fn((text) => Buffer.from(`${MARK}${text}`)),
-      decryptString: jest.fn((buffer) => {
+      isAsyncEncryptionAvailable: jest.fn(async () => true),
+      encryptStringAsync: jest.fn(async (text) => Buffer.from(`${MARK}${text}`)),
+      decryptStringAsync: jest.fn(async (buffer) => {
         const text = buffer.toString();
         if (!text.startsWith(MARK)) throw new Error("Decryption failed");
-        return text.slice(MARK.length);
+        return { result: text.slice(MARK.length), shouldReEncrypt: false };
       }),
     },
   };
@@ -38,7 +38,7 @@ describe("SettingsStore", () => {
     file = path.join(dir, "settings.json");
     logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
     jest.clearAllMocks();
-    safeStorage.isEncryptionAvailable.mockReturnValue(true);
+    safeStorage.isAsyncEncryptionAvailable.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -173,7 +173,7 @@ describe("SettingsStore", () => {
     });
 
     test("stay plain when encryption is not available, which is said once", async () => {
-      safeStorage.isEncryptionAvailable.mockReturnValue(false);
+      safeStorage.isAsyncEncryptionAvailable.mockResolvedValue(false);
       const store = new SettingsStore(file, logger);
 
       await store.update({ steam_id: "1", auth: "token" });
@@ -185,7 +185,7 @@ describe("SettingsStore", () => {
         auth: "token",
         fof_api_key: "K",
       });
-      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(safeStorage.encryptStringAsync).not.toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledTimes(1);
       expect(logger.error).not.toHaveBeenCalled();
     });
@@ -229,8 +229,8 @@ describe("SettingsStore", () => {
 
       expect(readFile()).toEqual(plain);
       await expect(store.read()).resolves.toEqual(plain);
-      expect(safeStorage.encryptString).not.toHaveBeenCalled();
-      expect(safeStorage.decryptString).not.toHaveBeenCalled();
+      expect(safeStorage.encryptStringAsync).not.toHaveBeenCalled();
+      expect(safeStorage.decryptStringAsync).not.toHaveBeenCalled();
     });
   });
 });

@@ -16,6 +16,7 @@ describe("isPermissionAllowed", () => {
     "fullscreen",
     "pointerLock",
     "clipboard-read",
+    // Screen capture, under its own name since Electron 45
     "display-capture",
     "fileSystem",
     "unknown",
