@@ -354,6 +354,58 @@ describe("resolveMapTarget", () => {
     expect(target).toMatchObject({ connect: CONNECT_B, prime: { only: false, players: 1 } });
   });
 
+  test("the friend check of the server picked is noted, and changes nothing about the pick", async () => {
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        user(),
+        presence(A),
+        presence(B, { connect: CONNECT_B }),
+        presence(C, { serverId: DUST_2, connect: CONNECT_C })
+      )
+    );
+    const primeCheck = jest.fn((serverId) => (serverId === DUST_1 ? "friend" : "alone"));
+
+    const { target } = await joinManager.resolveMapTarget(
+      dustTarget({ isPrime: (player) => player.steamid === A, primeCheck }),
+      USER,
+      AUTH
+    );
+
+    // B's slot comes first, the doubt about its server notwithstanding
+    expect(target).toMatchObject({
+      connect: CONNECT_B,
+      joinAs: B,
+      prime: { only: false, players: 1, check: "friend" },
+    });
+    expect(primeCheck).toHaveBeenCalledWith(DUST_1);
+  });
+
+  test("with no server to pick the friend check notes nothing", async () => {
+    SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A)));
+
+    const { target } = await joinManager.resolveMapTarget(
+      dustTarget({ isPrime: () => true, primeCheck: () => "alone" }),
+      USER,
+      AUTH
+    );
+
+    expect(target.prime).toEqual({ only: false, players: 0, check: null });
+  });
+
+  test("a join without the friend check has no check among its Prime facts", async () => {
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(user(), presence(A), presence(B, { connect: CONNECT_B }))
+    );
+
+    const { target } = await joinManager.resolveMapTarget(
+      dustTarget({ isPrime: (player) => player.steamid === A }),
+      USER,
+      AUTH
+    );
+
+    expect(target.prime).toEqual({ only: false, players: 1 });
+  });
+
   test("a join that asks nothing about Prime carries no Prime facts", async () => {
     SteamAPI.getPresence.mockResolvedValue(
       presenceMap(user(), presence(B, { connect: CONNECT_B }))
@@ -427,6 +479,31 @@ describe("startMapJoin", () => {
     expect(record).toHaveBeenCalledWith(
       "connect",
       expect.objectContaining({ joinAs: B, prime: { only: true, players: 1 } })
+    );
+    record.mockRestore();
+  });
+
+  test("the journal's connect notes the friend check of the server joined", async () => {
+    const record = jest.spyOn(joinManager.journal, "record").mockImplementation(() => {});
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(user(), presence(A), presence(B, { connect: CONNECT_B }))
+    );
+
+    joinManager.startMapJoin(
+      dustTarget({
+        primeOnly: () => true,
+        isPrime: (player) => player.steamid === A,
+        primeCheck: () => "alone",
+      })
+    );
+    await jest.advanceTimersByTimeAsync(100);
+
+    expect(record).toHaveBeenCalledWith(
+      "connect",
+      expect.objectContaining({
+        joinAs: B,
+        prime: { only: true, players: 1, check: "alone" },
+      })
     );
     record.mockRestore();
   });

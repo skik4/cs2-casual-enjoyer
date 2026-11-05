@@ -87,9 +87,11 @@
  * @property {string|null} statusKey - What Steam shows about the player the
  *   connect belongs to; a connect is only sent again once it changes
  * @property {Function} isJoined - Tells from the user's info whether the join succeeded
- * @property {{only: boolean, players: number}|null} [prime] - For a join
- *   through the map finder: whether only servers with a sign of Prime were
- *   taken, and how many players with one are on the server picked
+ * @property {{only: boolean, players: number, check?: string|null}|null} [prime] -
+ *   For a join through the map finder: whether only servers with a sign of
+ *   Prime were taken, how many players with one are on the server picked,
+ *   and what the friend check says about that server (PRIME_CHECK in
+ *   game/map-finder.js), null without such a player there
  */
 
 /**

@@ -262,8 +262,22 @@ export default {
     primeOnlyTitle:
       "List and join by map only servers where a player with a sign of Prime is seen: CS2 XP or a Premier match. Not a guarantee: a Prime player may have joined a friend in a match without Prime. A server you pick yourself is always joined.",
     primeTag: "Prime",
+    primeTagDoubt: "Prime?",
     primeTagTitle:
       "Players with a sign of Prime here: {count}. The sign is CS2 XP or a Premier match; it does not promise that everyone here has Prime.",
+    // What the check of their friends found, after primeTagTitle
+    primeCheck: {
+      alone:
+        "A player with a sign of Prime has none of their friends here: most likely came through matchmaking. Friends who hide their game details do not show.",
+      "prime-friends":
+        "A player with a sign of Prime plays with friends who show a sign of Prime too. Friends who hide their game details do not show.",
+      friend:
+        "A player with a sign of Prime plays with a friend who shows none: may have joined that friend's match without Prime.",
+      pending: "The friends of the player with a sign of Prime are not checked yet.",
+      "no-key": "Their friends could not be checked: no API key.",
+      closed:
+        "Their friends could not be checked: the friends list is private or could not be read.",
+    },
     primeServersTag: "Prime: {count}",
     primeServersTitle: "Servers where a player with a sign of Prime is seen: {count} of {total}",
     noPrimeServers:

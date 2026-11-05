@@ -396,3 +396,104 @@ describe("Prime", () => {
     expect(typeof serverJoin.isPrime).toBe("function");
   });
 });
+
+describe("friend check marks", () => {
+  const KEY = "ABCDEF0123456789ABCDEF0123456789";
+  const DUST_3 = "90071992547409924";
+  const DUST_4 = "90071992547409925";
+  const A = "76561198000000011";
+  const B = "76561198000000012";
+  const C = "76561198000000013";
+  const D = "76561198000000014";
+  let deps;
+
+  /** A server with one player showing a sign of Prime */
+  const primeServer = (serverId, steamid) =>
+    server(serverId, {
+      primePlayers: 1,
+      players: [{ steamid, personaname: "p", connect: "+gcconnect0A0B0C0D", prime: true }],
+    });
+  /** The Prime tag in a server's row */
+  const tag = (serverId) =>
+    button(`srv-${serverId}`).closest(".server-row").querySelector(".prime-tag");
+
+  beforeEach(() => {
+    deps = mapFinder.deps;
+    mapFinder.deps = { getFofKey: () => KEY };
+    mapFinder.servers = [
+      primeServer(DUST_1, A),
+      primeServer(DUST_2, B),
+      primeServer(DUST_3, C),
+      primeServer(DUST_4, D),
+    ];
+    mapFinder._friendChecks = new Map([
+      [A, { serverId: DUST_1, verdict: "alone", reason: null }],
+      [B, { serverId: DUST_2, verdict: "friend", reason: null }],
+      [C, { serverId: DUST_3, verdict: "unknown", reason: "closed" }],
+    ]);
+  });
+
+  afterEach(() => {
+    mapFinder.deps = deps;
+    mapFinder._friendChecks = new Map();
+    setLanguage("en");
+  });
+
+  test("each tag says what the check found, and a friend without Prime dims it to Prime?", () => {
+    MapFinderView.render();
+
+    expect(tag(DUST_1).textContent).toBe("Prime");
+    expect(tag(DUST_1).classList.contains("doubt")).toBe(false);
+    expect(tag(DUST_1).title).toContain("Players with a sign of Prime here: 1.");
+    expect(tag(DUST_1).title).toContain("most likely came through matchmaking");
+    expect(tag(DUST_1).title).toContain("Friends who hide their game details do not show");
+
+    expect(tag(DUST_2).textContent).toBe("Prime?");
+    expect(tag(DUST_2).classList.contains("doubt")).toBe(true);
+    expect(tag(DUST_2).title).toContain("may have joined that friend's match without Prime");
+    // Only a mark: the server is still there to join
+    expect(button(`srv-${DUST_2}`).disabled).toBe(false);
+
+    expect(tag(DUST_3).textContent).toBe("Prime");
+    expect(tag(DUST_3).title).toContain("private or could not be read");
+    expect(tag(DUST_4).textContent).toBe("Prime");
+    expect(tag(DUST_4).title).toContain("not checked yet");
+  });
+
+  test("without a key the tags say the friends could not be checked", () => {
+    mapFinder.deps = { getFofKey: () => "" };
+
+    MapFinderView.render();
+
+    expect(tag(DUST_4).getAttribute("data-prime-check")).toBe("no-key");
+    expect(tag(DUST_4).title).toContain("no API key");
+    // What was found before the key went stays
+    expect(tag(DUST_1).getAttribute("data-prime-check")).toBe("alone");
+  });
+
+  test("the tags speak Russian too", () => {
+    mapFinder._friendChecks.set(C, { serverId: DUST_3, verdict: "prime-friends", reason: null });
+    setLanguage("ru");
+
+    MapFinderView.render();
+
+    expect(tag(DUST_1).title).toContain("скорее всего, пришёл через поиск");
+    expect(tag(DUST_2).textContent).toBe("Prime?");
+    expect(tag(DUST_2).title).toContain("мог зайти к нему в матч без Prime");
+    expect(tag(DUST_3).title).toContain("тоже есть признак Prime");
+    expect(tag(DUST_4).title).toContain("ещё не проверили");
+  });
+
+  test("a join hands the journal what the check says about a server", () => {
+    MapFinderView.render();
+
+    click(button(getMapJoinId("de_dust2")));
+    click(button(`srv-${DUST_2}`));
+
+    const [mapJoin] = joinManager.startMapJoin.mock.calls[0];
+    const [serverJoin] = joinManager.startMapJoin.mock.calls[1];
+    expect(mapJoin.primeCheck(DUST_1)).toBe("alone");
+    expect(serverJoin.primeCheck(DUST_2)).toBe("friend");
+    expect(serverJoin.primeCheck(MIRAGE)).toBeNull();
+  });
+});

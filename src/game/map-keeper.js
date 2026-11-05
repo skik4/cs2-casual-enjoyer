@@ -105,6 +105,7 @@ class MapKeeper {
       getCandidateIds: () => mapFinder.getCandidateIdsForMaps(this.getMaps()),
       primeOnly: () => mapFinder.primeOnly,
       isPrime: (player) => mapFinder.isPrimePlayer(player),
+      primeCheck: (serverId) => mapFinder.getPrimeCheck(serverId)?.verdict ?? null,
     });
   }
 

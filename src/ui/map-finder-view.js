@@ -6,7 +6,7 @@ import { mapLabel } from "../shared/map-labels.js";
 import appStateManager from "../core/app-state-manager.js";
 
 // Game singletons
-import mapFinder from "../game/map-finder.js";
+import mapFinder, { PRIME_CHECK } from "../game/map-finder.js";
 import joinManager, {
   getMapJoinId,
   getServerJoinId,
@@ -182,6 +182,9 @@ class MapFinderView {
     // Whether a player has shown a sign of Prime: for the journal, and for
     // Prime only
     const isPrime = (player) => mapFinder.isPrimePlayer(player);
+    // What the friend check says about a server: for the journal only
+    const primeCheck = (serverId) =>
+      mapFinder.getPrimeCheck(serverId)?.verdict ?? null;
     if (joinId.startsWith(JOIN_TARGET_PREFIXES.SERVER)) {
       const serverId = joinId.slice(JOIN_TARGET_PREFIXES.SERVER.length);
       const server = mapFinder
@@ -194,6 +197,7 @@ class MapFinderView {
         label: `${mapLabel(map)} ${formatScore(server?.score)}`.trim(),
         getCandidateIds: () => mapFinder.getCandidateIds(map, serverId),
         isPrime,
+        primeCheck,
       });
     } else {
       joinManager.startMapJoin({
@@ -203,6 +207,7 @@ class MapFinderView {
         getCandidateIds: () => mapFinder.getCandidateIds(map),
         primeOnly: () => mapFinder.primeOnly,
         isPrime,
+        primeCheck,
       });
     }
   }
@@ -639,19 +644,37 @@ class MapFinderView {
     else if (score && server.rounds !== null) {
       title = t("mapFinder.round", { round: server.rounds + 1, score });
     }
-    const prime =
-      server.primePlayers > 0
-        ? `<span class="prime-tag" title="${escapeHtml(t("mapFinder.primeTagTitle", { count: server.primePlayers }))}">${escapeHtml(t("mapFinder.primeTag"))}</span>`
-        : "";
-
     return `
       <div class="friend server-row">
         <div class="friend-info">
           <span class="personaname">${escapeHtml(title)}</span>
-          <span class="game-line">${prime}${this.renderLabel(joinId, joinStates, slot)}</span>
+          <span class="game-line">${this.renderPrimeTag(server)}${this.renderLabel(joinId, joinStates, slot)}</span>
         </div>
         ${this.renderJoinButton(joinId, joinStates, slot)}
       </div>`;
+  }
+
+  /**
+   * The Prime tag of a server where a player shows a sign of Prime. Its
+   * title says what the friend check found; where every such player sits
+   * with a friend who shows no sign of Prime, the tag dims to "Prime?".
+   * A mark only: the server stays listed and joinable either way.
+   * @param {import('../shared/types.js').MapServer} server
+   * @returns {string} - Nothing without a sign of Prime there
+   */
+  static renderPrimeTag(server) {
+    if (!(server.primePlayers > 0)) return "";
+    const check = mapFinder.getPrimeCheck(server.serverId);
+    const doubt = check?.verdict === PRIME_CHECK.FRIEND;
+    // The reason says more than "unknown" does
+    const found = check ? (check.reason ?? check.verdict) : "";
+    const title = [
+      t("mapFinder.primeTagTitle", { count: server.primePlayers }),
+      found && t(`mapFinder.primeCheck.${found}`),
+    ]
+      .filter(Boolean)
+      .join(" ");
+    return `<span class="prime-tag${doubt ? " doubt" : ""}" data-prime-check="${escapeHtml(found)}" title="${escapeHtml(title)}">${escapeHtml(t(doubt ? "mapFinder.primeTagDoubt" : "mapFinder.primeTag"))}</span>`;
   }
 
   /**

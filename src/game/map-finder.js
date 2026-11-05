@@ -17,6 +17,88 @@ import logger from "../utils/logger.js";
 // One-shot ids waiting for their first look
 const MAX_SEEDS = 3000;
 
+// Friend checks one refresh may start. A check reads the player's friends
+// list on the key, unless it was read in the last day, then asks where the
+// friends are, one request per 100 of them: about three requests for a list
+// of one or two hundred. A big pool can show dozens of players with a sign
+// of Prime on official servers at once (40 in the census of 2026-11-04);
+// checking them all at once would add several times the 30 requests a
+// refresh takes at most. Four add about 12, and since a result holds while
+// its player stays on the server, they still get through such a crowd
+// within a few minutes, the servers best to join first.
+export const FRIEND_CHECKS_PER_REFRESH = 4;
+
+// Friends lists kept for the friend check, counted in ids. At about 20
+// bytes an id in map-finder.json this is near 1 MB, which keeps the store
+// well inside its 5 MB with every other list at its limit. Over it the
+// lists read longest ago go first.
+export const FRIEND_LISTS_MAX_IDS = 50000;
+
+/**
+ * What the friend check says about a player with a sign of Prime on an
+ * official casual server. The mark is all it gives: the list, Prime only
+ * and the joins never go by it.
+ */
+export const PRIME_CHECK = Object.freeze({
+  // The friends list is open and no friend shows on that server: most
+  // likely matchmaking put the player there
+  ALONE: "alone",
+  // Every friend showing on that server has a sign of Prime too
+  PRIME_FRIENDS: "prime-friends",
+  // No key, a closed friends list, or not checked yet
+  UNKNOWN: "unknown",
+  // A friend there shows no sign of Prime: the player may have joined that
+  // friend's match without Prime
+  FRIEND: "friend",
+});
+
+/**
+ * Why the friend check could not say anything about a player
+ */
+export const PRIME_CHECK_REASONS = Object.freeze({
+  // Not checked yet; it comes within the next refreshes
+  PENDING: "pending",
+  // Only a key reads other people's friends lists
+  NO_KEY: "no-key",
+  // Steam gave no friends: a closed list, or the read failed
+  CLOSED: "closed",
+});
+
+// A server takes the answer of its best player with a sign of Prime: one
+// alone or among Prime friends settles it, a doubt counts only when nothing
+// better is known. Among the unknown ones, a check still to come tells most.
+const PRIME_CHECK_ORDER = [
+  PRIME_CHECK.ALONE,
+  PRIME_CHECK.PRIME_FRIENDS,
+  PRIME_CHECK_REASONS.PENDING,
+  PRIME_CHECK_REASONS.NO_KEY,
+  PRIME_CHECK_REASONS.CLOSED,
+  PRIME_CHECK.FRIEND,
+];
+
+/**
+ * The friend check's answer for a server, from its players with a sign of
+ * Prime: the best of their answers
+ * @param {Array<{verdict: string, reason: string|null}>} checks - One per
+ *   player with a sign of Prime on the server
+ * @param {boolean} hasKey - Whether lists can be read, for a server whose
+ *   players are not known
+ * @returns {{verdict: string, reason: string|null}}
+ */
+export function bestPrimeCheck(checks, hasKey) {
+  const rank = (check) => PRIME_CHECK_ORDER.indexOf(check.reason ?? check.verdict);
+  const best = checks.reduce(
+    (found, check) => (!found || rank(check) < rank(found) ? check : found),
+    null
+  );
+  return (
+    best ?? {
+      verdict: PRIME_CHECK.UNKNOWN,
+      reason: hasKey ? PRIME_CHECK_REASONS.PENDING : PRIME_CHECK_REASONS.NO_KEY,
+    }
+  );
+}
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -115,6 +197,11 @@ export function buildServers(
  * only" on, the list and the map joins keep to such servers. The mark is a
  * likelihood, not a proof: Valve matches Prime players only with each other,
  * but a Prime player can still join a friend's match without Prime.
+ *
+ * With a key the finder looks for that case: it reads the friends lists of
+ * the players with a sign of Prime on official servers and asks where those
+ * friends are. A friend without a sign of Prime on the same server dims the
+ * server's mark; nothing else changes, Prime only and the joins included.
  */
 class MapFinder {
   constructor() {
@@ -127,6 +214,16 @@ class MapFinder {
     this.fof = { ids: [], fetchedAt: 0, friendsCount: 0 };
     // Friends of pool players, and when each pool player's list was read
     this.poolFriends = { ids: [], crawled: {} };
+    // Friends lists of players with a sign of Prime, read for the friend
+    // check, the one read longest ago first. No ids is a closed list.
+    /** @type {Map<string, {at: number, ids: string[]}>} */
+    this.friendLists = new Map();
+    // What the friend check found for each player with a sign of Prime, on
+    // the server it checked them on; it holds while they stay there
+    /** @type {Map<string, {serverId: string, verdict: string, reason: string|null}>} */
+    this._friendChecks = new Map();
+    // The friend checks under way, null when none run
+    this._friendChecking = null;
     this.seeds = new Set();
     /** @type {import('../shared/types.js').MapServer[]} */
     this.servers = [];
@@ -296,6 +393,48 @@ class MapFinder {
   }
 
   /**
+   * What the friend check says about a server: the best answer among its
+   * players with a sign of Prime. Only a mark: nothing is listed, left out
+   * or joined by it.
+   * @param {string} serverId - Game server Steam ID
+   * @returns {{verdict: string, reason: string|null}|null} - A PRIME_CHECK
+   *   verdict, with a PRIME_CHECK_REASONS reason when it is unknown; null
+   *   when no player there shows a sign of Prime
+   */
+  getPrimeCheck(serverId) {
+    const server = this.servers.find((s) => s.serverId === serverId);
+    if (!server?.primePlayers) return null;
+    const hasKey = Boolean(this.deps?.getFofKey?.());
+    return bestPrimeCheck(
+      server.players
+        .filter((player) => player.prime)
+        .map((player) => this._playerPrimeCheck(player.steamid, serverId, hasKey)),
+      hasKey
+    );
+  }
+
+  /**
+   * What the friend check found for one player with a sign of Prime on a
+   * server
+   * @param {string} steamid
+   * @param {string} serverId - The server the player is on
+   * @param {boolean} hasKey - Whether lists can be read
+   * @returns {{verdict: string, reason: string|null}}
+   * @private
+   */
+  _playerPrimeCheck(steamid, serverId, hasKey) {
+    const check = this._friendChecks.get(steamid);
+    // A check made on another server says nothing about this one
+    if (check?.serverId === serverId) {
+      return { verdict: check.verdict, reason: check.reason };
+    }
+    return {
+      verdict: PRIME_CHECK.UNKNOWN,
+      reason: hasKey ? PRIME_CHECK_REASONS.PENDING : PRIME_CHECK_REASONS.NO_KEY,
+    };
+  }
+
+  /**
    * Keep the list and the map joins to servers with a sign of Prime, or not
    * @param {boolean} on
    */
@@ -394,6 +533,7 @@ class MapFinder {
 
     this.status.refreshing = true;
     this._notify();
+    let refreshed = false;
     try {
       const ids = this._idsToPoll(userId);
       const polledSeeds = [...this.seeds].filter((id) => ids.has(id));
@@ -420,15 +560,25 @@ class MapFinder {
           (id) => this._statusSince.get(id)?.since ?? 0,
           (player) => this.isPrimePlayer(player)
         );
+        this._keepFriendChecks(presence, ids);
         this.status.lastRefreshAt = now;
         this.status.polled = ids.size;
         this._scheduleSave();
+        refreshed = true;
       }
     } catch (error) {
       logger.error("MapFinder", "Refresh failed", { error: error.message });
     } finally {
       this.status.refreshing = false;
       this._notify();
+    }
+
+    // The checks run beside the polling, never holding up the next refresh;
+    // one still under way takes this refresh's turn
+    if (refreshed && !this._friendChecking) {
+      this._friendChecking = this._checkFriends().finally(() => {
+        this._friendChecking = null;
+      });
     }
 
     if (this._refreshAgain) {
@@ -704,6 +854,9 @@ class MapFinder {
     this.primeOnly = false;
     this.fof = { ids: [], fetchedAt: 0, friendsCount: 0 };
     this.poolFriends = { ids: [], crawled: {} };
+    this.friendLists = new Map();
+    this._friendChecks = new Map();
+    this._friendChecking = null;
     this.seeds = new Set();
     this.servers = [];
     this.status = this._idleStatus();
@@ -932,8 +1085,208 @@ class MapFinder {
   }
 
   /**
+   * Keep each player's friend check while they stay on the server it was
+   * made on. Steam not answering about a player this round is no sign they
+   * left; a player no longer polled has.
+   * @param {Map<string, import('../shared/types.js').PlayerPresence>} presence
+   * @param {Set<string>} polled - Everyone this refresh asked about
+   * @private
+   */
+  _keepFriendChecks(presence, polled) {
+    for (const [id, check] of this._friendChecks) {
+      const player = presence.get(id);
+      const stays = player ? player.serverId === check.serverId : polled.has(id);
+      if (!stays) this._friendChecks.delete(id);
+    }
+  }
+
+  /**
+   * Check the friends of the players with a sign of Prime on official
+   * casual servers: whether any of them sits on the same server, and with
+   * or without a sign of Prime. Only with a key, the one thing that reads
+   * other people's friends lists, and at most FRIEND_CHECKS_PER_REFRESH
+   * checks that ask Steam anything.
+   * @private
+   */
+  async _checkFriends() {
+    const key = this.deps?.getFofKey?.();
+    const auth = this.deps?.getAuth?.();
+    if (!key || !auth) return;
+
+    const settled = new Set();
+    const due = this._friendChecksDue(settled);
+    let asked = 0;
+    try {
+      for (const { steamid, serverId } of due) {
+        if (asked >= FRIEND_CHECKS_PER_REFRESH) break;
+        // Another player there has settled the server meanwhile
+        if (settled.has(serverId)) continue;
+        if (await this._checkFriendsOf(steamid, serverId, key, auth)) asked++;
+        if (this._settles(this._friendChecks.get(steamid), serverId)) {
+          settled.add(serverId);
+        }
+      }
+    } catch (error) {
+      logger.warn("MapFinder", "Checking friends failed", {
+        error: error.message,
+      });
+    }
+    if (due.length) {
+      logger.debug("MapFinder", "Checked friends of players with a sign of Prime", {
+        due: due.length,
+        asked,
+      });
+      this._notify();
+    }
+  }
+
+  /**
+   * Players with a sign of Prime whose friends were not checked on the
+   * server they are on, the servers best to join first. A server where one
+   * of them is alone or among Prime friends needs no more checks: no other
+   * answer would change its mark.
+   * @param {Set<string>} settled - Filled with the servers that need none
+   * @returns {Array<{steamid: string, serverId: string}>}
+   * @private
+   */
+  _friendChecksDue(settled) {
+    const servers = [...this.servers].sort(
+      (a, b) =>
+        Number(this._joinable(b)) - Number(this._joinable(a)) ||
+        compareServers(a, b)
+    );
+    const due = [];
+    for (const { serverId, players } of servers) {
+      const primes = players.filter((player) => player.prime);
+      if (
+        primes.some((player) =>
+          this._settles(this._friendChecks.get(player.steamid), serverId)
+        )
+      ) {
+        settled.add(serverId);
+        continue;
+      }
+      for (const { steamid } of primes) {
+        if (this._friendChecks.get(steamid)?.serverId !== serverId) {
+          due.push({ steamid, serverId });
+        }
+      }
+    }
+    return due;
+  }
+
+  /**
+   * Whether a friend check settles its server's mark: the player is alone
+   * there or among friends with a sign of Prime
+   * @param {{serverId: string, verdict: string}|undefined} check
+   * @param {string} serverId
+   * @returns {boolean}
+   * @private
+   */
+  _settles(check, serverId) {
+    return (
+      check?.serverId === serverId &&
+      (check.verdict === PRIME_CHECK.ALONE ||
+        check.verdict === PRIME_CHECK.PRIME_FRIENDS)
+    );
+  }
+
+  /**
+   * Check one player's friends on the server they are on, and remember the
+   * answer for as long as they stay there
+   * @param {string} steamid - Player with a sign of Prime
+   * @param {string} serverId - Their server
+   * @param {string} key - API key, for the friends list
+   * @param {string} auth - Main token or key, for where the friends are, as
+   *   every other presence request
+   * @returns {Promise<boolean>} - Whether it asked Steam anything
+   * @private
+   */
+  async _checkFriendsOf(steamid, serverId, key, auth) {
+    let asked = false;
+    let list = this.friendLists.get(steamid);
+    if (!list || Date.now() - list.at >= MAP_FINDER_CONFIG.FOF_REFRESH_MS) {
+      list = this._keepFriendList(
+        steamid,
+        await SteamAPI.getFriendIdsOf(steamid, key)
+      );
+      asked = true;
+    }
+    // Steam gives no friends for a closed list, nor for a read that failed
+    if (!list.ids.length) {
+      this._friendChecks.set(steamid, {
+        serverId,
+        verdict: PRIME_CHECK.UNKNOWN,
+        reason: PRIME_CHECK_REASONS.CLOSED,
+      });
+      return asked;
+    }
+
+    // A friend who hides their game details shows no server at all, so
+    // "nobody there" can only mean nobody visible
+    const presence = await SteamAPI.getPresence(list.ids, auth);
+    const there = [...presence.values()].filter(
+      (friend) => friend.serverId === serverId
+    );
+    let verdict = null;
+    if (there.some((friend) => !this.isPrimePlayer(friend))) {
+      verdict = PRIME_CHECK.FRIEND;
+    } else if (presence.size >= list.ids.length) {
+      verdict = there.length ? PRIME_CHECK.PRIME_FRIENDS : PRIME_CHECK.ALONE;
+    }
+    // Otherwise a friend Steam did not answer about may be the one sitting
+    // there: the player is checked again in a later refresh
+    if (verdict) {
+      this._friendChecks.set(steamid, { serverId, verdict, reason: null });
+    }
+    return true;
+  }
+
+  /**
+   * Keep a friends list just read, as the newest
+   * @param {string} steamid - Whose list
+   * @param {string[]} ids - Their friends; none for a closed list
+   * @returns {{at: number, ids: string[]}}
+   * @private
+   */
+  _keepFriendList(steamid, ids) {
+    const list = {
+      at: Date.now(),
+      ids: [...new Set(ids.map(String))].filter((id) =>
+        Validators.validateSteamId(id)
+      ),
+    };
+    // A list read again moves among the newest
+    this.friendLists.delete(steamid);
+    this.friendLists.set(steamid, list);
+    this._pruneFriendLists(list.at);
+    this._scheduleSave();
+    return list;
+  }
+
+  /**
+   * Drop the friends lists read more than a day ago, which a check would
+   * read again anyway, and keep the rest to FRIEND_LISTS_MAX_IDS ids, the
+   * lists read longest ago going first
+   * @param {number} now - Current time
+   * @private
+   */
+  _pruneFriendLists(now) {
+    let total = 0;
+    for (const list of this.friendLists.values()) total += list.ids.length;
+    // The map holds the lists in the order they were read
+    for (const [id, list] of this.friendLists) {
+      const stale = now - list.at >= MAP_FINDER_CONFIG.FOF_REFRESH_MS;
+      if (!stale && total <= FRIEND_LISTS_MAX_IDS) break;
+      this.friendLists.delete(id);
+      total -= list.ids.length;
+    }
+  }
+
+  /**
    * Drop players not seen on an official server for too long, and keep the
-   * pool and the players with a sign of Prime to their size limits
+   * pool, the players with a sign of Prime and the friends lists of the
+   * friend check to their size limits
    * @param {number} now - Current time
    * @private
    */
@@ -957,11 +1310,12 @@ class MapFinder {
     for (const id of Object.keys(this.poolFriends.crawled)) {
       if (!this.pool.has(id)) delete this.poolFriends.crawled[id];
     }
+    this._pruneFriendLists(now);
   }
 
   /**
-   * Load the pool, its players' friends and friends of friends kept from
-   * earlier runs
+   * Load the pool, its players' friends, friends of friends and the friends
+   * lists of the friend check kept from earlier runs
    * @private
    */
   async _load() {
@@ -1014,6 +1368,23 @@ class MapFinder {
         crawled,
       };
     }
+    // A list read before the store came in is newer than its copy there
+    const lists = [...this.friendLists];
+    for (const [id, list] of Object.entries(data?.friendLists || {})) {
+      if (
+        !Validators.validateSteamId(id) ||
+        !Number.isFinite(list?.at) ||
+        !Array.isArray(list.ids) ||
+        this.friendLists.has(id)
+      ) {
+        continue;
+      }
+      const ids = list.ids
+        .map(String)
+        .filter((friend) => Validators.validateSteamId(friend));
+      lists.push([id, { at: list.at, ids }]);
+    }
+    this.friendLists = new Map(lists.sort((a, b) => a[1].at - b[1].at));
     this._prunePool(Date.now());
   }
 
@@ -1033,6 +1404,7 @@ class MapFinder {
         poolFriends: this.poolFriends,
         fof: this.fof,
         prime: Object.fromEntries(this.prime),
+        friendLists: Object.fromEntries(this.friendLists),
       });
     }, MAP_FINDER_CONFIG.SAVE_DEBOUNCE_MS);
   }

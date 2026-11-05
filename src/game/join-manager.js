@@ -152,6 +152,9 @@ class JoinManager {
    * @param {Function} [target.isPrime] - Whether a candidate's presence
    *   shows a sign of Prime, now or before. Prime only needs it, and the
    *   journal notes the count for the server picked.
+   * @param {Function} [target.primeCheck] - What the friend check says
+   *   about a server, by its id: only noted in the journal for the server
+   *   picked, never used to pick it
    */
   async startMapJoin(target) {
     const join_id =
@@ -282,6 +285,9 @@ class JoinManager {
           ? {
               only: primeOnly,
               players: pick ? (primeOnServer.get(pick.serverId) ?? 0) : 0,
+              ...(target.primeCheck && {
+                check: pick ? (target.primeCheck(pick.serverId) ?? null) : null,
+              }),
             }
           : null,
         isJoined: (userInfo) => {

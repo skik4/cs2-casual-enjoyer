@@ -141,6 +141,16 @@
   cursor: default;
 }
 
+/* The same tag where each player with a sign of Prime sits with a friend
+   who shows none: they may have joined that friend's match without Prime.
+   A dimmer gold and a broken border, so it reads as a doubt beside the
+   others, not as a different mark. */
+.prime-tag.doubt {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--steam-gold) 40%, transparent);
+  color: color-mix(in srgb, var(--steam-gold) 60%, transparent);
+}
+
 .view-empty {
   padding: var(--space-lg) var(--space-md);
   text-align: center;
