@@ -39,12 +39,19 @@
       "icon": "assets/icon.ico"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Casual Enjoyer",
+      "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,
+      "installerLanguages": [
+        "en_US",
+        "ru_RU"
+      ],
+      "include": "installer/installer.nsh",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "icon": "assets/icon.ico",

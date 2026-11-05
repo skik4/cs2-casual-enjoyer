@@ -27,7 +27,7 @@
 
 ## How to Run
 
-The easiest way to use the application is to download `Casual-Enjoyer-Setup-<version>.exe` from the [Releases](https://github.com/skik4/cs2-casual-enjoyer/releases) page and run it. It installs for your Windows user only, with no administrator rights, and adds desktop and Start menu shortcuts.  
+The easiest way to use the application is to download `Casual-Enjoyer-Setup-<version>.exe` from the [Releases](https://github.com/skik4/cs2-casual-enjoyer/releases) page and run it. The installer asks whether to install for you alone or for everyone on the computer, where to install, and whether to put shortcuts on the desktop and in the Start menu. For you alone it needs no administrator rights and installs to `%LOCALAPPDATA%\Programs\cs2-casual-enjoyer`.  
 **No installation of Node.js or other dependencies is required.**
 
 The app then keeps itself up to date. It checks the Releases page when it starts and every few hours, downloads a newer version in the background, and shows "Update … is ready — restart" in the footer. Click it to restart into the new version, or the update goes in the next time you close the app. Your settings stay as they are.
