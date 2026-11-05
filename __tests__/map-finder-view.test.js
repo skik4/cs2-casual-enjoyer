@@ -7,7 +7,13 @@
 
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    logStateChange: jest.fn(),
+  },
 }));
 
 import MapFinderView from "../src/ui/map-finder-view.js";
@@ -48,6 +54,7 @@ beforeAll(() => {
   document.body.innerHTML = `
     <span id="tab-count-maps"></span>
     <span id="map-finder-status"></span>
+    <button id="maps-prime-only" aria-pressed="false"></button>
     <div id="maps-list"></div>
     <div id="maps-empty" class="hidden"></div>
     <span id="fof-summary"></span>
@@ -216,5 +223,81 @@ describe("clear buttons", () => {
 
     expect(document.getElementById("pool-clear").disabled).toBe(true);
     expect(document.getElementById("fof-clear").disabled).toBe(true);
+  });
+});
+
+describe("Prime", () => {
+  afterEach(() => {
+    mapFinder.primeOnly = false;
+    delete window.electronAPI;
+  });
+
+  test("a server where someone shows a sign of Prime is marked, and its map counts them", () => {
+    mapFinder.servers = [
+      server(DUST_1, { primePlayers: 2 }),
+      server(DUST_2, { score: "[ 1 : 1 ]", rounds: 2 }),
+      server(MIRAGE, { map: "de_mirage", freeSlot: false }),
+    ];
+
+    MapFinderView.render();
+
+    const tags = list().querySelectorAll(".prime-tag");
+    expect(tags).toHaveLength(1);
+    expect(tags[0].textContent).toBe("Prime");
+    expect(tags[0].title).toContain(": 2.");
+    expect(row('[data-map="de_dust2"] .game-where').textContent).toBe(
+      "2 servers · with Prime: 1"
+    );
+    expect(row('[data-map="de_mirage"] .game-where').textContent).toBe("1 server");
+  });
+
+  test("Prime only leaves out the other servers, and the switch shows it is on", () => {
+    mapFinder.servers = [
+      server(DUST_1, { primePlayers: 1 }),
+      server(MIRAGE, { map: "de_mirage" }),
+    ];
+    mapFinder.primeOnly = true;
+
+    MapFinderView.render();
+
+    expect(row('[data-map="de_mirage"]')).toBeNull();
+    // Every server listed has Prime, so the map does not count them
+    expect(row('[data-map="de_dust2"] .game-where').textContent).toBe("1 server");
+    expect(document.getElementById("maps-prime-only").getAttribute("aria-pressed")).toBe("true");
+    expect(document.getElementById("tab-count-maps").textContent).toBe("1");
+  });
+
+  test("with every server left out by Prime only, the empty list says why", () => {
+    mapFinder.primeOnly = true;
+
+    MapFinderView.render();
+
+    expect(document.getElementById("maps-empty").textContent).toContain("Prime only");
+  });
+
+  test("the switch turns Prime only on and keeps it in the settings", async () => {
+    const update = jest.fn().mockResolvedValue({ maps_prime_only: true });
+    window.electronAPI = { settings: { update } };
+
+    click(document.getElementById("maps-prime-only"));
+    await Promise.resolve();
+
+    expect(mapFinder.primeOnly).toBe(true);
+    expect(update).toHaveBeenCalledWith({ maps_prime_only: true });
+  });
+
+  test("a map join keeps to Prime only, a server picked by hand does not", () => {
+    mapFinder.servers = [server(DUST_1, { primePlayers: 1 })];
+    MapFinderView.render();
+
+    click(button(getMapJoinId("de_dust2")));
+    click(button(`srv-${DUST_1}`));
+
+    const [mapJoin] = joinManager.startMapJoin.mock.calls[0];
+    const [serverJoin] = joinManager.startMapJoin.mock.calls[1];
+    expect(typeof mapJoin.primeOnly).toBe("function");
+    expect(typeof mapJoin.isPrime).toBe("function");
+    expect(serverJoin.primeOnly).toBeUndefined();
+    expect(typeof serverJoin.isPrime).toBe("function");
   });
 });

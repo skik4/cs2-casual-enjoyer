@@ -93,6 +93,9 @@ class MapFinderView {
       this.keyDetailsOpen = !this.keyDetailsOpen;
       this.renderFofKey();
     });
+    DOMUtils.getElementById("maps-prime-only")?.addEventListener("click", () =>
+      this.setPrimeOnly(!mapFinder.primeOnly)
+    );
 
     mapFinder.onChange(() => this.render());
     // Where the user is decides which rows to block
@@ -159,16 +162,21 @@ class MapFinderView {
     // Joining a map not pinned, the user no longer keeps the pinned ones
     mapKeeper.userJoined(map);
 
+    // Whether a player has shown a sign of Prime: for the journal, and for
+    // Prime only
+    const isPrime = (player) => mapFinder.isPrimePlayer(player);
     if (joinId.startsWith(JOIN_TARGET_PREFIXES.SERVER)) {
       const serverId = joinId.slice(JOIN_TARGET_PREFIXES.SERVER.length);
       const server = mapFinder
         .getServers(map)
         .find((s) => s.serverId === serverId);
+      // A server the user picked is joined whatever Prime only says
       joinManager.startMapJoin({
         map,
         serverId,
         label: `${mapLabel(map)} ${formatScore(server?.score)}`.trim(),
         getCandidateIds: () => mapFinder.getCandidateIds(map, serverId),
+        isPrime,
       });
     } else {
       joinManager.startMapJoin({
@@ -176,8 +184,26 @@ class MapFinderView {
         serverId: null,
         label: mapLabel(map),
         getCandidateIds: () => mapFinder.getCandidateIds(map),
+        primeOnly: () => mapFinder.primeOnly,
+        isPrime,
       });
     }
+  }
+
+  /**
+   * Turn Prime only on or off, and keep it that way in the settings
+   * @param {boolean} on
+   */
+  static async setPrimeOnly(on) {
+    mapFinder.setPrimeOnly(on);
+    const updated = await window.electronAPI.settings.update({
+      maps_prime_only: on ? true : null,
+    });
+    if (!updated) {
+      logger.error("MapFinderView", "Could not save settings");
+      return;
+    }
+    appStateManager.setState("savedSettings", updated);
   }
 
   /**
@@ -251,8 +277,20 @@ class MapFinderView {
     ViewTabs.setCount("maps", maps.length);
     this.renderEmpty(maps.length);
     this.renderStatus();
+    this.renderPrimeOnly();
     this.renderFofKey();
     this.renderClearButtons();
+  }
+
+  /**
+   * The Prime only switch next to the search status
+   */
+  static renderPrimeOnly() {
+    const button = DOMUtils.getElementById("maps-prime-only");
+    if (!button) return;
+    button.textContent = t("mapFinder.primeOnly");
+    button.title = t("mapFinder.primeOnlyTitle");
+    button.setAttribute("aria-pressed", String(mapFinder.primeOnly));
   }
 
   /**
@@ -332,12 +370,18 @@ class MapFinderView {
   }
 
   /**
-   * @param {{map: string, label: string, servers: number, freeServers: number}} entry
+   * @param {{map: string, label: string, servers: number, freeServers: number, primeServers: number}} entry
    * @param {Object} joinStates - Join states by id
    * @returns {string}
    */
   static renderMapCard(entry, joinStates) {
     const expanded = this.expanded.has(entry.map);
+    let where = tPlural("mapFinder.servers", entry.servers);
+    // With every server listed, say how many show a sign of Prime; with
+    // Prime only on, all of them do
+    if (!mapFinder.primeOnly && entry.primeServers) {
+      where += ` · ${t("mapFinder.withPrime", { count: entry.primeServers })}`;
+    }
     const joinId = getMapJoinId(entry.map);
     const free = entry.freeServers > 0;
     const here = entry.map === userLocation.getMap();
@@ -361,7 +405,7 @@ class MapFinderView {
           <span class="map-expander" aria-hidden="true">${expanded ? "▾" : "▸"}</span>
           <div class="friend-info">
             <span class="personaname">${escapeHtml(entry.label)}</span>
-            <span class="game-line"><span class="game-where">${escapeHtml(tPlural("mapFinder.servers", entry.servers))}</span>${this.renderLabel(joinId, joinStates, slot)}</span>
+            <span class="game-line"><span class="game-where">${escapeHtml(where)}</span>${this.renderLabel(joinId, joinStates, slot)}</span>
           </div>
           ${this.renderKeepButton(entry.map)}
           ${this.renderJoinButton(joinId, joinStates, slot)}
@@ -390,12 +434,16 @@ class MapFinderView {
     else if (score && server.rounds !== null) {
       title = t("mapFinder.round", { round: server.rounds + 1, score });
     }
+    const prime =
+      server.primePlayers > 0
+        ? `<span class="prime-tag" title="${escapeHtml(t("mapFinder.primeTagTitle", { count: server.primePlayers }))}">${escapeHtml(t("mapFinder.primeTag"))}</span>`
+        : "";
 
     return `
       <div class="friend server-row">
         <div class="friend-info">
           <span class="personaname">${escapeHtml(title)}</span>
-          <span class="game-line">${this.renderLabel(joinId, joinStates, slot)}</span>
+          <span class="game-line">${prime}${this.renderLabel(joinId, joinStates, slot)}</span>
         </div>
         ${this.renderJoinButton(joinId, joinStates, slot)}
       </div>`;
@@ -455,6 +503,8 @@ class MapFinderView {
     let message = "";
     if (!this.getMainAuth()) {
       message = t("mapFinder.needAuth");
+    } else if (!mapsCount && mapFinder.primeOnly && status.hiddenServers) {
+      message = t("mapFinder.noPrimeServers");
     } else if (!mapsCount) {
       message =
         status.refreshing || !status.lastRefreshAt

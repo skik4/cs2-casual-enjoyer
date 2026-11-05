@@ -4,6 +4,7 @@
  */
 
 import {
+  hasPrimeSign,
   isInCS2,
   isInProtectedMatch,
   isInSupportedMode,
@@ -17,7 +18,7 @@ describe("parseRichPresence", () => {
   test("reads the keys the app uses", () => {
     expect(
       rp(
-        '"status" "Casual Dust II [ 3 : 1 ]" "game:state" "game" "game:mode" "casual" "game:map" "de_dust2" "game:score" "[ 3 : 1 ]" "connect" "+gcconnectG1A2B3C4D" "game_server_steam_id" "9001" "game:server" "kv" "steam_display" "#display_GameKnownMapScore"'
+        '"status" "Casual Dust II [ 3 : 1 ]" "game:state" "game" "game:mode" "casual" "game:map" "de_dust2" "game:score" "[ 3 : 1 ]" "connect" "+gcconnectG1A2B3C4D" "game_server_steam_id" "9001" "game:server" "kv" "steam_display" "#display_GameKnownMapScore" "game:xptrail" "4"'
       )
     ).toEqual({
       status: "Casual Dust II [ 3 : 1 ]",
@@ -30,12 +31,36 @@ describe("parseRichPresence", () => {
       game_server: "kv",
       steam_display: "#display_GameKnownMapScore",
       addon: null,
+      xptrail: "4",
+      qmmflags: null,
     });
   });
 
   test("treats a missing string as empty rich presence", () => {
     expect(rp(undefined).game_mode).toBeNull();
     expect(rp(null).connect).toBeNull();
+  });
+});
+
+describe("hasPrimeSign", () => {
+  test("an XP trail of 1 or more is a sign of Prime", () => {
+    expect(hasPrimeSign(rp('"game:mode" "casual" "game:xptrail" "1"'))).toBe(true);
+    expect(hasPrimeSign(rp('"game:mode" "casual" "game:xptrail" "8"'))).toBe(true);
+  });
+
+  test("Premier, competitive with qmmflags 1, is a sign of Prime", () => {
+    expect(
+      hasPrimeSign(rp('"game:mode" "competitive" "game:qmmflags" "1" "game:xptrail" "0"'))
+    ).toBe(true);
+  });
+
+  test("no trail, plain competitive or junk is no sign", () => {
+    expect(hasPrimeSign(rp('"game:mode" "casual" "game:xptrail" "0"'))).toBe(false);
+    expect(hasPrimeSign(rp('"game:mode" "casual"'))).toBe(false);
+    expect(hasPrimeSign(rp('"game:mode" "competitive" "game:state" "game"'))).toBe(false);
+    expect(hasPrimeSign(rp('"game:mode" "casual" "game:qmmflags" "1"'))).toBe(false);
+    expect(hasPrimeSign(rp('"game:xptrail" "lots"'))).toBe(false);
+    expect(hasPrimeSign(null)).toBe(false);
   });
 });
 

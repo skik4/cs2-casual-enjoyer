@@ -103,6 +103,8 @@ class MapKeeper {
       maps: () => this.getMaps(),
       label: () => this.getLabel(),
       getCandidateIds: () => mapFinder.getCandidateIdsForMaps(this.getMaps()),
+      primeOnly: () => mapFinder.primeOnly,
+      isPrime: (player) => mapFinder.isPrimePlayer(player),
     });
   }
 

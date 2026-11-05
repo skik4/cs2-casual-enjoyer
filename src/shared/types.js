@@ -56,9 +56,12 @@
  *   map: string|null,
  *   score: string|null,
  *   official: boolean,
+ *   primeSign: boolean,
  * }} PlayerPresence - Join facts plus where the match is played; `official`
  *   is true for a casual match on Valve's own servers, as rich presence and
  *   the server's account tell (isOfficialServer in steam/rich-presence.js).
+ *   `primeSign` is true when rich presence shows something only a Prime
+ *   account can (hasPrimeSign there); false proves nothing.
  */
 
 /**
@@ -70,7 +73,9 @@
  * @property {boolean} over - Whether the match on it has ended; the server
  *   then loads its next map
  * @property {boolean} freeSlot - Whether a known player offers a connect
- * @property {Array<{steamid: string, personaname: string, connect: string|null}>} players - Known players on it
+ * @property {number} primePlayers - Known players on it with a sign of
+ *   Prime, now or seen before
+ * @property {Array<{steamid: string, personaname: string, connect: string|null, prime: boolean}>} players - Known players on it
  */
 
 /**
@@ -82,6 +87,9 @@
  * @property {string|null} statusKey - What Steam shows about the player the
  *   connect belongs to; a connect is only sent again once it changes
  * @property {Function} isJoined - Tells from the user's info whether the join succeeded
+ * @property {{only: boolean, players: number}|null} [prime] - For a join
+ *   through the map finder: whether only servers with a sign of Prime were
+ *   taken, and how many players with one are on the server picked
  */
 
 /**

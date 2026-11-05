@@ -244,8 +244,8 @@ describe("refresh", () => {
     await mapFinder.refresh();
 
     expect(mapFinder.getMaps()).toEqual([
-      { map: "de_dust2", label: "Dust II", servers: 1, freeServers: 1 },
-      { map: "de_mirage", label: "Mirage", servers: 1, freeServers: 0 },
+      { map: "de_dust2", label: "Dust II", servers: 1, freeServers: 1, primeServers: 0 },
+      { map: "de_mirage", label: "Mirage", servers: 1, freeServers: 0, primeServers: 0 },
     ]);
     expect([...mapFinder.pool.keys()].sort()).toEqual([A, B, C].sort());
     expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A, B]);
@@ -812,5 +812,124 @@ describe("several maps", () => {
     ];
 
     expect(mapFinder.getCandidateIdsForMaps(["de_dust2", "de_mirage"])).toEqual([B, A]);
+  });
+});
+
+describe("Prime", () => {
+  const INFERNO_SERVER = "90071992547409923";
+
+  /** A on Dust II with a sign of Prime, B beside A without one, C alone on Mirage */
+  const refreshWithPrime = async (overrides = {}) => {
+    configure({ getFriendIds: () => [A, B, C] });
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        presence(A, { primeSign: true, ...overrides[A] }),
+        presence(B, { connect: CONNECT, ...overrides[B] }),
+        presence(C, { serverId: MIRAGE_SERVER, map: "de_mirage", connect: CONNECT, ...overrides[C] })
+      )
+    );
+    await mapFinder.refresh();
+  };
+
+  test("buildServers counts the players with a sign of Prime", () => {
+    const [server] = buildServers([presence(A, { primeSign: true }), presence(B)]);
+
+    expect(server.primePlayers).toBe(1);
+    expect(server.players.map((player) => player.prime)).toEqual([true, false]);
+  });
+
+  test("a player once seen with a sign of Prime keeps it after the sign fades", async () => {
+    await refreshWithPrime();
+    expect(mapFinder.isPrimePlayer({ steamid: A })).toBe(true);
+
+    // The XP trail runs out, Prime stays
+    await refreshWithPrime({ [A]: { primeSign: false } });
+
+    expect(mapFinder.getServers("de_dust2")[0].primePlayers).toBe(1);
+    expect(mapFinder.isPrimePlayer({ steamid: B })).toBe(false);
+  });
+
+  test("with Prime only off every server is listed, and maps count those with Prime", async () => {
+    await refreshWithPrime();
+
+    expect(mapFinder.getMaps().map(({ map, servers, primeServers }) => [map, servers, primeServers]))
+      .toEqual([
+        ["de_dust2", 1, 1],
+        ["de_mirage", 1, 0],
+      ]);
+    expect(mapFinder.getStatus().hiddenServers).toBe(0);
+  });
+
+  test("with Prime only on, the list and map joins keep to servers with a sign of Prime", async () => {
+    await refreshWithPrime();
+    const changed = jest.fn();
+    mapFinder.onChange(changed);
+
+    mapFinder.setPrimeOnly(true);
+
+    expect(changed).toHaveBeenCalled();
+    expect(mapFinder.getMaps().map((entry) => entry.map)).toEqual(["de_dust2"]);
+    expect(mapFinder.getServers("de_mirage")).toEqual([]);
+    expect(mapFinder.getCandidateIds("de_mirage")).toEqual([]);
+    expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A, B]);
+    expect(mapFinder.getCandidateIdsForMaps(["de_dust2", "de_mirage"])).toEqual([A, B]);
+    expect(mapFinder.getStatus().hiddenServers).toBe(1);
+  });
+
+  test("a server the user picks is joined through whatever Prime only says", async () => {
+    await refreshWithPrime();
+    mapFinder.setPrimeOnly(true);
+
+    expect(mapFinder.getCandidateIds("de_mirage", MIRAGE_SERVER)).toEqual([C]);
+  });
+
+  test("Prime players are saved and loaded with the pool", async () => {
+    jest.useFakeTimers();
+    const save = jest.fn().mockResolvedValue(true);
+    global.window.electronAPI = { mapFinder: { save } };
+    await refreshWithPrime();
+    jest.advanceTimersByTime(MAP_FINDER_CONFIG.SAVE_DEBOUNCE_MS);
+    jest.useRealTimers();
+
+    const saved = save.mock.calls[0][0].prime;
+    expect(Object.keys(saved)).toEqual([A]);
+
+    mapFinder.reset();
+    global.window.electronAPI = {
+      mapFinder: {
+        load: jest.fn().mockResolvedValue({
+          prime: { ...saved, "not-an-id": Date.now(), [D]: "yesterday" },
+        }),
+        save: jest.fn().mockResolvedValue(true),
+      },
+    };
+    await mapFinder._load();
+
+    expect([...mapFinder.prime.keys()]).toEqual([A]);
+  });
+
+  test("over the limit the players seen longest ago are forgotten", () => {
+    const limit = MAP_FINDER_CONFIG.PRIME_MAX_IDS;
+    for (let i = 0; i <= limit; i++) {
+      mapFinder.prime.set(String(76561198100000000n + BigInt(i)), i);
+    }
+
+    mapFinder._prunePool(Date.now());
+
+    expect(mapFinder.prime.size).toBe(limit);
+    expect(mapFinder.prime.has("76561198100000000")).toBe(false);
+    expect(mapFinder.prime.has(String(76561198100000000n + BigInt(limit)))).toBe(true);
+  });
+
+  test("a seed showing a sign of Prime is remembered", async () => {
+    configure();
+    mapFinder.seeds.add(E);
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(presence(E, { serverId: INFERNO_SERVER, map: "de_inferno", primeSign: true }))
+    );
+
+    await mapFinder._checkSeeds();
+
+    expect(mapFinder.isPrimePlayer({ steamid: E })).toBe(true);
   });
 });

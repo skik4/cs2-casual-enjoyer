@@ -291,6 +291,78 @@ describe("resolveMapTarget", () => {
       target.isJoined(user({ serverId: DUST_2, official: true, mode: "casual", map: "de_dust2" }))
     ).toBe(false);
   });
+
+  test("with Prime only, a server counts while a candidate on it shows a sign of Prime", async () => {
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        user(),
+        presence(A),
+        presence(B, { connect: CONNECT_B }),
+        presence(C, { serverId: DUST_2, connect: CONNECT_C })
+      )
+    );
+
+    const { target } = await joinManager.resolveMapTarget(
+      dustTarget({ primeOnly: () => true, isPrime: (player) => player.steamid === C }),
+      USER,
+      AUTH
+    );
+
+    // B's slot comes first, but only C's server shows Prime
+    expect(target).toMatchObject({
+      inSupportedMode: true,
+      connect: CONNECT_C,
+      joinAs: C,
+      prime: { only: true, players: 1 },
+    });
+  });
+
+  test("with Prime only and no server showing Prime there is nothing to join", async () => {
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(user(), presence(B, { connect: CONNECT_B }))
+    );
+
+    const { target } = await joinManager.resolveMapTarget(
+      dustTarget({ primeOnly: true, isPrime: () => false }),
+      USER,
+      AUTH
+    );
+
+    expect(target).toMatchObject({
+      inSupportedMode: false,
+      connect: null,
+      prime: { only: true, players: 0 },
+    });
+  });
+
+  test("with Prime only off, signs of Prime are only counted", async () => {
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        user(),
+        presence(A),
+        presence(B, { connect: CONNECT_B }),
+        presence(C, { serverId: DUST_2, connect: CONNECT_C })
+      )
+    );
+
+    const { target } = await joinManager.resolveMapTarget(
+      dustTarget({ primeOnly: () => false, isPrime: (player) => player.steamid === A }),
+      USER,
+      AUTH
+    );
+
+    expect(target).toMatchObject({ connect: CONNECT_B, prime: { only: false, players: 1 } });
+  });
+
+  test("a join that asks nothing about Prime carries no Prime facts", async () => {
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(user(), presence(B, { connect: CONNECT_B }))
+    );
+
+    const { target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+
+    expect(target.prime).toBeNull();
+  });
 });
 
 describe("startMapJoin", () => {
@@ -339,6 +411,24 @@ describe("startMapJoin", () => {
     await jest.advanceTimersByTimeAsync(600);
 
     expect(joinManager.getJoinStates()[joinId].status).toBe(STATUS_TYPES.JOINED);
+  });
+
+  test("the journal notes what the server showed of Prime when the connect went out", async () => {
+    const record = jest.spyOn(joinManager.journal, "record").mockImplementation(() => {});
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(user(), presence(A), presence(B, { connect: CONNECT_B }))
+    );
+
+    joinManager.startMapJoin(
+      dustTarget({ primeOnly: () => true, isPrime: (player) => player.steamid === A })
+    );
+    await jest.advanceTimersByTimeAsync(100);
+
+    expect(record).toHaveBeenCalledWith(
+      "connect",
+      expect.objectContaining({ joinAs: B, prime: { only: true, players: 1 } })
+    );
+    record.mockRestore();
   });
 
   test("a server of the map the user just left does not count while CS2 shows the menu", async () => {

@@ -94,6 +94,10 @@ export const MAP_FINDER_CONFIG = {
   // oldest. At 100 ids a request, one pass over them is 200 requests,
   // spread over the refreshes.
   POOL_FRIENDS_MAX_IDS: 20000,
+  // Players once seen with a sign of Prime. Prime is never taken away, so
+  // they are kept with no expiry; the cap only bounds the store, and over
+  // it those seen longest ago go first.
+  PRIME_MAX_IDS: 20000,
   // The store is written this long after the last change, not on every
   // refresh
   SAVE_DEBOUNCE_MS: 2000,
@@ -178,6 +182,8 @@ export const LOGGING_CONFIG = {
 export const GAME_MODES = {
   CASUAL: "casual",
   DEATHMATCH: "deathmatch",
+  // Premier as well: CS2 tells it apart only by game:qmmflags
+  COMPETITIVE: "competitive",
 };
 
 /**

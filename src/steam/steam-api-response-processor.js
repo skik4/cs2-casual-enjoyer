@@ -4,6 +4,7 @@ import { ERROR_CODES, LOG_LEVELS } from "../shared/constants.js";
 // Steam modules
 import SteamAPIUtils from "./steam-api-utils.js";
 import {
+  hasPrimeSign,
   isInCS2,
   isInProtectedMatch,
   isInSupportedMode,
@@ -248,6 +249,7 @@ class SteamAPIResponseProcessor {
       official:
         info.inSupportedMode &&
         isOfficialServer(richPresence, info.serverId),
+      primeSign: info.inCS2 && hasPrimeSign(richPresence),
     };
   }
 

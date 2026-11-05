@@ -227,6 +227,15 @@ export default {
     fofUsesMainKey: "Your main API key is used for friends lists.",
     fofKeyInvalid: "That is not an API key: it should be 32 letters and digits.",
     fofKeyError: "No friends list could be read with this key. Check the key.",
+    primeOnly: "Prime only",
+    primeOnlyTitle:
+      "List and join by map only servers where a player with a sign of Prime is seen: CS2 XP or a Premier match. Not a guarantee: a Prime player may have joined a friend in a match without Prime. A server you pick yourself is always joined.",
+    primeTag: "Prime",
+    primeTagTitle:
+      "Players with a sign of Prime here: {count}. The sign is CS2 XP or a Premier match; it does not promise that everyone here has Prime.",
+    withPrime: "with Prime: {count}",
+    noPrimeServers:
+      "No server with a visible Prime player right now. The others are hidden by “Prime only”. Still searching.",
   },
 
   gsi: {

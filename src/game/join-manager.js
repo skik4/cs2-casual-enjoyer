@@ -147,6 +147,11 @@ class JoinManager {
    * @param {string|Function} [target.label] - Name shown for the attempt
    * @param {Function} target.getCandidateIds - Players to join through, best
    *   first; read again every iteration so new arrivals count
+   * @param {boolean|Function} [target.primeOnly] - Only servers where a
+   *   candidate shows a sign of Prime; a function is read every iteration
+   * @param {Function} [target.isPrime] - Whether a candidate's presence
+   *   shows a sign of Prime, now or before. Prime only needs it, and the
+   *   journal notes the count for the server picked.
    */
   async startMapJoin(target) {
     const join_id =
@@ -227,12 +232,30 @@ class JoinManager {
           maps.includes(player.map) &&
           (!target.serverId || player.serverId === target.serverId)
       );
+    // Candidates showing a sign of Prime, by server, as this very poll has
+    // them: one who moved on takes the server's mark along
+    const primeOnServer = new Map();
+    for (const player of onMap) {
+      if (target.isPrime?.(player)) {
+        primeOnServer.set(
+          player.serverId,
+          (primeOnServer.get(player.serverId) ?? 0) + 1
+        );
+      }
+    }
+    const primeOnly =
+      typeof target.primeOnly === "function"
+        ? Boolean(target.primeOnly())
+        : Boolean(target.primeOnly);
+    const eligible = primeOnly
+      ? onMap.filter((player) => primeOnServer.has(player.serverId))
+      : onMap;
     // A finished match is about to load another map, and the user's own
     // server is nowhere new. Back in the menu the user is on no server,
     // whatever Steam still shows.
     const gsi = this.cs2Manager?.getGsiUserState?.() ?? null;
     const ownServerId = gsi && !gsi.inMatch ? null : user.serverId;
-    const running = onMap.filter(
+    const running = eligible.filter(
       (player) => !isMatchOver(player.score)
     );
     const joinable = running.filter(
@@ -254,6 +277,12 @@ class JoinManager {
         joinAs: pick?.steamid ?? null,
         statusKey: pick
           ? `${pick.steamid}\n${pick.statusKey ?? connectKind(pick.connect)}`
+          : null,
+        prime: target.isPrime
+          ? {
+              only: primeOnly,
+              players: pick ? (primeOnServer.get(pick.serverId) ?? 0) : 0,
+            }
           : null,
         isJoined: (userInfo) => {
           if (target.serverId) {
@@ -604,6 +633,9 @@ class JoinManager {
           join: join_id,
           joinAs: target.joinAs,
           connect: target.connect,
+          // If the user lands in a match without Prime, this says what the
+          // server showed when the connect went out
+          ...(target.prime ? { prime: target.prime } : {}),
         });
         await openSteamUrl(joinUrl(target.joinAs, target.connect));
 

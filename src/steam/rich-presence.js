@@ -45,7 +45,30 @@ export function parseRichPresence(kv) {
     game_server: extract("game:server"),
     steam_display: extract("steam_display"),
     addon: extract("Addon"),
+    xptrail: extract("game:xptrail"),
+    qmmflags: extract("game:qmmflags"),
   };
+}
+
+/**
+ * Whether rich presence shows a sign that the player has Prime. Steam never
+ * says so outright, but two things only a Prime account can show do:
+ * - an XP trail level of 1 or more (game:xptrail). Valve's FAQ makes XP
+ *   Prime-only, and CS2's own files call this value the XP trail level;
+ *   that reading of the name is ours, not Valve's.
+ * - a Premier match, which needs Prime. CS2 reports it as competitive with
+ *   game:qmmflags 1, the only flagged mode in Steam's rich presence
+ *   localization for CS2.
+ * No sign proves nothing: a Prime player with no recent XP shows none.
+ * @param {Object} richPresence - Parsed rich presence data
+ * @returns {boolean}
+ */
+export function hasPrimeSign(richPresence) {
+  return (
+    Number(richPresence?.xptrail) >= 1 ||
+    (richPresence?.game_mode === GAME_MODES.COMPETITIVE &&
+      richPresence?.qmmflags === "1")
+  );
 }
 
 /**

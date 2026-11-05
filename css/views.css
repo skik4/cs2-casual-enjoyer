@@ -64,6 +64,76 @@
   white-space: nowrap;
 }
 
+/* A slim row above the maps for what filters them */
+.maps-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 2px 8px;
+}
+
+/* Prime only: a check box drawn the way Steam's dialogs draw theirs */
+.prime-only-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.prime-only-btn:hover,
+.prime-only-btn[aria-pressed="true"] {
+  color: var(--text-primary);
+}
+
+.prime-only-btn::before {
+  content: "";
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--button-secondary-hover);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-item);
+}
+
+.prime-only-btn[aria-pressed="true"]::before {
+  border-color: var(--blue-primary);
+  background: var(--blue-primary);
+}
+
+/* The tick inside the box */
+.prime-only-btn[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  width: 4px;
+  height: 8px;
+  border: solid var(--white);
+  border-width: 0 2px 2px 0;
+  transform: translateY(-65%) rotate(45deg);
+}
+
+/* A server where someone shows a sign of Prime */
+.prime-tag {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, var(--steam-gold) 55%, transparent);
+  border-radius: var(--border-radius-sm);
+  color: var(--steam-gold);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 15px;
+  cursor: default;
+}
+
 .view-empty {
   padding: var(--space-lg) var(--space-md);
   text-align: center;

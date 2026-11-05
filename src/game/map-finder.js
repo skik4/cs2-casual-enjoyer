@@ -40,9 +40,15 @@ export function compareServers(a, b) {
  * @param {Iterable<import('../shared/types.js').PlayerPresence>} presences
  * @param {(steamid: string) => number} [statusSince] - When a player's
  *   status last changed, as far as the caller has seen
+ * @param {(player: import('../shared/types.js').PlayerPresence) => boolean} [isPrime] -
+ *   Whether a player has shown a sign of Prime
  * @returns {import('../shared/types.js').MapServer[]}
  */
-export function buildServers(presences, statusSince = () => 0) {
+export function buildServers(
+  presences,
+  statusSince = () => 0,
+  isPrime = (player) => Boolean(player.primeSign)
+) {
   const byServer = new Map();
   for (const player of presences) {
     if (!player?.official || !player.serverId || !player.map) continue;
@@ -72,6 +78,12 @@ export function buildServers(presences, statusSince = () => 0) {
       (entry.rounds ?? -1) > (best.rounds ?? -1) ? entry : best
     );
 
+    const players = current.map(({ player }) => ({
+      steamid: player.steamid,
+      personaname: player.personaname,
+      connect: player.connect,
+      prime: isPrime(player),
+    }));
     servers.push({
       serverId,
       map,
@@ -79,11 +91,8 @@ export function buildServers(presences, statusSince = () => 0) {
       rounds: furthest.rounds,
       over: furthest.over,
       freeSlot: current.some((entry) => entry.player.connect),
-      players: current.map(({ player }) => ({
-        steamid: player.steamid,
-        personaname: player.personaname,
-        connect: player.connect,
-      })),
+      primePlayers: players.filter((player) => player.prime).length,
+      players,
     });
   }
   return servers;
@@ -99,11 +108,21 @@ export function buildServers(presences, statusSince = () => 0) {
  * (both API key only), and whoever CS2 shows or lists in the user's own
  * matches. The pool is polled every round; the friends lists, far bigger and
  * far fewer of them in casual, a slice each round in turn.
+ *
+ * Whoever shows a sign of Prime is remembered for good, since Prime is never
+ * taken away. A server with one of them on it is marked, and with "Prime
+ * only" on, the list and the map joins keep to such servers. The mark is a
+ * likelihood, not a proof: Valve matches Prime players only with each other,
+ * but a Prime player can still join a friend's match without Prime.
  */
 class MapFinder {
   constructor() {
     /** @type {Map<string, {lastSeen: number, map: string}>} */
     this.pool = new Map();
+    /** @type {Map<string, number>} Players seen with a sign of Prime -> last seen */
+    this.prime = new Map();
+    // Whether the list and the map joins keep to servers with a sign of Prime
+    this.primeOnly = false;
     this.fof = { ids: [], fetchedAt: 0, friendsCount: 0 };
     // Friends of pool players, and when each pool player's list was read
     this.poolFriends = { ids: [], crawled: {} };
@@ -216,9 +235,11 @@ class MapFinder {
         this._checkSeedsAgain = false;
         const ids = [...this.seeds];
         const presence = await SteamAPI.getPresence(ids, auth);
-        const added = this._addToPool(presence.values(), Date.now());
+        const now = Date.now();
+        const added = this._addToPool(presence.values(), now);
+        const primeAdded = this._rememberPrime(presence.values(), now);
         this.journal.record("seeds", this._takeSeedAnswers(ids, presence));
-        if (added) {
+        if (added || primeAdded) {
           this._scheduleSave();
           this._notify();
         }
@@ -247,6 +268,46 @@ class MapFinder {
       this.pool.set(player.steamid, { lastSeen: now, map: player.map });
     }
     return added;
+  }
+
+  /**
+   * Remember the players showing a sign of Prime. A player's XP trail fades,
+   * but Prime stays, so once is enough for good.
+   * @param {Iterable<import('../shared/types.js').PlayerPresence>} players
+   * @param {number} now - Time to remember them by
+   * @returns {number} - How many were not remembered before
+   * @private
+   */
+  _rememberPrime(players, now) {
+    let added = 0;
+    for (const player of players) {
+      if (!player?.primeSign || !player.steamid) continue;
+      if (!this.prime.has(player.steamid)) added++;
+      this.prime.set(player.steamid, now);
+    }
+    return added;
+  }
+
+  /**
+   * Whether a player has shown a sign of Prime, now or before
+   * @param {import('../shared/types.js').PlayerPresence|{steamid: string}} player
+   * @returns {boolean}
+   */
+  isPrimePlayer(player) {
+    return (
+      Boolean(player?.primeSign) || this.prime.has(String(player?.steamid))
+    );
+  }
+
+  /**
+   * Keep the list and the map joins to servers with a sign of Prime, or not
+   * @param {boolean} on
+   */
+  setPrimeOnly(on) {
+    if (this.primeOnly === Boolean(on)) return;
+    this.primeOnly = Boolean(on);
+    logger.info("MapFinder", "Prime only", { on: this.primeOnly });
+    this._notify();
   }
 
   /**
@@ -351,6 +412,7 @@ class MapFinder {
       } else {
         const now = Date.now();
         this._addToPool(presence.values(), now);
+        this._rememberPrime(presence.values(), now);
         if (polledSeeds.length) {
           this.journal.record("seeds", this._takeSeedAnswers(polledSeeds, presence));
         }
@@ -359,7 +421,8 @@ class MapFinder {
         this._noteStatusChanges(presence, now);
         this.servers = buildServers(
           presence.values(),
-          (id) => this._statusSince.get(id)?.since ?? 0
+          (id) => this._statusSince.get(id)?.since ?? 0,
+          (player) => this.isPrimePlayer(player)
         );
         this.status.lastRefreshAt = now;
         this.status.polled = ids.size;
@@ -379,20 +442,23 @@ class MapFinder {
   }
 
   /**
-   * Maps with at least one known official server
-   * @returns {Array<{map: string, label: string, servers: number, freeServers: number}>}
+   * Maps with at least one known official server; with Prime only on, one
+   * with a sign of Prime
+   * @returns {Array<{map: string, label: string, servers: number, freeServers: number, primeServers: number}>}
    */
   getMaps() {
     const maps = new Map();
-    for (const server of this._currentServers()) {
+    for (const server of this._shownServers()) {
       const entry = maps.get(server.map) || {
         map: server.map,
         label: mapLabel(server.map),
         servers: 0,
         freeServers: 0,
+        primeServers: 0,
       };
       entry.servers++;
       if (this._joinable(server) && server.freeSlot) entry.freeServers++;
+      if (server.primePlayers > 0) entry.primeServers++;
       maps.set(server.map, entry);
     }
     return [...maps.values()].sort(
@@ -409,9 +475,22 @@ class MapFinder {
    * @returns {import('../shared/types.js').MapServer[]}
    */
   getServers(map) {
-    return this._currentServers()
+    return this._shownServers()
       .filter((server) => server.map === map)
       .sort(compareServers);
+  }
+
+  /**
+   * The servers to list and to join: all of them, or with Prime only on,
+   * those with a sign of Prime
+   * @returns {import('../shared/types.js').MapServer[]}
+   * @private
+   */
+  _shownServers() {
+    const servers = this._currentServers();
+    return this.primeOnly
+      ? servers.filter((server) => server.primePlayers > 0)
+      : servers;
   }
 
   /**
@@ -479,8 +558,13 @@ class MapFinder {
    * @returns {string[]} - SteamID64s
    */
   getCandidateIds(map, serverId = null) {
-    return this.getServers(map)
-      .filter((server) => !serverId || server.serverId === serverId)
+    // A server the user picked is theirs to join, Prime only or not
+    const servers = serverId
+      ? this._currentServers().filter(
+          (server) => server.map === map && server.serverId === serverId
+        )
+      : this.getServers(map);
+    return servers
       .filter((server) => this._joinable(server))
       .flatMap((server) => server.players.map((player) => player.steamid));
   }
@@ -492,7 +576,7 @@ class MapFinder {
    * @returns {string[]} - SteamID64s
    */
   getCandidateIdsForMaps(maps) {
-    return this._currentServers()
+    return this._shownServers()
       .filter((server) => maps.includes(server.map) && this._joinable(server))
       .sort(compareServers)
       .flatMap((server) => server.players.map((player) => player.steamid));
@@ -512,7 +596,7 @@ class MapFinder {
 
   /**
    * Counters for the status line
-   * @returns {{refreshing: boolean, lastRefreshAt: number, polled: number, fof: string, poolFriends: string, poolSize: number, poolFriendsSize: number, fofSize: number}}
+   * @returns {{refreshing: boolean, lastRefreshAt: number, polled: number, fof: string, poolFriends: string, poolSize: number, poolFriendsSize: number, fofSize: number, primeSize: number, hiddenServers: number}}
    */
   getStatus() {
     return {
@@ -520,6 +604,10 @@ class MapFinder {
       poolSize: this.pool.size,
       poolFriendsSize: this.poolFriends.ids.length,
       fofSize: this.fof.ids.length,
+      primeSize: this.prime.size,
+      // Known servers that Prime only leaves out
+      hiddenServers:
+        this._currentServers().length - this._shownServers().length,
     };
   }
 
@@ -555,6 +643,8 @@ class MapFinder {
     if (this._saveTimer) clearTimeout(this._saveTimer);
     this._saveTimer = null;
     this.pool = new Map();
+    this.prime = new Map();
+    this.primeOnly = false;
     this.fof = { ids: [], fetchedAt: 0, friendsCount: 0 };
     this.poolFriends = { ids: [], crawled: {} };
     this.seeds = new Set();
@@ -791,11 +881,18 @@ class MapFinder {
 
   /**
    * Drop players not seen on an official server for too long, and keep the
-   * pool to its size limit
+   * pool and the players with a sign of Prime to their size limits
    * @param {number} now - Current time
    * @private
    */
   _prunePool(now) {
+    if (this.prime.size > MAP_FINDER_CONFIG.PRIME_MAX_IDS) {
+      this.prime = new Map(
+        [...this.prime.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, MAP_FINDER_CONFIG.PRIME_MAX_IDS)
+      );
+    }
     for (const [id, entry] of this.pool) {
       if (now - entry.lastSeen > MAP_FINDER_CONFIG.POOL_TTL_MS) this.pool.delete(id);
     }
@@ -836,6 +933,11 @@ class MapFinder {
         lastSeen: entry.lastSeen,
         map: String(entry.map || ""),
       });
+    }
+    for (const [id, lastSeen] of Object.entries(data?.prime || {})) {
+      if (Validators.validateSteamId(id) && Number.isFinite(lastSeen)) {
+        this.prime.set(id, Math.max(lastSeen, this.prime.get(id) || 0));
+      }
     }
     if (Array.isArray(data?.fof?.ids)) {
       this.fof = {
@@ -879,6 +981,7 @@ class MapFinder {
         pool: Object.fromEntries(this.pool),
         poolFriends: this.poolFriends,
         fof: this.fof,
+        prime: Object.fromEntries(this.prime),
       });
     }, MAP_FINDER_CONFIG.SAVE_DEBOUNCE_MS);
   }

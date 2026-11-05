@@ -279,6 +279,8 @@ class App {
       );
 
       appStateManager.setState("savedSettings", savedSettings);
+      // The Maps view's Prime only, as the user left it
+      mapFinder.setPrimeOnly(Boolean(savedSettings?.maps_prime_only));
       logger.info("App", "Settings loaded and state updated");
 
       logger.info("App", "Step 9: Checking for first-time run and tutorial");
