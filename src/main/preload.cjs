@@ -11,6 +11,28 @@ const electronAPI = {
   window: {
     minimize: () => ipcRenderer.send("window-minimize"),
     close: () => ipcRenderer.send("window-close"),
+    /**
+     * Whether the window is minimized now
+     * @returns {Promise<boolean>} - False when the main process cannot say
+     */
+    isMinimized: async () => {
+      try {
+        return await ipcRenderer.invoke("window-is-minimized");
+      } catch (error) {
+        console.error("Failed to get the window state:", error);
+        return false;
+      }
+    },
+    /**
+     * Subscribe to the window being minimized and restored
+     * @param {Function} callback - Called with true on minimize, false on restore
+     * @returns {Function} - Unsubscribe
+     */
+    onMinimized: (callback) => {
+      const listener = (_event, minimized) => callback(minimized);
+      ipcRenderer.on("window-minimized", listener);
+      return () => ipcRenderer.removeListener("window-minimized", listener);
+    },
   },
 
   /**

@@ -166,6 +166,22 @@ class WindowManager {
         window.close();
       }
     });
+
+    // The page cannot tell by itself that nobody sees it: with
+    // backgroundThrottling off, Electron keeps its visibilityState
+    // "visible" even when the window is minimized. So it hears minimize and
+    // restore from here, and asks once when it loads, for a reload done
+    // while minimized.
+    const sendMinimized = (minimized) => {
+      if (window && !window.isDestroyed()) {
+        window.webContents.send("window-minimized", minimized);
+      }
+    };
+    window.on("minimize", () => sendMinimized(true));
+    window.on("restore", () => sendMinimized(false));
+    ipcMain.handle("window-is-minimized", () =>
+      Boolean(window && !window.isDestroyed() && window.isMinimized())
+    );
   }
 }
 

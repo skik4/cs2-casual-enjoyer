@@ -121,11 +121,20 @@ class MapFinderView {
     onLanguageChange(() => this.render());
   }
 
+  // Whether the Maps tab is open, and whether the window is minimized as
+  // the main process last said: the "view" need holds only for an open tab
+  // in a window that is not minimized
+  static _shown = false;
+  static _minimized = false;
+  static _minimizedWired = false;
+
   /**
-   * The view opened: start finding
+   * The view opened: start finding, unless the window is minimized
    */
   static show() {
-    mapFinder.setNeed("view", true);
+    this._shown = true;
+    this._followMinimized();
+    this._updateViewNeed();
     this.render();
   }
 
@@ -133,7 +142,46 @@ class MapFinderView {
    * The view closed: the finder goes on only for a join or a kept map
    */
   static hide() {
+    this._shown = false;
     mapFinder.setNeed("view", false);
+  }
+
+  /**
+   * Hold the "view" need while the tab is open in a window that is not
+   * minimized. A Maps tab left open in a minimized window would otherwise
+   * poll Steam all evening for nobody. A running join and a kept map hold
+   * needs of their own and go on.
+   * @private
+   */
+  static _updateViewNeed() {
+    mapFinder.setNeed("view", this._shown && !this._minimized);
+  }
+
+  /**
+   * Hear the window's minimize and restore from the main process, wired
+   * once. The page cannot see them itself: with backgroundThrottling off,
+   * Electron keeps its visibilityState "visible". The state is asked for
+   * as well, since a page reloaded in a minimized window hears no minimize;
+   * a report that comes first wins over that answer, which may be older.
+   * @private
+   */
+  static _followMinimized() {
+    const bridge = window.electronAPI?.window;
+    if (this._minimizedWired || !bridge?.onMinimized) return;
+    this._minimizedWired = true;
+
+    let heard = false;
+    const apply = (minimized) => {
+      this._minimized = Boolean(minimized);
+      if (this._shown) this._updateViewNeed();
+    };
+    bridge.onMinimized((minimized) => {
+      heard = true;
+      apply(minimized);
+    });
+    bridge.isMinimized?.().then((minimized) => {
+      if (!heard) apply(minimized);
+    });
   }
 
   /**
