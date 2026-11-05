@@ -66,26 +66,37 @@ describe("startAutoRefresh", () => {
     credentialState.reject("token-1");
     SteamAPI.getFriendsStatuses.mockClear();
 
-    await jest.advanceTimersByTimeAsync(API_CONFIG.AUTO_REFRESH_INTERVAL_MS * 3);
+    await jest.advanceTimersByTimeAsync(
+      API_CONFIG.AUTO_REFRESH_INTERVAL_MS * 3
+    );
     expect(SteamAPI.getFriendsStatuses).not.toHaveBeenCalled();
 
     // The user pasted a fresh token
     auth = "token-2";
     await jest.advanceTimersByTimeAsync(API_CONFIG.AUTO_REFRESH_INTERVAL_MS);
 
-    expect(SteamAPI.getFriendsStatuses).toHaveBeenLastCalledWith([FRIEND], "token-2");
+    expect(SteamAPI.getFriendsStatuses).toHaveBeenLastCalledWith(
+      [FRIEND],
+      "token-2"
+    );
     credentialState.reset();
   });
 
   test("asks with the credential entered at the time of each round", async () => {
     await appFriendsManager.startAutoRefresh();
-    expect(SteamAPI.getFriendsStatuses).toHaveBeenLastCalledWith([FRIEND], "token-1");
+    expect(SteamAPI.getFriendsStatuses).toHaveBeenLastCalledWith(
+      [FRIEND],
+      "token-1"
+    );
 
     // The old token expired; the user pasted a new one
     auth = "token-2";
     await jest.advanceTimersByTimeAsync(API_CONFIG.AUTO_REFRESH_INTERVAL_MS);
 
-    expect(SteamAPI.getFriendsStatuses).toHaveBeenLastCalledWith([FRIEND], "token-2");
+    expect(SteamAPI.getFriendsStatuses).toHaveBeenLastCalledWith(
+      [FRIEND],
+      "token-2"
+    );
   });
 
   test("a slow round is not overlapped by the next ones", async () => {
@@ -95,7 +106,9 @@ describe("startAutoRefresh", () => {
       () => new Promise((resolve) => (finish = resolve))
     );
 
-    await jest.advanceTimersByTimeAsync(API_CONFIG.AUTO_REFRESH_INTERVAL_MS * 3);
+    await jest.advanceTimersByTimeAsync(
+      API_CONFIG.AUTO_REFRESH_INTERVAL_MS * 3
+    );
     expect(SteamAPI.getFriendsStatuses).toHaveBeenCalledTimes(2);
 
     finish([]);
@@ -105,7 +118,10 @@ describe("startAutoRefresh", () => {
 
   test("asks where the user is in the same round, to spot friends beside them", async () => {
     const SERVER = "90071992547409921";
-    appStateManager.setState("savedSettings", { fake_friend_ids: [], steam_id: USER });
+    appStateManager.setState("savedSettings", {
+      fake_friend_ids: [],
+      steam_id: USER,
+    });
     SteamAPI.getPresence.mockResolvedValue(
       new Map([[USER, { steamid: USER, inCS2: true, serverId: SERVER }]])
     );

@@ -36,7 +36,13 @@ const server = (serverId, overrides = {}) => ({
   rounds: 4,
   over: false,
   freeSlot: true,
-  players: [{ steamid: "76561198000000011", personaname: "a", connect: "+gcconnect0A0B0C0D" }],
+  players: [
+    {
+      steamid: "76561198000000011",
+      personaname: "a",
+      connect: "+gcconnect0A0B0C0D",
+    },
+  ],
   ...overrides,
 });
 
@@ -90,7 +96,9 @@ test("a map's servers say what is going on there", () => {
   MapFinderView.render();
 
   // Only the running match counts as a server with room
-  expect(label(getMapJoinId("de_dust2")).textContent).toBe("1 with a free slot");
+  expect(label(getMapJoinId("de_dust2")).textContent).toBe(
+    "1 with a free slot"
+  );
   expect(label(`srv-${DUST_1}`).textContent).toBe("free slot");
   expect(button(`srv-${DUST_1}`).disabled).toBe(false);
   expect(label(`srv-${DUST_2}`).textContent).toBe("match over");
@@ -111,7 +119,9 @@ test("the user's own server and map are marked and cannot be joined", () => {
 
   MapFinderView.render();
 
-  expect(label(getMapJoinId("de_dust2")).textContent).toBe("you're on this map");
+  expect(label(getMapJoinId("de_dust2")).textContent).toBe(
+    "you're on this map"
+  );
   expect(button(getMapJoinId("de_dust2")).disabled).toBe(true);
   expect(label(`srv-${DUST_1}`).textContent).toBe("you're here");
   expect(button(`srv-${DUST_1}`).disabled).toBe(true);
@@ -144,7 +154,12 @@ test("Join on a map not pinned lets the pins go, and so does cancelling their jo
   expect(mapKeeper.getMaps()).toEqual([]);
 
   mapKeeper.toggle("de_dust2");
-  joinStates = { [PINNED_MAPS_JOIN_ID]: { status: STATUS_TYPES.CONNECTING, cancelled: false } };
+  joinStates = {
+    [PINNED_MAPS_JOIN_ID]: {
+      status: STATUS_TYPES.CONNECTING,
+      cancelled: false,
+    },
+  };
   MapFinderView.render();
 
   click(button(PINNED_MAPS_JOIN_ID));
@@ -177,9 +192,12 @@ describe("sources", () => {
   const A = "76561198000000011";
   const B = "76561198000000012";
   const KEY = "ABCDEF0123456789ABCDEF0123456789";
-  const sourceRow = (source) => document.querySelector(`[data-source-row="${source}"]`);
+  const sourceRow = (source) =>
+    document.querySelector(`[data-source-row="${source}"]`);
   const sourceButton = (source, action) =>
-    document.querySelector(`#map-sources [data-source="${source}"][data-action="${action}"]`);
+    document.querySelector(
+      `#map-sources [data-source="${source}"][data-action="${action}"]`
+    );
   let deps;
 
   beforeEach(() => {
@@ -201,19 +219,29 @@ describe("sources", () => {
   test("each source shows how many players it holds", () => {
     mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
     mapFinder.poolFriends = {
-      ids: Array.from({ length: 1234 }, (_, i) => String(76561198100000000n + BigInt(i))),
+      ids: Array.from({ length: 1234 }, (_, i) =>
+        String(76561198100000000n + BigInt(i))
+      ),
       crawled: {},
     };
 
     MapFinderView.render();
 
-    expect(sourceRow("pool").querySelector(".source-count").textContent).toBe("1");
-    expect(sourceRow("poolFriends").querySelector(".source-count").textContent).toBe("1,234");
-    expect(sourceRow("fof").querySelector(".source-count").textContent).toBe("0");
+    expect(sourceRow("pool").querySelector(".source-count").textContent).toBe(
+      "1"
+    );
+    expect(
+      sourceRow("poolFriends").querySelector(".source-count").textContent
+    ).toBe("1,234");
+    expect(sourceRow("fof").querySelector(".source-count").textContent).toBe(
+      "0"
+    );
   });
 
   test("the pool's clear asks whom to forget: everyone, or those without a sign of Prime", () => {
-    const clearPool = jest.spyOn(mapFinder, "clearPool").mockImplementation(() => 0);
+    const clearPool = jest
+      .spyOn(mapFinder, "clearPool")
+      .mockImplementation(() => 0);
     mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
     mapFinder.pool.set(B, { lastSeen: Date.now(), map: "de_dust2" });
     mapFinder.prime.set(A, Date.now());
@@ -248,7 +276,9 @@ describe("sources", () => {
     expect(sourceButton("poolFriends", "clear").textContent).toBe("Clear");
 
     click(sourceButton("poolFriends", "clear"));
-    expect(sourceButton("poolFriends", "clear").textContent).toBe("Sure? Click again");
+    expect(sourceButton("poolFriends", "clear").textContent).toBe(
+      "Sure? Click again"
+    );
     expect(clearPoolFriends).not.toHaveBeenCalled();
 
     click(sourceButton("poolFriends", "clear"));
@@ -259,7 +289,9 @@ describe("sources", () => {
   test("a clear forgets its first click after a few seconds", () => {
     jest.useFakeTimers();
     try {
-      const clearFof = jest.spyOn(mapFinder, "clearFof").mockImplementation(() => {});
+      const clearFof = jest
+        .spyOn(mapFinder, "clearFof")
+        .mockImplementation(() => {});
       mapFinder.fof = { ids: [B], fetchedAt: 1, friendsCount: 1 };
       MapFinderView.render();
 
@@ -286,7 +318,9 @@ describe("sources", () => {
 
   test("lists are read only on a click, and only with a key", () => {
     const readFof = jest.spyOn(mapFinder, "readFof").mockReturnValue(true);
-    const readPoolFriends = jest.spyOn(mapFinder, "readPoolFriends").mockReturnValue(true);
+    const readPoolFriends = jest
+      .spyOn(mapFinder, "readPoolFriends")
+      .mockReturnValue(true);
     mapFinder.pool.set(A, { lastSeen: Date.now(), map: "de_dust2" });
 
     MapFinderView.render();
@@ -309,13 +343,13 @@ describe("sources", () => {
 
     MapFinderView.render();
 
-    expect(sourceRow("poolFriends").querySelector(".source-state").textContent).toBe(
-      "reading 3 of 40…"
-    );
+    expect(
+      sourceRow("poolFriends").querySelector(".source-state").textContent
+    ).toBe("reading 3 of 40…");
     expect(sourceButton("poolFriends", "read")).toBeNull();
-    expect(document.getElementById("map-finder-status").textContent).not.toContain(
-      "reading"
-    );
+    expect(
+      document.getElementById("map-finder-status").textContent
+    ).not.toContain("reading");
   });
 });
 
@@ -342,7 +376,9 @@ describe("Prime", () => {
     const mapTag = row('[data-map="de_dust2"] .map-row .prime-tag');
     expect(mapTag.textContent).toBe("Prime: 1");
     expect(mapTag.title).toContain("1 of 2");
-    expect(row('[data-map="de_dust2"] .game-where').textContent).toBe("2 servers");
+    expect(row('[data-map="de_dust2"] .game-where').textContent).toBe(
+      "2 servers"
+    );
     expect(row('[data-map="de_mirage"] .prime-tag')).toBeNull();
   });
 
@@ -358,7 +394,9 @@ describe("Prime", () => {
     expect(row('[data-map="de_mirage"]')).toBeNull();
     // Every server listed has Prime, so the map does not count them
     expect(row('[data-map="de_dust2"] .map-row .prime-tag')).toBeNull();
-    expect(document.getElementById("maps-prime-only").getAttribute("aria-pressed")).toBe("true");
+    expect(
+      document.getElementById("maps-prime-only").getAttribute("aria-pressed")
+    ).toBe("true");
     expect(document.getElementById("tab-count-maps").textContent).toBe("1");
   });
 
@@ -367,7 +405,9 @@ describe("Prime", () => {
 
     MapFinderView.render();
 
-    expect(document.getElementById("maps-empty").textContent).toContain("Prime only");
+    expect(document.getElementById("maps-empty").textContent).toContain(
+      "Prime only"
+    );
   });
 
   test("the switch turns Prime only on and keeps it in the settings", async () => {
@@ -411,11 +451,20 @@ describe("friend check marks", () => {
   const primeServer = (serverId, steamid) =>
     server(serverId, {
       primePlayers: 1,
-      players: [{ steamid, personaname: "p", connect: "+gcconnect0A0B0C0D", prime: true }],
+      players: [
+        {
+          steamid,
+          personaname: "p",
+          connect: "+gcconnect0A0B0C0D",
+          prime: true,
+        },
+      ],
     });
   /** The Prime tag in a server's row */
   const tag = (serverId) =>
-    button(`srv-${serverId}`).closest(".server-row").querySelector(".prime-tag");
+    button(`srv-${serverId}`)
+      .closest(".server-row")
+      .querySelector(".prime-tag");
 
   beforeEach(() => {
     deps = mapFinder.deps;
@@ -444,13 +493,19 @@ describe("friend check marks", () => {
 
     expect(tag(DUST_1).textContent).toBe("Prime");
     expect(tag(DUST_1).classList.contains("doubt")).toBe(false);
-    expect(tag(DUST_1).title).toContain("Players with a sign of Prime here: 1.");
+    expect(tag(DUST_1).title).toContain(
+      "Players with a sign of Prime here: 1."
+    );
     expect(tag(DUST_1).title).toContain("most likely came through matchmaking");
-    expect(tag(DUST_1).title).toContain("Friends who hide their game details do not show");
+    expect(tag(DUST_1).title).toContain(
+      "Friends who hide their game details do not show"
+    );
 
     expect(tag(DUST_2).textContent).toBe("Prime?");
     expect(tag(DUST_2).classList.contains("doubt")).toBe(true);
-    expect(tag(DUST_2).title).toContain("may have joined that friend's match without Prime");
+    expect(tag(DUST_2).title).toContain(
+      "may have joined that friend's match without Prime"
+    );
     // Only a mark: the server is still there to join
     expect(button(`srv-${DUST_2}`).disabled).toBe(false);
 
@@ -472,7 +527,11 @@ describe("friend check marks", () => {
   });
 
   test("the tags speak Russian too", () => {
-    mapFinder._friendChecks.set(C, { serverId: DUST_3, verdict: "prime-friends", reason: null });
+    mapFinder._friendChecks.set(C, {
+      serverId: DUST_3,
+      verdict: "prime-friends",
+      reason: null,
+    });
     setLanguage("ru");
 
     MapFinderView.render();

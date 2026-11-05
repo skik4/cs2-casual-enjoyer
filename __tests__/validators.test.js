@@ -13,7 +13,9 @@ const API_KEY = "ABCDEF0123456789ABCDEF0123456789";
  */
 const tokenWith = (claims) =>
   [
-    Buffer.from(JSON.stringify({ alg: "EdDSA", typ: "JWT" })).toString("base64url"),
+    Buffer.from(JSON.stringify({ alg: "EdDSA", typ: "JWT" })).toString(
+      "base64url"
+    ),
     Buffer.from(JSON.stringify(claims)).toString("base64url"),
     "c2lnbmF0dXJl",
   ].join(".");
@@ -38,7 +40,10 @@ describe("format checks", () => {
 
 describe("extracting the credential", () => {
   const token = tokenWith({ sub: STEAM_ID, exp: 2000000000 });
-  const pastedJson = JSON.stringify({ success: 1, data: { webapi_token: token } });
+  const pastedJson = JSON.stringify({
+    success: 1,
+    data: { webapi_token: token },
+  });
 
   test("takes the token out of the JSON Steam shows", () => {
     expect(Validators.extractTokenIfAny(pastedJson)).toBe(token);
@@ -96,7 +101,9 @@ describe("parseWebApiToken", () => {
 describe("validateSteamUrl", () => {
   test("reads a SteamID64 profile link", () => {
     expect(
-      Validators.validateSteamUrl(`https://steamcommunity.com/profiles/${STEAM_ID}/`)
+      Validators.validateSteamUrl(
+        `https://steamcommunity.com/profiles/${STEAM_ID}/`
+      )
     ).toEqual({ valid: true, type: "steamid", value: STEAM_ID });
   });
 
@@ -107,10 +114,12 @@ describe("validateSteamUrl", () => {
   });
 
   test("rejects other links", () => {
-    expect(Validators.validateSteamUrl("https://example.com/id/x").valid).toBe(false);
-    expect(Validators.validateSteamUrl("https://steamcommunity.com/market").valid).toBe(
+    expect(Validators.validateSteamUrl("https://example.com/id/x").valid).toBe(
       false
     );
+    expect(
+      Validators.validateSteamUrl("https://steamcommunity.com/market").valid
+    ).toBe(false);
     expect(Validators.validateSteamUrl(42).valid).toBe(false);
   });
 });
@@ -123,7 +132,10 @@ describe("validateRequiredFields", () => {
   });
 
   test("lists every missing field", () => {
-    const result = Validators.validateRequiredFields({ steamId: "", auth: "x" });
+    const result = Validators.validateRequiredFields({
+      steamId: "",
+      auth: "x",
+    });
     expect(result.valid).toBe(false);
     expect(result.errors).toHaveLength(2);
   });

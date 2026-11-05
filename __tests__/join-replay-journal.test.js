@@ -15,7 +15,12 @@ jest.mock("../src/steam/steam-api.js");
 jest.mock("../src/utils/error-handler.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import joinManager, {
@@ -50,7 +55,7 @@ const stateAt = (steps, elapsed) =>
         user: step.user ?? state.user,
         players: { ...state.players, ...step.players },
       }),
-      { gsi: null, user: null, players: {} },
+      { gsi: null, user: null, players: {} }
     );
 
 const account = (steamid, { kv = "", server = null, inCS2 = true }) => ({
@@ -76,7 +81,7 @@ const mapOf = (kv) => /"game:map" "([^"]*)"/.exec(kv ?? "")?.[1] ?? null;
 const userAccount = ({ user, players, gsi }) => {
   const server = user?.server ?? null;
   const there = Object.values(players).find(
-    (player) => server && player?.server === server,
+    (player) => server && player?.server === server
   );
   const map = there ? mapOf(there.kv) : (gsi?.map?.name ?? null);
   const kv =
@@ -129,7 +134,7 @@ async function replay(recording) {
       if (raw) {
         presence.set(
           id,
-          SteamAPIResponseProcessor.processPresenceResponse(raw),
+          SteamAPIResponseProcessor.processPresenceResponse(raw)
         );
       }
     }
@@ -141,11 +146,11 @@ async function replay(recording) {
     const friend = state.players[friendId];
     return {
       user: SteamAPIResponseProcessor.processJoinInfoResponse(
-        userAccount(state),
+        userAccount(state)
       ),
       friend: friend
         ? SteamAPIResponseProcessor.processJoinInfoResponse(
-            account(friendId, friend),
+            account(friendId, friend)
           )
         : null,
     };
@@ -207,12 +212,12 @@ test.each(RECORDINGS.map((recording) => [recording.name, recording]))(
       if (attempt.outcome === "joined") {
         expect(updateDot).toHaveBeenCalledWith(
           joinIdOf(attempt),
-          STATUS_TYPES.JOINED,
+          STATUS_TYPES.JOINED
         );
       } else {
         expect(updateDot).not.toHaveBeenCalledWith(
           joinIdOf(attempt),
-          STATUS_TYPES.JOINED,
+          STATUS_TYPES.JOINED
         );
       }
     }
@@ -220,8 +225,8 @@ test.each(RECORDINGS.map((recording) => [recording.name, recording]))(
     // can find the user's own slot taken
     expect(openExternal.mock.calls.map(([url]) => url)).toEqual(
       recording.connects.map(
-        ({ player, connect }) => `steam://rungame/730/${player}/${connect}`,
-      ),
+        ({ player, connect }) => `steam://rungame/730/${player}/${connect}`
+      )
     );
-  },
+  }
 );

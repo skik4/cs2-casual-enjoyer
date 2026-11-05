@@ -172,7 +172,9 @@ describe("GSI cfg", () => {
     expect(first.cfgPath).toBe(
       path.join(cs2Dir, "game", "csgo", "cfg", GSI_CONFIG.CFG_FILE_NAME)
     );
-    expect(fs.readFileSync(first.cfgPath, "utf-8")).toBe(buildGsiConfig(options));
+    expect(fs.readFileSync(first.cfgPath, "utf-8")).toBe(
+      buildGsiConfig(options)
+    );
 
     await expect(installGsiConfig(cs2Dir, options)).resolves.toMatchObject({
       changed: false,
@@ -244,7 +246,10 @@ describe("startGsiServer", () => {
       maxBodyBytes: 64,
     }));
 
-    const body = JSON.stringify({ auth: { token: "secret" }, pad: "x".repeat(200) });
+    const body = JSON.stringify({
+      auth: { token: "secret" },
+      pad: "x".repeat(200),
+    });
     await expect(post(server.address().port, body)).resolves.toBe(413);
     expect(onState).not.toHaveBeenCalled();
   });
@@ -312,7 +317,10 @@ describe("GsiService", () => {
 
     await post(
       status.port,
-      JSON.stringify({ auth: { token: store.token }, map: { name: "de_dust2" } })
+      JSON.stringify({
+        auth: { token: store.token },
+        map: { name: "de_dust2" },
+      })
     );
     expect(onState).toHaveBeenCalledWith({ map: { name: "de_dust2" } });
   });

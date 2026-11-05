@@ -120,25 +120,31 @@ test.each([
   // As app.js holds it for a map or server join, and map-keeper.js for pins
   ["a running map join", "join"],
   ["a pinned map", "keep"],
-])("%s keeps the finder polling while the window is minimized", async (_, need) => {
-  mapFinder.setNeed(need, true);
-  MapFinderView.show();
-  await settle();
-  const setNeed = jest.spyOn(mapFinder, "setNeed");
+])(
+  "%s keeps the finder polling while the window is minimized",
+  async (_, need) => {
+    mapFinder.setNeed(need, true);
+    MapFinderView.show();
+    await settle();
+    const setNeed = jest.spyOn(mapFinder, "setNeed");
 
-  main.report(true);
-  expect(mapFinder.active).toBe(true);
-  expect(await pollsOver(mapFinder, 3 * POLL_MS)).toBe(3);
+    main.report(true);
+    expect(mapFinder.active).toBe(true);
+    expect(await pollsOver(mapFinder, 3 * POLL_MS)).toBe(3);
 
-  // The restore adds no poll of its own to a finder that never stopped
-  main.report(false);
-  expect(await pollsOver(mapFinder, 0)).toBe(0);
-  expect(await pollsOver(mapFinder, POLL_MS)).toBe(1);
+    // The restore adds no poll of its own to a finder that never stopped
+    main.report(false);
+    expect(await pollsOver(mapFinder, 0)).toBe(0);
+    expect(await pollsOver(mapFinder, POLL_MS)).toBe(1);
 
-  // The view touched its own need only
-  expect(setNeed.mock.calls.map(([name]) => name)).toEqual(["view", "view"]);
-  expect(setNeed.mock.calls.map(([, needed]) => needed)).toEqual([false, true]);
-});
+    // The view touched its own need only
+    expect(setNeed.mock.calls.map(([name]) => name)).toEqual(["view", "view"]);
+    expect(setNeed.mock.calls.map(([, needed]) => needed)).toEqual([
+      false,
+      true,
+    ]);
+  }
+);
 
 test("a closed Maps tab stays closed when the window comes back", async () => {
   MapFinderView.show();

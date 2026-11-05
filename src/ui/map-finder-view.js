@@ -1,5 +1,8 @@
 // Shared constants
-import { JOIN_TARGET_PREFIXES, PINNED_MAPS_JOIN_ID } from "../shared/constants.js";
+import {
+  JOIN_TARGET_PREFIXES,
+  PINNED_MAPS_JOIN_ID,
+} from "../shared/constants.js";
 import { mapLabel } from "../shared/map-labels.js";
 
 // Core singletons
@@ -41,7 +44,9 @@ const escapeHtml = DOMUtils.escapeHtml;
  * @returns {string} - E.g. "19 510" in Russian, "19,510" in English
  */
 function formatCount(count) {
-  return Number(count || 0).toLocaleString(getLanguage() === "ru" ? "ru-RU" : "en-US");
+  return Number(count || 0).toLocaleString(
+    getLanguage() === "ru" ? "ru-RU" : "en-US"
+  );
 }
 
 // A clear button waits this long for its second click, as a fake friend's
@@ -100,12 +105,15 @@ class MapFinderView {
     DOMUtils.getElementById("fof-key-delete")?.addEventListener("click", () =>
       this.deleteFofKey()
     );
-    DOMUtils.getElementById("map-sources")?.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-action]");
-      if (button && !button.disabled) {
-        this.handleSourceAction(button.dataset.source, button.dataset.action);
+    DOMUtils.getElementById("map-sources")?.addEventListener(
+      "click",
+      (event) => {
+        const button = event.target.closest("[data-action]");
+        if (button && !button.disabled) {
+          this.handleSourceAction(button.dataset.source, button.dataset.action);
+        }
       }
-    });
+    );
     DOMUtils.getElementById("fof-key-toggle")?.addEventListener("click", () => {
       this.keyDetailsOpen = !this.keyDetailsOpen;
       this.renderFofKey();
@@ -489,11 +497,16 @@ class MapFinderView {
     return `
       <span>${escapeHtml(t("mapFinder.clearPoolAsk"))}</span>
       ${this._button("pool", "clear-all", t("mapFinder.clearPoolAll"), { className: "clear-btn armed" })}
-      ${this._button("pool", "clear-no-prime", t("mapFinder.clearPoolNoPrime", { count: withoutPrime }), {
-        title: t("mapFinder.clearPoolNoPrimeTitle"),
-        className: "clear-btn armed",
-        disabled: !withoutPrime,
-      })}
+      ${this._button(
+        "pool",
+        "clear-no-prime",
+        t("mapFinder.clearPoolNoPrime", { count: withoutPrime }),
+        {
+          title: t("mapFinder.clearPoolNoPrimeTitle"),
+          className: "clear-btn armed",
+          disabled: !withoutPrime,
+        }
+      )}
       ${this._button("pool", "cancel", t("mapFinder.cancel"))}`;
   }
 
@@ -531,7 +544,11 @@ class MapFinderView {
       "clear",
       t(armed ? "mapFinder.confirmClear" : "mapFinder.clear"),
       {
-        title: t(source === "fof" ? "mapFinder.clearFofTitle" : "mapFinder.clearPoolFriendsTitle"),
+        title: t(
+          source === "fof"
+            ? "mapFinder.clearFofTitle"
+            : "mapFinder.clearPoolFriendsTitle"
+        ),
         className: `clear-btn${armed ? " armed" : ""}`,
         disabled: !count && !armed,
       }

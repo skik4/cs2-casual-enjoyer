@@ -46,7 +46,9 @@ describe("friends lists", () => {
   });
 
   test("player summaries come in two shapes", () => {
-    expect(SteamAPIUtils.extractPlayersFromSummaries({ players: [1] })).toEqual([1]);
+    expect(SteamAPIUtils.extractPlayersFromSummaries({ players: [1] })).toEqual(
+      [1]
+    );
     expect(
       SteamAPIUtils.extractPlayersFromSummaries({ response: { players: [2] } })
     ).toEqual([2]);
@@ -57,19 +59,27 @@ describe("friends lists", () => {
 describe("avatars and logging helpers", () => {
   test("extractBestAvatar prefers the full size", () => {
     expect(
-      SteamAPIUtils.extractBestAvatar({ avatar: "s", avatarfull: "f", avatarmedium: "m" })
+      SteamAPIUtils.extractBestAvatar({
+        avatar: "s",
+        avatarfull: "f",
+        avatarmedium: "m",
+      })
     ).toBe("f");
     expect(SteamAPIUtils.extractBestAvatar({ avatarmedium: "m" })).toBe("m");
     expect(SteamAPIUtils.extractBestAvatar(undefined)).toBe("");
   });
 
   test("filterMissingAvatars leaves out cached ones", () => {
-    expect(SteamAPIUtils.filterMissingAvatars(["1", "2"], { 1: {} })).toEqual(["2"]);
+    expect(SteamAPIUtils.filterMissingAvatars(["1", "2"], { 1: {} })).toEqual([
+      "2",
+    ]);
   });
 
   test("maskAuthInUrl hides keys and tokens", () => {
     expect(
-      SteamAPIUtils.maskAuthInUrl("https://x/?key=SECRET&a=1&access_token=TOKEN")
+      SteamAPIUtils.maskAuthInUrl(
+        "https://x/?key=SECRET&a=1&access_token=TOKEN"
+      )
     ).toBe("https://x/?key=***&a=1&access_token=***");
   });
 });
@@ -78,11 +88,16 @@ describe("HTTP errors", () => {
   const response = (status, ok = false) => ({ ok, status, statusText: "S" });
 
   test("an OK response passes", () => {
-    expect(SteamAPIUtils.handleHttpResponse(response(200, true), {})).toBe(true);
+    expect(SteamAPIUtils.handleHttpResponse(response(200, true), {})).toBe(
+      true
+    );
   });
 
   test("a private friends list has an error of its own", () => {
-    const errorHandlers = SteamAPIUtils.getMethodErrorHandlers("GetFriendsList", false);
+    const errorHandlers = SteamAPIUtils.getMethodErrorHandlers(
+      "GetFriendsList",
+      false
+    );
 
     expect(() =>
       SteamAPIUtils.handleHttpResponse(response(401), {
@@ -90,7 +105,9 @@ describe("HTTP errors", () => {
         errorHandlers,
         allowFailure: true,
       })
-    ).toThrow(expect.objectContaining({ code: ERROR_CODES.PRIVATE_FRIENDS_LIST }));
+    ).toThrow(
+      expect.objectContaining({ code: ERROR_CODES.PRIVATE_FRIENDS_LIST })
+    );
   });
 
   test("a token's 401 on the friends list is the token turned down, not a private list", () => {
@@ -98,7 +115,10 @@ describe("HTTP errors", () => {
       SteamAPIUtils.handleHttpResponse(response(401), {
         method: "GetFriendsList",
         isToken: true,
-        errorHandlers: SteamAPIUtils.getMethodErrorHandlers("GetFriendsList", true),
+        errorHandlers: SteamAPIUtils.getMethodErrorHandlers(
+          "GetFriendsList",
+          true
+        ),
       })
     ).toThrow(
       expect.objectContaining({ code: ERROR_CODES.TOKEN_REJECTED, status: 401 })
@@ -117,7 +137,10 @@ describe("HTTP errors", () => {
       SteamAPIUtils.handleHttpResponse(response(status), {
         method: "GetPlayerSummaries",
         isToken,
-        errorHandlers: SteamAPIUtils.getMethodErrorHandlers("GetPlayerSummaries", isToken),
+        errorHandlers: SteamAPIUtils.getMethodErrorHandlers(
+          "GetPlayerSummaries",
+          isToken
+        ),
       })
     ).toThrow(expect.objectContaining({ code, status }));
   });
@@ -126,7 +149,9 @@ describe("HTTP errors", () => {
     expect(
       SteamAPIUtils.handleHttpResponse(response(429), {
         method: "GetPlayerLinkDetails",
-        errorHandlers: SteamAPIUtils.getMethodErrorHandlers("GetPlayerLinkDetails"),
+        errorHandlers: SteamAPIUtils.getMethodErrorHandlers(
+          "GetPlayerLinkDetails"
+        ),
         allowFailure: true,
       })
     ).toBe(false);

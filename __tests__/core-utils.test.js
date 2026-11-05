@@ -9,9 +9,12 @@ import { setLanguage } from "../src/i18n/i18n-manager.js";
 
 /** An error as the Steam client throws it: a code, a status, a log message */
 const coded = (code, status) =>
-  Object.assign(ErrorHandler.createError(code, `GetFriendsList failed: ${status}`), {
-    status,
-  });
+  Object.assign(
+    ErrorHandler.createError(code, `GetFriendsList failed: ${status}`),
+    {
+      status,
+    }
+  );
 
 describe("ErrorHandler", () => {
   afterEach(() => setLanguage("en"));
@@ -44,12 +47,12 @@ describe("ErrorHandler", () => {
   test("Russian users read Steam's refusals in Russian", () => {
     setLanguage("ru");
 
-    expect(ErrorHandler.userMessage(coded(ERROR_CODES.EMPTY_FRIENDS_LIST))).toBe(
-      "В твоём списке друзей никого не найдено."
-    );
-    expect(ErrorHandler.userMessage(coded(ERROR_CODES.TOKEN_REJECTED, 401))).toBe(
-      "Steam не принял токен, получи новый."
-    );
+    expect(
+      ErrorHandler.userMessage(coded(ERROR_CODES.EMPTY_FRIENDS_LIST))
+    ).toBe("В твоём списке друзей никого не найдено.");
+    expect(
+      ErrorHandler.userMessage(coded(ERROR_CODES.TOKEN_REJECTED, 401))
+    ).toBe("Steam не принял токен, получи новый.");
     expect(ErrorHandler.userMessage(coded(ERROR_CODES.KEY_REJECTED, 403))).toBe(
       "Steam не принял ключ, проверь его."
     );
@@ -73,7 +76,9 @@ describe("ErrorHandler", () => {
   test("formatErrorMessage handles strings, errors and anything else", () => {
     expect(ErrorHandler.formatErrorMessage("text")).toBe("text");
     expect(ErrorHandler.formatErrorMessage(new Error("boom"))).toBe("boom");
-    expect(ErrorHandler.formatErrorMessage({})).toBe("An unknown error occurred");
+    expect(ErrorHandler.formatErrorMessage({})).toBe(
+      "An unknown error occurred"
+    );
   });
 
   test("isPrivacyError recognises the private friends list", () => {
@@ -89,11 +94,16 @@ describe("ErrorHandler", () => {
 describe("AppStateManager", () => {
   test("stores single and batched values", () => {
     appStateManager.setState("usingSavedFriends", true);
-    appStateManager.batchUpdate({ savedFriendsIds: ["1"], savedSettings: { steam_id: "1" } });
+    appStateManager.batchUpdate({
+      savedFriendsIds: ["1"],
+      savedSettings: { steam_id: "1" },
+    });
 
     expect(appStateManager.getState("usingSavedFriends")).toBe(true);
     expect(appStateManager.getState("savedFriendsIds")).toEqual(["1"]);
-    expect(appStateManager.getState("savedSettings")).toEqual({ steam_id: "1" });
+    expect(appStateManager.getState("savedSettings")).toEqual({
+      steam_id: "1",
+    });
   });
 
   test("clearRefreshInterval stops the friends refresh", () => {

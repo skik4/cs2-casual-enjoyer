@@ -66,13 +66,19 @@ test("onMinimized passes on each minimize and restore, until unsubscribed", () =
   expect(callback.mock.calls).toEqual([[true], [false]]);
 
   unsubscribe();
-  expect(ipcRenderer.removeListener).toHaveBeenCalledWith("window-minimized", listener);
+  expect(ipcRenderer.removeListener).toHaveBeenCalledWith(
+    "window-minimized",
+    listener
+  );
 });
 
 test("the main process sends and answers on the preload's channels", () => {
   // main.js starts the app when imported, and Jest cannot run its
   // import.meta, so its side is read from the source
-  const main = fs.readFileSync(path.join(__dirname, "..", "src", "main", "main.js"), "utf-8");
+  const main = fs.readFileSync(
+    path.join(__dirname, "..", "src", "main", "main.js"),
+    "utf-8"
+  );
 
   expect(main).toContain('.on("minimize", () => sendMinimized(true))');
   expect(main).toContain('.on("restore", () => sendMinimized(false))');

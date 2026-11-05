@@ -19,7 +19,12 @@ jest.mock("../src/game/map-finder.js", () => ({
 }));
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import joinManager from "../src/game/join-manager.js";
@@ -69,13 +74,20 @@ const presence = (overrides = {}) => ({
 /** The user in the menu; the friend on a full server */
 const snapshot = () => ({
   user: presence({ personaname: "me" }),
-  friend: presence({ personaname: "Gabe", inSupportedMode: true, serverId: SERVER }),
+  friend: presence({
+    personaname: "Gabe",
+    inSupportedMode: true,
+    serverId: SERVER,
+  }),
 });
 
 /** The user in the menu; a known player on Dust II with no slot to offer */
 const presences = () =>
   new Map([
-    [USER, presence({ steamid: USER, official: false, map: null, score: null })],
+    [
+      USER,
+      presence({ steamid: USER, official: false, map: null, score: null }),
+    ],
     [
       PLAYER,
       presence({
@@ -115,7 +127,9 @@ beforeEach(() => {
       <button id="join-bar-cancel"></button>
     </div>`;
 
-  joinManager.configure({ getCredentials: () => ({ steamId: USER, auth: KEY }) });
+  joinManager.configure({
+    getCredentials: () => ({ steamId: USER, auth: KEY }),
+  });
   joinManager.setCS2Manager({
     checkUserInCS2: jest.fn().mockResolvedValue(true),
     getGsiUserState: () => null,
@@ -130,7 +144,9 @@ beforeEach(() => {
   );
   SteamAPI.getJoinSnapshot.mockResolvedValue(snapshot());
   SteamAPI.getPresence.mockResolvedValue(presences());
-  window.electronAPI = { shell: { openExternal: jest.fn().mockResolvedValue(true) } };
+  window.electronAPI = {
+    shell: { openExternal: jest.fn().mockResolvedValue(true) },
+  };
 });
 
 afterEach(() => {

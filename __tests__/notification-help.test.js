@@ -8,7 +8,12 @@
 
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import NotificationManager from "../src/ui/notification-manager.js";
@@ -20,7 +25,8 @@ import { setLanguage, t } from "../src/i18n/i18n-manager.js";
 
 const notifications = () => document.getElementById("notifications");
 const card = () => notifications().querySelector(".notification-content");
-const title = () => notifications().querySelector(".notification-main-text").textContent;
+const title = () =>
+  notifications().querySelector(".notification-main-text").textContent;
 const PICTOGRAPH = /\p{Extended_Pictographic}/u;
 
 beforeEach(() => {
@@ -54,7 +60,9 @@ test("every link in the help texts carries the app's one link look", () => {
 
     const links = [...card().querySelectorAll("a")];
     expect(links.length).toBeGreaterThan(0);
-    links.forEach((link) => expect(link.classList.contains("link-btn")).toBe(true));
+    links.forEach((link) =>
+      expect(link.classList.contains("link-btn")).toBe(true)
+    );
   }
 });
 
@@ -81,7 +89,9 @@ test("a language switch re-renders the help that is open", () => {
   expect(title().trim()).toBe(t("help.apiKey.title"));
   expect(title()).not.toBe(before);
   expect(card().querySelector("img")).toBeNull();
-  expect(notifications().querySelector("#steam-token-help-link")).not.toBeNull();
+  expect(
+    notifications().querySelector("#steam-token-help-link")
+  ).not.toBeNull();
 });
 
 test("the close button is the app's square button and hides the help", () => {

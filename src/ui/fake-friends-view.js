@@ -75,7 +75,9 @@ class FakeFriendsView {
         // so the first click only asks for a second one
         if (removeButton.classList.contains("confirm-remove")) {
           this.disarmRemoveButton(removeButton);
-          this.removeFakeFriend(removeButton.id.replace("remove-fake-btn-", ""));
+          this.removeFakeFriend(
+            removeButton.id.replace("remove-fake-btn-", "")
+          );
         } else {
           this.armRemoveButton(removeButton);
         }
@@ -146,7 +148,10 @@ class FakeFriendsView {
     const remaining = FriendsRenderer.lastRenderedFakeFriends.filter(
       (friend) => friend.steamid !== steamId
     );
-    FriendsRenderer.renderFakeFriendsList(remaining, joinManager.getJoinStates());
+    FriendsRenderer.renderFakeFriendsList(
+      remaining,
+      joinManager.getJoinStates()
+    );
     appStateManager.setState(
       "friendsData",
       (appStateManager.getState("friendsData") || []).filter(

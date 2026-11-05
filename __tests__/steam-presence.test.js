@@ -45,7 +45,9 @@ const okResponse = (body) => ({
 
 /** Answer presence requests the way Steam does */
 const mockSteam = ({ accounts = [] }) => {
-  global.fetch.mockImplementation(async () => okResponse({ response: { accounts } }));
+  global.fetch.mockImplementation(async () =>
+    okResponse({ response: { accounts } })
+  );
 };
 
 beforeEach(() => {
@@ -77,9 +79,7 @@ describe("isOfficialServer", () => {
     ],
     ["the main menu", '"game:state" "lobby" "game:mode" "casual"', false],
   ])("%s", (_name, kv, expected) => {
-    expect(isOfficialServer(parseRichPresence(kv))).toBe(
-      expected
-    );
+    expect(isOfficialServer(parseRichPresence(kv))).toBe(expected);
   });
 });
 
@@ -131,7 +131,9 @@ describe("official servers without addresses", () => {
     expect(presence.get(A).official).toBe(true);
     expect(presence.get(B).official).toBe(false);
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(String(global.fetch.mock.calls[0][0])).toContain("/GetPlayerLinkDetails/");
+    expect(String(global.fetch.mock.calls[0][0])).toContain(
+      "/GetPlayerLinkDetails/"
+    );
   });
 });
 
@@ -142,7 +144,11 @@ describe("status key", () => {
         accounts: [
           {
             public_data: { steamid: A },
-            private_data: { game_id: "730", rich_presence_kv: kv, game_server_steam_id: serverId },
+            private_data: {
+              game_id: "730",
+              rich_presence_kv: kv,
+              game_server_steam_id: serverId,
+            },
           },
         ],
       },
@@ -159,15 +165,17 @@ describe("status key", () => {
   test("a new join token alone is no change; a connect showing up or going away is", () => {
     const key = (kv) => richPresenceKey(kv);
     // Seen live: only the token changed, as the user arrived on the server
-    const before = '"connect" "+gcconnect62805B3F4B1347F135DF8FBE" "game:map" "de_dust2"';
-    const after = '"connect" "+gcconnect0FB32A434B1347F1A291CB89" "game:map" "de_dust2"';
+    const before =
+      '"connect" "+gcconnect62805B3F4B1347F135DF8FBE" "game:map" "de_dust2"';
+    const after =
+      '"connect" "+gcconnect0FB32A434B1347F1A291CB89" "game:map" "de_dust2"';
 
     expect(key(after)).toBe(key(before));
     expect(key('"game:map" "de_dust2"')).not.toBe(key(before));
     // Joining a lobby is not joining a server
-    expect(key('"connect" "+gcconnectG4B1347F1" "game:map" "de_dust2"')).not.toBe(
-      key(before)
-    );
+    expect(
+      key('"connect" "+gcconnectG4B1347F1" "game:map" "de_dust2"')
+    ).not.toBe(key(before));
   });
 
   test("connectKind keeps what a connect joins and drops its token", () => {
@@ -186,9 +194,9 @@ describe("status key", () => {
 
     expect(joinInfo(OFFICIAL_CASUAL).statusKey).toBe(base);
     // A new score shows in the status line before anything else changes
-    expect(joinInfo(OFFICIAL_CASUAL.replace("[ 3 : 1 ]", "[ 4 : 1 ]")).statusKey).not.toBe(
-      base
-    );
+    expect(
+      joinInfo(OFFICIAL_CASUAL.replace("[ 3 : 1 ]", "[ 4 : 1 ]")).statusKey
+    ).not.toBe(base);
     // The server id can come from outside rich presence and still counts
     const withoutId = OFFICIAL_CASUAL.replace(
       ' "game_server_steam_id" "90071992547409921"',
@@ -288,7 +296,9 @@ describe("getFriendIdsOf", () => {
       })
     );
 
-    await expect(SteamAPIClient.getFriendIdsOf("76561198000000001", KEY)).resolves.toEqual([A]);
+    await expect(
+      SteamAPIClient.getFriendIdsOf("76561198000000001", KEY)
+    ).resolves.toEqual([A]);
     const url = new URL(global.fetch.mock.calls[0][0]);
     expect(url.pathname).toBe("/ISteamUser/GetFriendList/v1/");
     expect(url.searchParams.get("key")).toBe(KEY);
@@ -303,12 +313,17 @@ describe("getFriendIdsOf", () => {
       json: async () => ({}),
     });
 
-    await expect(SteamAPIClient.getFriendIdsOf("76561198000000001", KEY)).resolves.toEqual([]);
+    await expect(
+      SteamAPIClient.getFriendIdsOf("76561198000000001", KEY)
+    ).resolves.toEqual([]);
   });
 });
 
 describe("friends statuses", () => {
-  const withoutServer = OFFICIAL_CASUAL.replace(' "game_server_steam_id" "90071992547409921"', "");
+  const withoutServer = OFFICIAL_CASUAL.replace(
+    ' "game_server_steam_id" "90071992547409921"',
+    ""
+  );
 
   test("a friend's server comes from the account when rich presence leaves it out", async () => {
     // As Steam answers in practice: rich presence seldom carries the server
@@ -328,7 +343,8 @@ describe("friends statuses", () => {
       },
     };
 
-    const friends = await SteamAPIResponseProcessor.processFriendsStatusesResponse(data, {});
+    const friends =
+      await SteamAPIResponseProcessor.processFriendsStatusesResponse(data, {});
 
     expect(friends).toHaveLength(1);
     expect(friends[0]).toMatchObject({

@@ -26,5 +26,7 @@ export const MAP_LABELS = {
 export function mapLabel(map) {
   if (MAP_LABELS[map]) return MAP_LABELS[map];
   const bare = String(map || "").replace(/^[a-z]{2}_/, "");
-  return bare ? bare.charAt(0).toUpperCase() + bare.slice(1) : String(map || "");
+  return bare
+    ? bare.charAt(0).toUpperCase() + bare.slice(1)
+    : String(map || "");
 }

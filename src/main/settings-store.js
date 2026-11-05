@@ -129,9 +129,12 @@ class SettingsStore {
       return { encrypted: buffer.toString("base64") };
     } catch (error) {
       // The field name and the reason only: a credential never goes to the log
-      this.logger.error(`Could not encrypt ${field}, keeping it in plain text`, {
-        error: error.message,
-      });
+      this.logger.error(
+        `Could not encrypt ${field}, keeping it in plain text`,
+        {
+          error: error.message,
+        }
+      );
       return null;
     }
   }
@@ -178,9 +181,12 @@ class SettingsStore {
     } catch (error) {
       // Most likely a settings file copied from another Windows account or
       // PC, whose keys this one does not have: the app asks for it again
-      this.logger.error(`Could not decrypt ${field}, it will be asked for again`, {
-        error: error.message,
-      });
+      this.logger.error(
+        `Could not decrypt ${field}, it will be asked for again`,
+        {
+          error: error.message,
+        }
+      );
       return null;
     }
   }

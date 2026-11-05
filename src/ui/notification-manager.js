@@ -80,7 +80,10 @@ class NotificationManager {
       : "";
 
     this.showNotification(this.getPrivacyWarningHtml(linkHtml), "error");
-    NotificationManager._lastMain = { kind: "privacy", payload: { privacyUrl } };
+    NotificationManager._lastMain = {
+      kind: "privacy",
+      payload: { privacyUrl },
+    };
   }
 
   /**
@@ -126,16 +129,23 @@ class NotificationManager {
       // Refresh main notification if visible and we know its kind
       const main = NotificationManager._lastMain;
       const notificationElement = DOMUtils.getElementById("notifications");
-      const isVisible = notificationElement && notificationElement.style.display === "block";
+      const isVisible =
+        notificationElement && notificationElement.style.display === "block";
       if (!main || !isVisible) return;
 
       // Update close button tooltip without rebuilding DOM
-      const closeBtn = notificationElement.querySelector(".notification-close-btn");
+      const closeBtn = notificationElement.querySelector(
+        ".notification-close-btn"
+      );
       if (closeBtn) {
-        try { closeBtn.title = i18n.t("notifications.closeButtonTitle"); } catch {}
+        try {
+          closeBtn.title = i18n.t("notifications.closeButtonTitle");
+        } catch {}
       }
 
-      const contentDiv = notificationElement.querySelector(".notification-content");
+      const contentDiv = notificationElement.querySelector(
+        ".notification-content"
+      );
       if (!contentDiv) return;
 
       switch (main.kind) {
@@ -153,27 +163,34 @@ class NotificationManager {
         }
         case "privacy": {
           const privacyUrl = main.payload?.privacyUrl || "";
-          const linkHtml = privacyUrl ? NOTIFICATION_TEMPLATES.PRIVACY_LINK(privacyUrl) : "";
+          const linkHtml = privacyUrl
+            ? NOTIFICATION_TEMPLATES.PRIVACY_LINK(privacyUrl)
+            : "";
           contentDiv.className = "notification-content error";
           contentDiv.innerHTML = this.getPrivacyWarningHtml(linkHtml);
           break;
         }
         case "error": {
-          const errorMessage = ErrorHandler.userMessage(main.payload?.error ?? "");
+          const errorMessage = ErrorHandler.userMessage(
+            main.payload?.error ?? ""
+          );
           contentDiv.className = "notification-content error";
-          contentDiv.innerHTML = NOTIFICATION_TEMPLATES.ERROR_MESSAGE(errorMessage);
+          contentDiv.innerHTML =
+            NOTIFICATION_TEMPLATES.ERROR_MESSAGE(errorMessage);
           break;
         }
         default:
           break;
       }
-    } catch { }
+    } catch {}
   }
 }
 
 // Subscribe to language changes for automatic refresh
 try {
-  i18n.onLanguageChange(() => NotificationManager.refreshTextsAfterLanguageChange());
+  i18n.onLanguageChange(() =>
+    NotificationManager.refreshTextsAfterLanguageChange()
+  );
 } catch {}
 
 export default NotificationManager;

@@ -50,7 +50,10 @@ function chunk(ids, size) {
 class SteamAPIClient {
   // ===== BATCHING/DEDUP/CACHE STATE =====
   static _BATCH_WINDOW_MS = 10; // micro-batching window within a tick
-  static _SHORT_TTL_MS = Math.max(1, Math.floor((API_CONFIG?.JOIN_LOOP_INTERVAL_MS || 200) / 2));
+  static _SHORT_TTL_MS = Math.max(
+    1,
+    Math.floor((API_CONFIG?.JOIN_LOOP_INTERVAL_MS || 200) / 2)
+  );
 
   /**
    * Max steamids per GetPlayerLinkDetails request.
@@ -505,7 +508,12 @@ class SteamAPIClient {
    * @returns {Promise<Object|null>} - Player link details response
    * @private
    */
-  static async _getPlayerLinkDetails(steamids, auth, context = {}, onHttpError) {
+  static async _getPlayerLinkDetails(
+    steamids,
+    auth,
+    context = {},
+    onHttpError
+  ) {
     // Build special params for this API call
     const params = {};
 
@@ -534,11 +542,11 @@ class SteamAPIClient {
    */
   static async isPlayerInCS2(steam_id, auth, requireLobby = false) {
     try {
-      const mapById = await this._getPlayerLinkDetailsBatched(
+      const mapById = await this._getPlayerLinkDetailsBatched(steam_id, auth, {
         steam_id,
-        auth,
-        { steam_id, checkingCS2: true, requireLobby }
-      );
+        checkingCS2: true,
+        requireLobby,
+      });
       const id = String(steam_id);
       // A failed request is unknown, not "not playing" - nothing may be
       // cancelled on the strength of it

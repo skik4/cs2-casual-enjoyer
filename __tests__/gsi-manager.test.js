@@ -65,18 +65,18 @@ describe("interpretGsiPayload", () => {
   test.each(["competitive", "premier", "scrimcomp2v2", "rush", "custom"])(
     "a %s match is one a join must not interrupt",
     (mode) => {
-      expect(
-        interpretGsiPayload(matchPayload(mode)).inProtectedMatch
-      ).toBe(true);
+      expect(interpretGsiPayload(matchPayload(mode)).inProtectedMatch).toBe(
+        true
+      );
     }
   );
 
   test.each(["casual", "deathmatch"])(
     "a %s match may be left for a join",
     (mode) => {
-      expect(
-        interpretGsiPayload(matchPayload(mode)).inProtectedMatch
-      ).toBe(false);
+      expect(interpretGsiPayload(matchPayload(mode)).inProtectedMatch).toBe(
+        false
+      );
     }
   );
 
@@ -121,9 +121,9 @@ describe("GSIManager", () => {
   test("keeps the state while fresh and drops it once CS2 goes quiet", () => {
     gsiManager.handlePayload(menuPayload(), 1000);
 
-    expect(gsiManager.getUserState(1000 + GSI_CONFIG.FRESH_MS)).toMatchObject(
-      { inMenu: true }
-    );
+    expect(gsiManager.getUserState(1000 + GSI_CONFIG.FRESH_MS)).toMatchObject({
+      inMenu: true,
+    });
     expect(gsiManager.getUserState(1000 + GSI_CONFIG.FRESH_MS + 1)).toBeNull();
   });
 
@@ -156,8 +156,12 @@ describe("GSIManager", () => {
       1000
     );
 
-    expect(gsiManager.getListedPlayerIds(1000).sort()).toEqual([OTHER_ID, third].sort());
-    expect(gsiManager.getListedPlayerIds(1000 + GSI_CONFIG.FRESH_MS + 1)).toEqual([]);
+    expect(gsiManager.getListedPlayerIds(1000).sort()).toEqual(
+      [OTHER_ID, third].sort()
+    );
+    expect(
+      gsiManager.getListedPlayerIds(1000 + GSI_CONFIG.FRESH_MS + 1)
+    ).toEqual([]);
   });
 
   test("lists nobody when CS2 sends no player list", () => {

@@ -5,7 +5,12 @@
 
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import mapKeeper from "../src/game/map-keeper.js";
@@ -13,7 +18,11 @@ import gsiManager from "../src/game/gsi-manager.js";
 import joinManager from "../src/game/join-manager.js";
 import mapFinder from "../src/game/map-finder.js";
 import userLocation from "../src/game/user-location.js";
-import { GSI_CONFIG, PINNED_MAPS_JOIN_ID, STATUS_TYPES } from "../src/shared/constants.js";
+import {
+  GSI_CONFIG,
+  PINNED_MAPS_JOIN_ID,
+  STATUS_TYPES,
+} from "../src/shared/constants.js";
 
 const USER = "76561198000000001";
 
@@ -53,7 +62,9 @@ test("joins a server of a pinned map once the match on one ends", () => {
   cs2("de_dust2", "gameover");
 
   expect(startMapJoin).toHaveBeenCalledTimes(1);
-  expect(startMapJoin.mock.calls[0][0]).toMatchObject({ joinId: PINNED_MAPS_JOIN_ID });
+  expect(startMapJoin.mock.calls[0][0]).toMatchObject({
+    joinId: PINNED_MAPS_JOIN_ID,
+  });
 });
 
 test("one join takes any pinned map, read again as pins change", () => {
@@ -84,7 +95,12 @@ test("stays quiet in the menu, in another mode, on a pinned map and on states it
 });
 
 test("starts no second join while one runs", () => {
-  joinStates = { [PINNED_MAPS_JOIN_ID]: { status: STATUS_TYPES.CONNECTING, cancelled: false } };
+  joinStates = {
+    [PINNED_MAPS_JOIN_ID]: {
+      status: STATUS_TYPES.CONNECTING,
+      cancelled: false,
+    },
+  };
   mapKeeper.toggle("de_dust2");
 
   cs2("de_mirage", "warmup");
@@ -118,10 +134,15 @@ test("unpinning the last map ends its join and lets the map finder rest", () => 
   mapKeeper.toggle("de_dust2");
   expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
 
-  joinStates = { [PINNED_MAPS_JOIN_ID]: { status: STATUS_TYPES.WAITING, cancelled: false } };
+  joinStates = {
+    [PINNED_MAPS_JOIN_ID]: { status: STATUS_TYPES.WAITING, cancelled: false },
+  };
   mapKeeper.toggle("de_dust2");
 
-  expect(joinManager.cancelJoin).toHaveBeenCalledWith(PINNED_MAPS_JOIN_ID, "unpinned");
+  expect(joinManager.cancelJoin).toHaveBeenCalledWith(
+    PINNED_MAPS_JOIN_ID,
+    "unpinned"
+  );
   expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
   expect(listener).toHaveBeenCalledTimes(2);
 });

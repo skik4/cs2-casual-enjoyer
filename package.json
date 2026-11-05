@@ -23,7 +23,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint .",
-    "format": "prettier --write src/"
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "build": {
     "appId": "cs2casualenjoyer",

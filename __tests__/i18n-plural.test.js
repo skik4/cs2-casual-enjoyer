@@ -23,7 +23,9 @@ test("ru: after «среди» the noun takes the genitive", () => {
   setLanguage("ru");
   expect(tPlural("mapFinder.searchingAmong", 1)).toBe("ищем среди 1 игрока");
   expect(tPlural("mapFinder.searchingAmong", 3)).toBe("ищем среди 3 игроков");
-  expect(tPlural("mapFinder.searchingAmong", 263)).toBe("ищем среди 263 игроков");
+  expect(tPlural("mapFinder.searchingAmong", 263)).toBe(
+    "ищем среди 263 игроков"
+  );
 });
 
 test("en: one and other", () => {

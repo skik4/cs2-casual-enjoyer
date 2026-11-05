@@ -45,7 +45,9 @@ class UserLocation {
     // Back in the menu the user is on no server, whatever Steam still shows
     if (gsi && !gsi.inMatch) return null;
     const presence = this.steamPresence;
-    return presence?.inCS2 && presence.serverId ? String(presence.serverId) : null;
+    return presence?.inCS2 && presence.serverId
+      ? String(presence.serverId)
+      : null;
   }
 
   /**
@@ -77,7 +79,9 @@ class UserLocation {
     const gsi = gsiManager.getUserState();
     if (gsi) {
       const own = this.getOwnMatch();
-      return own && gsi.mode === GAME_MODES.CASUAL && !own.over ? own.map : null;
+      return own && gsi.mode === GAME_MODES.CASUAL && !own.over
+        ? own.map
+        : null;
     }
     const presence = this.steamPresence;
     return presence?.official && !isMatchOver(presence.score)

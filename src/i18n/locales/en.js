@@ -37,8 +37,7 @@ export default {
         "No friends list returned. This could be because your friends list is set to private.",
       linkText: "Open your Steam privacy settings",
       linkTitle: "Open privacy settings in Steam",
-      note:
-        'After setting your friends list to public, click "Update Friend List", then you can set it back to private.',
+      note: 'After setting your friends list to public, click "Update Friend List", then you can set it back to private.',
     },
     cs2Launch: {
       initial: {
@@ -94,8 +93,7 @@ export default {
       option2Title: "Option 2: Manual Entry",
       option2Body:
         "If you already know your <strong>SteamID64</strong> (17-digit number), you can enter it directly.",
-      note:
-        "Your SteamID64 is used to identify your account in Steam Web API requests.",
+      note: "Your SteamID64 is used to identify your account in Steam Web API requests.",
     },
     apiKey: {
       title: "How to Get Your Steam API Token or Key",
@@ -104,7 +102,8 @@ export default {
       getTokenLinkTitle: "Get your Steam Web API Token in the Steam client.",
       option1Body:
         "On the opened page (may appear blank / black), press <strong>Ctrl+A</strong> then <strong>Ctrl+C</strong> to copy, and <strong>Ctrl+V</strong> to paste into the Token field.",
-      option1Bullet1: "The app will extract your token and SteamID automatically",
+      option1Bullet1:
+        "The app will extract your token and SteamID automatically",
       option1Bullet2: "Your friend list can stay private",
       option1Bullet3: "A token is valid for about 24 hours",
       option2Title: "Option 2: API Key",
@@ -115,12 +114,12 @@ export default {
       option2Body2:
         "Click the <strong>SteamID64</strong> field label below to open your Steam profile, then copy your profile URL and paste it into the SteamID64 field.",
       option2Bullet1: "You may need to confirm via Steam Guard or email",
-      option2Bullet2: "Set your friend list to public at least once for caching",
+      option2Bullet2:
+        "Set your friend list to public at least once for caching",
       option2Bullet3:
         "Make it public again temporarily to update your friends list",
       note1: "Your credentials are stored locally only.",
-      note2:
-        "All requests are made only through the official Steam Web API.",
+      note2: "All requests are made only through the official Steam Web API.",
     },
   },
 
@@ -212,7 +211,8 @@ export default {
       poolTitle:
         "Players the app has seen on official casual servers in the last two weeks",
       poolFriends: "Friends of pool players",
-      poolFriendsTitle: "Friends of pool players, from their public friends lists",
+      poolFriendsTitle:
+        "Friends of pool players, from their public friends lists",
       fof: "Friends of friends",
       fofTitle: "Your friends' friends, from their public friends lists",
     },
@@ -223,13 +223,15 @@ export default {
       poolFriendsNone: "Every pool player's list was read in the last day",
       fof: "Read your friends' friends lists: {count}",
       fofNone: "No friends in your list yet",
-      needsKey: "Needs a Steam Web API key: a token cannot read other people's friends lists",
+      needsKey:
+        "Needs a Steam Web API key: a token cannot read other people's friends lists",
       progress: "reading {done} of {total}…",
       failed: "no list could be read",
       at: "read {date}",
     },
     clear: "Clear",
-    clearPoolTitle: "Remove players from the pool: all of them, or only those without a sign of Prime",
+    clearPoolTitle:
+      "Remove players from the pool: all of them, or only those without a sign of Prime",
     clearPoolAsk: "Remove from the pool:",
     clearPoolAll: "everyone",
     clearPoolNoPrime: "without a sign of Prime ({count})",
@@ -263,7 +265,8 @@ export default {
     fofKeptWithoutKey:
       "Friends of friends ({count}) are kept and checked without a key. A key is only needed to read the lists again.",
     fofUsesMainKey: "Your main API key is used for friends lists.",
-    fofKeyInvalid: "That is not an API key: it should be 32 letters and digits.",
+    fofKeyInvalid:
+      "That is not an API key: it should be 32 letters and digits.",
     fofKeyError: "No friends list could be read with this key. Check the key.",
     primeOnly: "Prime only",
     primeOnlyTitle:
@@ -280,13 +283,15 @@ export default {
         "A player with a sign of Prime plays with friends who show a sign of Prime too. Friends who hide their game details do not show.",
       friend:
         "A player with a sign of Prime plays with a friend who shows none: may have joined that friend's match without Prime.",
-      pending: "The friends of the player with a sign of Prime are not checked yet.",
+      pending:
+        "The friends of the player with a sign of Prime are not checked yet.",
       "no-key": "Their friends could not be checked: no API key.",
       closed:
         "Their friends could not be checked: the friends list is private or could not be read.",
     },
     primeServersTag: "Prime: {count}",
-    primeServersTitle: "Servers where a player with a sign of Prime is seen: {count} of {total}",
+    primeServersTitle:
+      "Servers where a player with a sign of Prime is seen: {count} of {total}",
     noPrimeServers:
       "No server with a visible Prime player right now. The others are hidden by “Prime only”. Still searching.",
   },
@@ -341,7 +346,8 @@ export default {
     unrecognizedSteamUrl: "Unrecognized Steam URL format",
     validSteamIdRequired: "Valid SteamID64 is required",
     validAuthRequired: "Valid API Key or Token is required",
-    vanityNeedsAuth: "Enter your API token or key first to resolve profile links",
+    vanityNeedsAuth:
+      "Enter your API token or key first to resolve profile links",
     vanityResolving: "Resolving profile link...",
     vanityNotResolved:
       "Could not resolve the profile link. Please enter SteamID64 manually.",
@@ -353,8 +359,7 @@ export default {
     step1Title: "Welcome to Casual Enjoyer",
     step1Content:
       "Quick tutorial on main features.<br>Use buttons below to navigate.",
-    keyHint:
-      "Press Enter for next step, Backspace for previous, Esc to skip.",
+    keyHint: "Press Enter for next step, Backspace for previous, Esc to skip.",
     step2Title: "Steam token",
     step2Content:
       "Click the highlighted link to open help with the Steam link for a token.",
@@ -370,8 +375,7 @@ export default {
     step6Title: "Filter Friends",
     step6Content: "Type in highlighted box to filter friends by nickname.",
     step7Title: "Friends List Display",
-    step7Content:
-      "Friends currently playing Casual will appear in this list.",
+    step7Content: "Friends currently playing Casual will appear in this list.",
     step8Title: "Join to Friend Game",
     step8Content:
       "For example, your best friend <strong>Gabe Newell</strong> is playing Casual on Dust 2.<br>Click 'Join' to automatically connect to his match!",

@@ -98,19 +98,25 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
     test("returns null when the request fails at the network level", async () => {
       global.fetch.mockRejectedValue(new Error("ECONNRESET"));
 
-      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBeNull();
+      await expect(
+        SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)
+      ).resolves.toBeNull();
     });
 
     test("returns null when Steam answers HTTP 429", async () => {
       global.fetch.mockResolvedValue(errorResponse(429, "Too Many Requests"));
 
-      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBeNull();
+      await expect(
+        SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)
+      ).resolves.toBeNull();
     });
 
     test("returns true when the player is in CS2", async () => {
       global.fetch.mockResolvedValue(okResponse([account(USER_ID)]));
 
-      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBe(true);
+      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBe(
+        true
+      );
     });
 
     test("does not cache a failed request", async () => {
@@ -118,16 +124,24 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
         .mockRejectedValueOnce(new Error("ECONNRESET"))
         .mockResolvedValueOnce(okResponse([account(USER_ID)]));
 
-      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBeNull();
-      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBe(true);
+      await expect(
+        SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)
+      ).resolves.toBeNull();
+      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBe(
+        true
+      );
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
     test("caches a no-account answer and reports false", async () => {
       global.fetch.mockResolvedValue(okResponse([]));
 
-      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBe(false);
-      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBe(false);
+      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBe(
+        false
+      );
+      await expect(SteamAPIClient.isPlayerInCS2(USER_ID, AUTH)).resolves.toBe(
+        false
+      );
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
   });
@@ -138,13 +152,18 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
         okResponse([
           account(USER_ID, {
             persona_name: "Me",
-            rich_presence_kv: '"game:mode" "casual" "game:state" "game" "game_server_steam_id" "8000"',
+            rich_presence_kv:
+              '"game:mode" "casual" "game:state" "game" "game_server_steam_id" "8000"',
           }),
           account(FRIEND_ID, { persona_name: "Friend" }),
         ])
       );
 
-      const snapshot = await SteamAPIClient.getJoinSnapshot(USER_ID, FRIEND_ID, AUTH);
+      const snapshot = await SteamAPIClient.getJoinSnapshot(
+        USER_ID,
+        FRIEND_ID,
+        AUTH
+      );
 
       expect(global.fetch).toHaveBeenCalledTimes(1);
       expect(requestedIds(global.fetch.mock.calls[0]).sort()).toEqual(
@@ -177,7 +196,11 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
     test("reports a side Steam has no account for as not in CS2, not as unknown", async () => {
       global.fetch.mockResolvedValue(okResponse([account(USER_ID)]));
 
-      const { user, friend } = await SteamAPIClient.getJoinSnapshot(USER_ID, FRIEND_ID, AUTH);
+      const { user, friend } = await SteamAPIClient.getJoinSnapshot(
+        USER_ID,
+        FRIEND_ID,
+        AUTH
+      );
 
       expect(user.inCS2).toBe(true);
       expect(friend).toEqual({
@@ -193,8 +216,17 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
     });
 
     test.each([
-      ["a network error", () => global.fetch.mockRejectedValue(new Error("ECONNRESET"))],
-      ["HTTP 429", () => global.fetch.mockResolvedValue(errorResponse(429, "Too Many Requests"))],
+      [
+        "a network error",
+        () => global.fetch.mockRejectedValue(new Error("ECONNRESET")),
+      ],
+      [
+        "HTTP 429",
+        () =>
+          global.fetch.mockResolvedValue(
+            errorResponse(429, "Too Many Requests")
+          ),
+      ],
     ])("returns null for both sides on %s", async (_label, arrange) => {
       arrange();
 
@@ -229,9 +261,9 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
     test("isJoinAvailable requires a valid connect", () => {
       const richPresence = { game_mode: "casual", game_state: "game" };
 
-      expect(
-        isJoinAvailable({ ...richPresence, connect: VALID_CONNECT })
-      ).toBe(true);
+      expect(isJoinAvailable({ ...richPresence, connect: VALID_CONNECT })).toBe(
+        true
+      );
       expect(
         isJoinAvailable({
           ...richPresence,
@@ -246,14 +278,23 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
         okResponse([
           account(USER_ID),
           account(FRIEND_ID, {
-            rich_presence_kv: '"game:mode" "casual" "game:state" "game" "connect" "+gcconnectG1 +exec autoexec"',
+            rich_presence_kv:
+              '"game:mode" "casual" "game:state" "game" "connect" "+gcconnectG1 +exec autoexec"',
           }),
         ])
       );
 
-      const first = await SteamAPIClient.getJoinSnapshot(USER_ID, FRIEND_ID, AUTH);
+      const first = await SteamAPIClient.getJoinSnapshot(
+        USER_ID,
+        FRIEND_ID,
+        AUTH
+      );
       SteamAPIClient.reset();
-      const second = await SteamAPIClient.getJoinSnapshot(USER_ID, FRIEND_ID, AUTH);
+      const second = await SteamAPIClient.getJoinSnapshot(
+        USER_ID,
+        FRIEND_ID,
+        AUTH
+      );
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
       for (const { friend } of [first, second]) {
@@ -284,9 +325,9 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
       const rich_presence_kv =
         `"game:mode" "${mode}"` + (state ? ` "game:state" "${state}"` : "");
 
-      expect(
-        isInProtectedMatch({ game_id: "730", rich_presence_kv })
-      ).toBe(expected);
+      expect(isInProtectedMatch({ game_id: "730", rich_presence_kv })).toBe(
+        expected
+      );
     });
 
     test.each(["competitive", "custom"])(
@@ -294,9 +335,9 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
       (mode) => {
         const rich_presence_kv = `"game:mode" "${mode}" "game:state" "game" "game:server" "offline"`;
 
-        expect(
-          isInProtectedMatch({ game_id: "730", rich_presence_kv })
-        ).toBe(false);
+        expect(isInProtectedMatch({ game_id: "730", rich_presence_kv })).toBe(
+          false
+        );
       }
     );
 
@@ -310,31 +351,45 @@ describe("SteamAPIClient - join snapshot and tri-state batching", () => {
         ])
       );
 
-      const { user, friend } = await SteamAPIClient.getJoinSnapshot(USER_ID, FRIEND_ID, AUTH);
+      const { user, friend } = await SteamAPIClient.getJoinSnapshot(
+        USER_ID,
+        FRIEND_ID,
+        AUTH
+      );
 
       expect(user.inProtectedMatch).toBe(false);
-      expect(user.offlineGame).toEqual({ map: "de_mirage", mode: "competitive" });
+      expect(user.offlineGame).toEqual({
+        map: "de_mirage",
+        mode: "competitive",
+      });
       expect(friend.offlineGame).toBeNull();
     });
 
     test.each([
       ["in the lobby", "lobby", false],
       ["in a match", "game", true],
-    ])("the snapshot reports a competitive user %s (state %s) -> %s", async (_label, state, expected) => {
-      global.fetch.mockResolvedValue(
-        okResponse([
-          account(USER_ID, {
-            rich_presence_kv: `"game:mode" "competitive" "game:state" "${state}"`,
-          }),
-          account(FRIEND_ID),
-        ])
-      );
+    ])(
+      "the snapshot reports a competitive user %s (state %s) -> %s",
+      async (_label, state, expected) => {
+        global.fetch.mockResolvedValue(
+          okResponse([
+            account(USER_ID, {
+              rich_presence_kv: `"game:mode" "competitive" "game:state" "${state}"`,
+            }),
+            account(FRIEND_ID),
+          ])
+        );
 
-      const { user } = await SteamAPIClient.getJoinSnapshot(USER_ID, FRIEND_ID, AUTH);
+        const { user } = await SteamAPIClient.getJoinSnapshot(
+          USER_ID,
+          FRIEND_ID,
+          AUTH
+        );
 
-      expect(user.inCS2).toBe(true);
-      expect(user.inProtectedMatch).toBe(expected);
-      expect(user.inSupportedMode).toBe(false);
-    });
+        expect(user.inCS2).toBe(true);
+        expect(user.inProtectedMatch).toBe(expected);
+        expect(user.inSupportedMode).toBe(false);
+      }
+    );
   });
 });

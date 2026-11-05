@@ -29,7 +29,11 @@ jest.mock("../src/steam/steam-api.js", () => ({
 }));
 jest.mock("../src/utils/dom-utils.js", () => ({
   __esModule: true,
-  default: { getElementById: jest.fn(), toggleClass: jest.fn(), setText: jest.fn() },
+  default: {
+    getElementById: jest.fn(),
+    toggleClass: jest.fn(),
+    setText: jest.fn(),
+  },
 }));
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
@@ -65,7 +69,9 @@ const KEY = "ABCDEF0123456789ABCDEF0123456789";
 /** A Web API token for USER that expires at the given unix time */
 const tokenExpiring = (exp) =>
   [
-    Buffer.from(JSON.stringify({ alg: "EdDSA", typ: "JWT" })).toString("base64url"),
+    Buffer.from(JSON.stringify({ alg: "EdDSA", typ: "JWT" })).toString(
+      "base64url"
+    ),
     Buffer.from(JSON.stringify({ sub: USER, exp })).toString("base64url"),
     "signature",
   ].join(".");
@@ -169,7 +175,10 @@ test("does not start on a first run, with nothing saved", () => {
 
 describe("around the tutorial", () => {
   test("the refresh stops with the tutorial and resumes after its wait", () => {
-    appStateManager.setState("friendsRefreshInterval", setInterval(() => {}, 1000));
+    appStateManager.setState(
+      "friendsRefreshInterval",
+      setInterval(() => {}, 1000)
+    );
 
     appFriendsManager.stopAutoRefresh();
     expect(appStateManager.getState("friendsRefreshInterval")).toBeNull();

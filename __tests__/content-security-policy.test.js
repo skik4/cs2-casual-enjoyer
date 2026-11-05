@@ -59,11 +59,13 @@ function allows(sources, url) {
 
 /** The files under a folder with one of the extensions, relative to ROOT */
 function filesUnder(dir, extensions) {
-  return fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((entry) => {
-    const file = `${dir}/${entry.name}`;
-    if (entry.isDirectory()) return filesUnder(file, extensions);
-    return extensions.includes(path.extname(entry.name)) ? [file] : [];
-  });
+  return fs
+    .readdirSync(path.join(ROOT, dir), { withFileTypes: true })
+    .flatMap((entry) => {
+      const file = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) return filesUnder(file, extensions);
+      return extensions.includes(path.extname(entry.name)) ? [file] : [];
+    });
 }
 
 const HASH = "c5d56249ee5d28a07db4ac9f7f60af961fab5426";
@@ -101,19 +103,24 @@ test.each([
 test("every remote image the page's own code names may load", () => {
   // The main process is not under the page's policy
   const files = [
-    ...filesUnder("src", [".js"]).filter((file) => !file.startsWith("src/main/")),
+    ...filesUnder("src", [".js"]).filter(
+      (file) => !file.startsWith("src/main/")
+    ),
     ...filesUnder("css", [".css"]),
     "index.html",
   ];
   const urls = files.flatMap((file) =>
-    [...read(file).matchAll(/https?:\/\/[^\s"'`)<>]+\.(?:jpe?g|png|gif|webp|svg|ico)\b/gi)].map(
-      ([url]) => url
-    )
+    [
+      ...read(file).matchAll(
+        /https?:\/\/[^\s"'`)<>]+\.(?:jpe?g|png|gif|webp|svg|ico)\b/gi
+      ),
+    ].map(([url]) => url)
   );
 
   // The tutorial's made-up friend wears a real Steam avatar
   expect(urls.length).toBeGreaterThan(0);
-  for (const url of urls) expect([url, allows(imgSrc, url)]).toEqual([url, true]);
+  for (const url of urls)
+    expect([url, allows(imgSrc, url)]).toEqual([url, true]);
 });
 
 test("the policy names no navigate-to, which Chromium never shipped", () => {

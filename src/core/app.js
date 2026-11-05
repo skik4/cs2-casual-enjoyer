@@ -97,7 +97,9 @@ class App {
     }
 
     if (closeBtn && window.electronAPI?.window?.close) {
-      closeBtn.addEventListener("click", () => window.electronAPI.window.close());
+      closeBtn.addEventListener("click", () =>
+        window.electronAPI.window.close()
+      );
     }
 
     if (steamIdInput) {
@@ -210,7 +212,8 @@ class App {
       // "Waiting for CS2" offers the launch a join with CS2 closed offers,
       // with no join waiting on it
       GsiStatusIndicator.initialize({
-        onLaunch: () => Cs2LaunchDialog.ask(this.cs2Manager, { mode: "launch" }),
+        onLaunch: () =>
+          Cs2LaunchDialog.ask(this.cs2Manager, { mode: "launch" }),
       });
       // A newer version downloading or ready, beside the version in the footer
       UpdateNotice.initialize().catch((error) =>
@@ -233,7 +236,8 @@ class App {
           FakeFriendsManager.mergeIds(
             appStateManager.getState("savedFriendsIds") || []
           ),
-        getRealFriendIds: () => appStateManager.getState("savedFriendsIds") || [],
+        getRealFriendIds: () =>
+          appStateManager.getState("savedFriendsIds") || [],
         getFofKey: () => MapFinderView.getFofKey(),
       });
       MapFinderView.initialize({
@@ -267,7 +271,9 @@ class App {
 
       logger.info("App", "Step 7: Setting CS2 launch callback");
       // The overlay that offers to launch CS2 before a join
-      joinManager.setCS2LaunchCallback(() => Cs2LaunchDialog.ask(this.cs2Manager));
+      joinManager.setCS2LaunchCallback(() =>
+        Cs2LaunchDialog.ask(this.cs2Manager)
+      );
       logger.info("App", "CS2 launch callback configured");
 
       logger.info("App", "Step 8: Loading saved settings from storage");

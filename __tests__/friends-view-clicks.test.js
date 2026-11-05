@@ -18,7 +18,11 @@ jest.mock("../src/game/join-manager.js", () => ({
 }));
 jest.mock("../src/game/map-keeper.js", () => ({
   __esModule: true,
-  default: { userJoined: jest.fn(), userCancelled: jest.fn(), getLabel: () => "" },
+  default: {
+    userJoined: jest.fn(),
+    userCancelled: jest.fn(),
+    getLabel: () => "",
+  },
 }));
 jest.mock("../src/steam/steam-api.js", () => ({
   __esModule: true,
@@ -82,9 +86,12 @@ const friend = (steamid) => ({
   game_score: "[ 3 : 1 ]",
 });
 
-const connecting = (steamid) => ({ [steamid]: { status: STATUS_TYPES.CONNECTING } });
+const connecting = (steamid) => ({
+  [steamid]: { status: STATUS_TYPES.CONNECTING },
+});
 const button = (steamid) => document.getElementById(`join-btn-${steamid}`);
-const clicks = (spy) => spy.mock.calls.filter(([type]) => type === "click").length;
+const clicks = (spy) =>
+  spy.mock.calls.filter(([type]) => type === "click").length;
 
 let listens;
 

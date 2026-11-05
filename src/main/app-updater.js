@@ -56,7 +56,9 @@ export default class AppUpdater {
       debug: () => {},
     };
 
-    updater.on("checking-for-update", () => this._report({ state: "checking" }));
+    updater.on("checking-for-update", () =>
+      this._report({ state: "checking" })
+    );
     updater.on("update-not-available", () => this._report({ state: "idle" }));
     updater.on("update-available", (info) =>
       this._report({ state: "downloading", version: info?.version, percent: 0 })
@@ -87,7 +89,8 @@ export default class AppUpdater {
    */
   check() {
     if (!this.isPackaged) return;
-    if (["checking", "downloading", "ready"].includes(this.status.state)) return;
+    if (["checking", "downloading", "ready"].includes(this.status.state))
+      return;
     Promise.resolve()
       .then(() => this.updater.checkForUpdates())
       .catch((error) => {

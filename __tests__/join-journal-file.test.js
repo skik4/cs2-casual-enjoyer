@@ -13,7 +13,8 @@ describe("join journal file", () => {
   let dir;
   let file;
 
-  const lines = () => fs.readFileSync(file, "utf-8").split("\n").filter(Boolean);
+  const lines = () =>
+    fs.readFileSync(file, "utf-8").split("\n").filter(Boolean);
 
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), "casual-enjoyer-journal-"));
@@ -29,7 +30,11 @@ describe("join journal file", () => {
     const second = appendJoinJournal(file, ['{"event":"c"}']);
 
     await expect(Promise.all([first, second])).resolves.toEqual([true, true]);
-    expect(lines()).toEqual(['{"event":"a"}', '{"event":"b"}', '{"event":"c"}']);
+    expect(lines()).toEqual([
+      '{"event":"a"}',
+      '{"event":"b"}',
+      '{"event":"c"}',
+    ]);
   });
 
   test("a line break inside a line cannot start a line of its own", async () => {
@@ -42,7 +47,9 @@ describe("join journal file", () => {
     fs.writeFileSync(file, "x".repeat(JOIN_JOURNAL_CONFIG.MAX_BYTES));
     fs.writeFileSync(`${file}.old`, "older");
 
-    await expect(appendJoinJournal(file, ['{"event":"new"}'])).resolves.toBe(true);
+    await expect(appendJoinJournal(file, ['{"event":"new"}'])).resolves.toBe(
+      true
+    );
 
     expect(lines()).toEqual(['{"event":"new"}']);
     expect(fs.statSync(`${file}.old`).size).toBe(JOIN_JOURNAL_CONFIG.MAX_BYTES);
@@ -52,10 +59,16 @@ describe("join journal file", () => {
     ["not a list", "line"],
     ["an empty list", []],
     ["a line that is not text", [{ event: "a" }]],
-    ["a line that is too long", ["x".repeat(JOIN_JOURNAL_CONFIG.MAX_LINE_LENGTH + 1)]],
+    [
+      "a line that is too long",
+      ["x".repeat(JOIN_JOURNAL_CONFIG.MAX_LINE_LENGTH + 1)],
+    ],
     [
       "too many lines",
-      Array.from({ length: JOIN_JOURNAL_CONFIG.MAX_LINES_PER_APPEND + 1 }, () => "{}"),
+      Array.from(
+        { length: JOIN_JOURNAL_CONFIG.MAX_LINES_PER_APPEND + 1 },
+        () => "{}"
+      ),
     ],
   ])("refuses %s", async (_name, batch) => {
     await expect(appendJoinJournal(file, batch)).resolves.toBe(false);

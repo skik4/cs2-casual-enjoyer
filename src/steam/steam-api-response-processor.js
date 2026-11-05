@@ -185,16 +185,14 @@ class SteamAPIResponseProcessor {
     const richPresence = parseRichPresence(priv.rich_presence_kv);
 
     const inCS2 = isInCS2(priv);
-    const inProtectedMatch =
-      inCS2 && isInProtectedMatch(priv);
+    const inProtectedMatch = inCS2 && isInProtectedMatch(priv);
     // CS2 reports training in the mode picked for it; only Steam knows the
     // game is offline
     const offlineGame =
       inCS2 && isOffline(richPresence)
         ? { map: richPresence.game_map, mode: richPresence.game_mode }
         : null;
-    const inSupportedMode =
-      inCS2 && isInSupportedMode(richPresence);
+    const inSupportedMode = inCS2 && isInSupportedMode(richPresence);
 
     let connect = null;
     if (inSupportedMode && richPresence.connect) {
@@ -221,9 +219,7 @@ class SteamAPIResponseProcessor {
       inSupportedMode,
       connect,
       serverId,
-      statusKey: `${serverId ?? ""}\n${richPresenceKey(
-        priv.rich_presence_kv
-      )}`,
+      statusKey: `${serverId ?? ""}\n${richPresenceKey(priv.rich_presence_kv)}`,
     };
   }
 
@@ -247,8 +243,7 @@ class SteamAPIResponseProcessor {
       map: info.inCS2 ? richPresence.game_map : null,
       score: info.inCS2 ? richPresence.game_score : null,
       official:
-        info.inSupportedMode &&
-        isOfficialServer(richPresence, info.serverId),
+        info.inSupportedMode && isOfficialServer(richPresence, info.serverId),
       primeSign: info.inCS2 && hasPrimeSign(richPresence),
     };
   }
@@ -369,9 +364,7 @@ class SteamAPIResponseProcessor {
     }
 
     // Parse rich presence to check if user is in lobby
-    const richPresence = parseRichPresence(
-      priv.rich_presence_kv || ""
-    );
+    const richPresence = parseRichPresence(priv.rich_presence_kv || "");
     const isInLobby = richPresence.game_state === "lobby";
 
     logger.info(
@@ -403,9 +396,7 @@ class SteamAPIResponseProcessor {
     return cs2Players
       .filter((acc) => {
         const priv = acc.private_data || {};
-        const richPresence = parseRichPresence(
-          priv.rich_presence_kv || ""
-        );
+        const richPresence = parseRichPresence(priv.rich_presence_kv || "");
         return isInSupportedMode(richPresence);
       })
       .map((acc) => acc.public_data?.steamid)
@@ -493,9 +484,7 @@ class SteamAPIResponseProcessor {
     return cs2Players.map((acc) => {
       const priv = acc.private_data || {};
       const pub = acc.public_data || {};
-      const richPresence = parseRichPresence(
-        priv.rich_presence_kv || ""
-      );
+      const richPresence = parseRichPresence(priv.rich_presence_kv || "");
       const status = richPresence.status || "";
       const inSupportedMode = isInSupportedMode(richPresence);
       const joinAvailable = isJoinAvailable(richPresence);

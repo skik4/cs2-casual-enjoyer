@@ -4,7 +4,9 @@
  */
 
 import { EventEmitter } from "events";
-import AppUpdater, { UPDATE_CHECK_INTERVAL_MS } from "../src/main/app-updater.js";
+import AppUpdater, {
+  UPDATE_CHECK_INTERVAL_MS,
+} from "../src/main/app-updater.js";
 
 /** electron-updater's autoUpdater, as far as AppUpdater uses it */
 function fakeUpdater() {
@@ -28,7 +30,12 @@ afterEach(() => {
 test("a development run neither checks nor installs", async () => {
   const updater = fakeUpdater();
   const send = jest.fn();
-  appUpdater = new AppUpdater({ updater, isPackaged: false, send, logger: logger() });
+  appUpdater = new AppUpdater({
+    updater,
+    isPackaged: false,
+    send,
+    logger: logger(),
+  });
 
   appUpdater.start();
   jest.advanceTimersByTime(UPDATE_CHECK_INTERVAL_MS * 2);
@@ -42,7 +49,12 @@ test("a development run neither checks nor installs", async () => {
 
 test("an installed build checks at start and then on its interval", async () => {
   const updater = fakeUpdater();
-  appUpdater = new AppUpdater({ updater, isPackaged: true, send: jest.fn(), logger: logger() });
+  appUpdater = new AppUpdater({
+    updater,
+    isPackaged: true,
+    send: jest.fn(),
+    logger: logger(),
+  });
 
   appUpdater.start();
   await Promise.resolve();
@@ -58,7 +70,12 @@ test("an installed build checks at start and then on its interval", async () => 
 test("a new version is reported while it downloads, then as ready", () => {
   const updater = fakeUpdater();
   const send = jest.fn();
-  appUpdater = new AppUpdater({ updater, isPackaged: true, send, logger: logger() });
+  appUpdater = new AppUpdater({
+    updater,
+    isPackaged: true,
+    send,
+    logger: logger(),
+  });
   appUpdater.start();
 
   updater.emit("update-available", { version: "0.9.0" });
@@ -75,7 +92,12 @@ test("a new version is reported while it downloads, then as ready", () => {
 
 test("it restarts into the new version only when asked, and only once it is ready", () => {
   const updater = fakeUpdater();
-  appUpdater = new AppUpdater({ updater, isPackaged: true, send: jest.fn(), logger: logger() });
+  appUpdater = new AppUpdater({
+    updater,
+    isPackaged: true,
+    send: jest.fn(),
+    logger: logger(),
+  });
   appUpdater.start();
 
   expect(appUpdater.install()).toBe(false);
@@ -88,7 +110,12 @@ test("it restarts into the new version only when asked, and only once it is read
 
 test("no new check runs while a version downloads or waits to be installed", async () => {
   const updater = fakeUpdater();
-  appUpdater = new AppUpdater({ updater, isPackaged: true, send: jest.fn(), logger: logger() });
+  appUpdater = new AppUpdater({
+    updater,
+    isPackaged: true,
+    send: jest.fn(),
+    logger: logger(),
+  });
   appUpdater.start();
   await Promise.resolve();
 
@@ -123,11 +150,18 @@ test("a check that throws is logged rather than left unhandled", async () => {
   const updater = fakeUpdater();
   updater.checkForUpdates.mockRejectedValue(new Error("no release"));
   const log = logger();
-  appUpdater = new AppUpdater({ updater, isPackaged: true, send: jest.fn(), logger: log });
+  appUpdater = new AppUpdater({
+    updater,
+    isPackaged: true,
+    send: jest.fn(),
+    logger: log,
+  });
 
   appUpdater.start();
   // The rejection travels through a few promise steps before the catch
   for (let i = 0; i < 5; i++) await Promise.resolve();
 
-  expect(log.warn).toHaveBeenCalledWith("Update check failed", { error: "no release" });
+  expect(log.warn).toHaveBeenCalledWith("Update check failed", {
+    error: "no release",
+  });
 });

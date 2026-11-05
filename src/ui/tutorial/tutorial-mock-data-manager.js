@@ -47,7 +47,10 @@ export class TutorialMockDataManager {
       if (currentStep === TUTORIAL_STEPS.TOKEN_PAGE && onNotificationReady) {
         onNotificationReady();
       }
-    } else if (currentStep === TUTORIAL_STEPS.TOKEN_PAGE && onNotificationReady) {
+    } else if (
+      currentStep === TUTORIAL_STEPS.TOKEN_PAGE &&
+      onNotificationReady
+    ) {
       // Notification is already open, call callback immediately
       onNotificationReady();
     }

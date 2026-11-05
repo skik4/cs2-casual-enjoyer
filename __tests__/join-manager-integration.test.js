@@ -14,7 +14,12 @@ jest.mock("../src/steam/steam-api.js");
 jest.mock("../src/utils/error-handler.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import joinManager from "../src/game/join-manager.js";
@@ -59,7 +64,11 @@ const userIn = {
   // from the menu still reads as the menu
   menu: () => playerInfo({ personaname: "me" }),
   casual: () =>
-    playerInfo({ personaname: "me", inSupportedMode: true, serverId: CASUAL_SERVER }),
+    playerInfo({
+      personaname: "me",
+      inSupportedMode: true,
+      serverId: CASUAL_SERVER,
+    }),
   // Another mode that is not competitive and not joinable either
   armsRace: () =>
     playerInfo({
@@ -127,7 +136,9 @@ describe("JoinManager - Real-world Competitive/Premier Scenarios", () => {
     cs2 = {
       checkUserInCS2: jest.fn(
         () =>
-          new Promise((resolve) => setTimeout(() => resolve(true), CS2_CHECK_MS))
+          new Promise((resolve) =>
+            setTimeout(() => resolve(true), CS2_CHECK_MS)
+          )
       ),
       getGsiUserState: jest.fn(() => null),
     };
@@ -159,7 +170,10 @@ describe("JoinManager - Real-world Competitive/Premier Scenarios", () => {
           if (steam.failing) {
             reject(new Error("Steam API temporarily unavailable"));
           } else {
-            resolve({ user: steam.user, friend: steam.friends[friendId] ?? null });
+            resolve({
+              user: steam.user,
+              friend: steam.friends[friendId] ?? null,
+            });
           }
         }, STEAM_LATENCY_MS);
       });
@@ -323,7 +337,9 @@ describe("JoinManager - Real-world Competitive/Premier Scenarios", () => {
       joinManager.startJoin(FRIEND_ID);
       await untilSteamAnswers(1);
 
-      expect(connectedAt).toEqual([clickedAt + CS2_CHECK_MS + STEAM_LATENCY_MS]);
+      expect(connectedAt).toEqual([
+        clickedAt + CS2_CHECK_MS + STEAM_LATENCY_MS,
+      ]);
     });
   });
 
@@ -396,9 +412,12 @@ describe("JoinManager - Real-world Competitive/Premier Scenarios", () => {
       expect(joinManager.isActive(state())).toBe(true);
 
       // A match is found and starts while the next request is out
-      setTimeout(() => {
-        steam.user = userIn.match();
-      }, API_CONFIG.JOIN_LOOP_INTERVAL_MS + STEAM_LATENCY_MS / 2);
+      setTimeout(
+        () => {
+          steam.user = userIn.match();
+        },
+        API_CONFIG.JOIN_LOOP_INTERVAL_MS + STEAM_LATENCY_MS / 2
+      );
       await untilSteamAnswers(1);
 
       expect(status()).toBe(CANCELLED);

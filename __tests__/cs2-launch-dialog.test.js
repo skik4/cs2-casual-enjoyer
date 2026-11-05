@@ -9,7 +9,12 @@
 
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import Cs2LaunchDialog from "../src/ui/cs2-launch-dialog.js";
@@ -133,7 +138,9 @@ test("a launch that times out keeps the overlay up for another try", async () =>
 });
 
 test("a launch that throws answers false", async () => {
-  cs2Manager.launchAndWaitForLobby.mockRejectedValue(new Error("Steam is not running"));
+  cs2Manager.launchAndWaitForLobby.mockRejectedValue(
+    new Error("Steam is not running")
+  );
   const answer = ask();
 
   launchButton().click();
@@ -256,7 +263,10 @@ describe("with no join waiting", () => {
 
   test("the control pressed reads as busy while Steam answers, and a second press asks nothing", async () => {
     const answerSteam = holdSteam();
-    document.body.insertAdjacentHTML("beforeend", '<button id="opener">GSI</button>');
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<button id="opener">GSI</button>'
+    );
     const opener = document.getElementById("opener");
     opener.focus();
 

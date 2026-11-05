@@ -44,21 +44,33 @@ describe("parseRichPresence", () => {
 
 describe("hasPrimeSign", () => {
   test("an XP trail of 1 or more is a sign of Prime", () => {
-    expect(hasPrimeSign(rp('"game:mode" "casual" "game:xptrail" "1"'))).toBe(true);
-    expect(hasPrimeSign(rp('"game:mode" "casual" "game:xptrail" "8"'))).toBe(true);
+    expect(hasPrimeSign(rp('"game:mode" "casual" "game:xptrail" "1"'))).toBe(
+      true
+    );
+    expect(hasPrimeSign(rp('"game:mode" "casual" "game:xptrail" "8"'))).toBe(
+      true
+    );
   });
 
   test("Premier, competitive with qmmflags 1, is a sign of Prime", () => {
     expect(
-      hasPrimeSign(rp('"game:mode" "competitive" "game:qmmflags" "1" "game:xptrail" "0"'))
+      hasPrimeSign(
+        rp('"game:mode" "competitive" "game:qmmflags" "1" "game:xptrail" "0"')
+      )
     ).toBe(true);
   });
 
   test("no trail, plain competitive or junk is no sign", () => {
-    expect(hasPrimeSign(rp('"game:mode" "casual" "game:xptrail" "0"'))).toBe(false);
+    expect(hasPrimeSign(rp('"game:mode" "casual" "game:xptrail" "0"'))).toBe(
+      false
+    );
     expect(hasPrimeSign(rp('"game:mode" "casual"'))).toBe(false);
-    expect(hasPrimeSign(rp('"game:mode" "competitive" "game:state" "game"'))).toBe(false);
-    expect(hasPrimeSign(rp('"game:mode" "casual" "game:qmmflags" "1"'))).toBe(false);
+    expect(
+      hasPrimeSign(rp('"game:mode" "competitive" "game:state" "game"'))
+    ).toBe(false);
+    expect(hasPrimeSign(rp('"game:mode" "casual" "game:qmmflags" "1"'))).toBe(
+      false
+    );
     expect(hasPrimeSign(rp('"game:xptrail" "lots"'))).toBe(false);
     expect(hasPrimeSign(null)).toBe(false);
   });
@@ -66,16 +78,26 @@ describe("hasPrimeSign", () => {
 
 describe("modes", () => {
   test("only a running casual match is a supported mode", () => {
-    expect(isInSupportedMode(rp('"game:mode" "casual" "game:state" "game"'))).toBe(true);
-    expect(isInSupportedMode(rp('"game:mode" "casual" "game:state" "lobby"'))).toBe(false);
-    expect(isInSupportedMode(rp('"game:mode" "deathmatch" "game:state" "game"'))).toBe(false);
-    expect(isInSupportedMode(rp('"game:mode" "competitive" "game:state" "game"'))).toBe(false);
+    expect(
+      isInSupportedMode(rp('"game:mode" "casual" "game:state" "game"'))
+    ).toBe(true);
+    expect(
+      isInSupportedMode(rp('"game:mode" "casual" "game:state" "lobby"'))
+    ).toBe(false);
+    expect(
+      isInSupportedMode(rp('"game:mode" "deathmatch" "game:state" "game"'))
+    ).toBe(false);
+    expect(
+      isInSupportedMode(rp('"game:mode" "competitive" "game:state" "game"'))
+    ).toBe(false);
   });
 
   test("join needs a supported mode and a valid connect", () => {
     expect(
       isJoinAvailable(
-        rp('"game:mode" "casual" "game:state" "game" "connect" "+gcconnectG1A2B3C4D"')
+        rp(
+          '"game:mode" "casual" "game:state" "game" "connect" "+gcconnectG1A2B3C4D"'
+        )
       )
     ).toBe(true);
     expect(
@@ -86,14 +108,10 @@ describe("modes", () => {
   test("competitive or premier counts only once the match runs", () => {
     const priv = (kv) => ({ game_id: "730", rich_presence_kv: kv });
     expect(
-      isInProtectedMatch(
-        priv('"game:mode" "premier" "game:state" "game"')
-      )
+      isInProtectedMatch(priv('"game:mode" "premier" "game:state" "game"'))
     ).toBe(true);
     expect(
-      isInProtectedMatch(
-        priv('"game:mode" "competitive" "game:state" "lobby"')
-      )
+      isInProtectedMatch(priv('"game:mode" "competitive" "game:state" "lobby"'))
     ).toBe(false);
     expect(isInProtectedMatch(null)).toBe(false);
   });

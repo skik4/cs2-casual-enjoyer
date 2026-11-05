@@ -59,12 +59,9 @@ class AccountView {
         DOMUtils.getElementById("auth")?.focus();
       }
     );
-    DOMUtils.getElementById("account-status")?.addEventListener(
-      "click",
-      () => {
-        if (this.describeAuth(this.facts).state !== "ok") this.open();
-      }
-    );
+    DOMUtils.getElementById("account-status")?.addEventListener("click", () => {
+      if (this.describeAuth(this.facts).state !== "ok") this.open();
+    });
     DOMUtils.getElementById("account-close-btn")?.addEventListener(
       "click",
       () => this.close()

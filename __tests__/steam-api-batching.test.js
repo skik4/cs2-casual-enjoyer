@@ -99,23 +99,26 @@ describe("Steam saying stop", () => {
   test.each([
     [429, "Too Many Requests"],
     [503, "Service Unavailable"],
-  ])("an HTTP %s stops the rest of the batch, its ids left unanswered", async (status, text) => {
-    global.fetch.mockImplementation(async (url) => {
-      const asked = requestedIds(url);
-      return asked.includes(ids[100])
-        ? errorResponse(status, text)
-        : okResponse(asked.map(account));
-    });
+  ])(
+    "an HTTP %s stops the rest of the batch, its ids left unanswered",
+    async (status, text) => {
+      global.fetch.mockImplementation(async (url) => {
+        const asked = requestedIds(url);
+        return asked.includes(ids[100])
+          ? errorResponse(status, text)
+          : okResponse(asked.map(account));
+      });
 
-    const presence = await SteamAPIClient.getPresence(ids, AUTH);
+      const presence = await SteamAPIClient.getPresence(ids, AUTH);
 
-    // The first chunk answered, the second failed, the third and fourth
-    // were never sent
-    expect(global.fetch).toHaveBeenCalledTimes(2);
-    expect(presence.has(ids[0])).toBe(true);
-    expect(presence.has(ids[100])).toBe(false);
-    expect(presence.has(ids[300])).toBe(false);
-  });
+      // The first chunk answered, the second failed, the third and fourth
+      // were never sent
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(presence.has(ids[0])).toBe(true);
+      expect(presence.has(ids[100])).toBe(false);
+      expect(presence.has(ids[300])).toBe(false);
+    }
+  );
 
   test("a 401 marks the credential turned down, and an answer takes it back", async () => {
     global.fetch.mockResolvedValue(errorResponse(401, "Unauthorized"));
@@ -127,7 +130,9 @@ describe("Steam saying stop", () => {
 
     // A reload the user asks for is answered: polling may go on
     SteamAPIClient.reset();
-    global.fetch.mockImplementation(async (url) => okResponse(requestedIds(url).map(account)));
+    global.fetch.mockImplementation(async (url) =>
+      okResponse(requestedIds(url).map(account))
+    );
     await SteamAPIClient.getPresence([USER], AUTH);
 
     expect(credentialState.isRejected(AUTH)).toBe(false);
@@ -138,6 +143,8 @@ describe("Steam saying stop", () => {
     await SteamAPIClient.getPresence([USER], AUTH);
 
     expect(credentialState.isRejected(AUTH)).toBe(true);
-    expect(credentialState.isRejected("FEDCBA9876543210FEDCBA9876543210")).toBe(false);
+    expect(credentialState.isRejected("FEDCBA9876543210FEDCBA9876543210")).toBe(
+      false
+    );
   });
 });

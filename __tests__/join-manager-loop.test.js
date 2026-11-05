@@ -10,7 +10,12 @@ jest.mock("../src/steam/steam-api.js");
 jest.mock("../src/utils/error-handler.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import joinManager from "../src/game/join-manager.js";
@@ -90,8 +95,9 @@ describe("JoinManager join loop", () => {
   const state = (id = FRIEND_ID) => joinManager.getJoinStates()[id];
   const status = (id = FRIEND_ID) => state(id)?.status;
   const polls = (id = FRIEND_ID) =>
-    SteamAPI.getJoinSnapshot.mock.calls.filter(([, friendId]) => friendId === id)
-      .length;
+    SteamAPI.getJoinSnapshot.mock.calls.filter(
+      ([, friendId]) => friendId === id
+    ).length;
   const openedUrls = () => openExternal.mock.calls.map(([url]) => url);
   /** Statuses a UI callback got for an attempt, from its call number `from` on */
   const reported = (callback, id = FRIEND_ID, from = 0) =>
@@ -109,7 +115,8 @@ describe("JoinManager join loop", () => {
   /** Answer the oldest held request for a friend with what Steam reports now */
   const answer = async (id = FRIEND_ID) => {
     const index = inFlight.findIndex((request) => request.friendId === id);
-    if (index === -1) throw new Error(`No snapshot request in flight for ${id}`);
+    if (index === -1)
+      throw new Error(`No snapshot request in flight for ${id}`);
     const [request] = inFlight.splice(index, 1);
     request.resolve(snapshotFor(id));
     await flush();
@@ -172,7 +179,9 @@ describe("JoinManager join loop", () => {
       await flush();
       expect(status()).toBe(CONNECTING);
 
-      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOAD_WINDOW_MS - 1000);
+      await jest.advanceTimersByTimeAsync(
+        API_CONFIG.JOIN_LOAD_WINDOW_MS - 1000
+      );
       expect(status()).toBe(CONNECTING);
 
       await jest.advanceTimersByTimeAsync(1000);
@@ -283,7 +292,11 @@ describe("JoinManager join loop", () => {
       expect(journal.attemptStarted).toHaveBeenCalledWith(FRIEND_ID);
       expect(journal.record).toHaveBeenCalledWith(
         "snapshot",
-        expect.objectContaining({ join: FRIEND_ID, connect: CONNECT, userServer: null })
+        expect.objectContaining({
+          join: FRIEND_ID,
+          connect: CONNECT,
+          userServer: null,
+        })
       );
       expect(journal.record).toHaveBeenCalledWith("connect", {
         join: FRIEND_ID,
@@ -336,7 +349,9 @@ describe("JoinManager join loop", () => {
           reported(onUpdateDot, FRIEND_ID, dotCalls).filter(stillRunning)
         ).toEqual([]);
         expect(
-          reported(onUpdateJoinButton, FRIEND_ID, buttonCalls).filter(stillRunning)
+          reported(onUpdateJoinButton, FRIEND_ID, buttonCalls).filter(
+            stillRunning
+          )
         ).toEqual([]);
         expect(status()).toBe(CANCELLED);
         expect(polls()).toBe(1);
@@ -608,7 +623,9 @@ describe("JoinManager join loop", () => {
       expect(onUpdateJoinButton).toHaveBeenCalledWith(FRIEND_ID, JOINED);
 
       // Shown for JOIN_SUCCESS_DISPLAY_MS, then reset
-      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_SUCCESS_DISPLAY_MS - 1);
+      await jest.advanceTimersByTimeAsync(
+        API_CONFIG.JOIN_SUCCESS_DISPLAY_MS - 1
+      );
       expect(status()).toBe(JOINED);
       await jest.advanceTimersByTimeAsync(1);
       expect(status()).toBe(CANCELLED);
@@ -691,10 +708,16 @@ describe("JoinManager join loop", () => {
       );
       // The facade's other methods are mocked too, so the check below means something
       expect(others.map(([name]) => name)).toEqual(
-        expect.arrayContaining(["getPresence", "getFriendsStatuses", "isPlayerInCS2"])
+        expect.arrayContaining([
+          "getPresence",
+          "getFriendsStatuses",
+          "isPlayerInCS2",
+        ])
       );
       expect(
-        others.filter(([, mock]) => mock.mock.calls.length > 0).map(([name]) => name)
+        others
+          .filter(([, mock]) => mock.mock.calls.length > 0)
+          .map(([name]) => name)
       ).toEqual([]);
     });
   });

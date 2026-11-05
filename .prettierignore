@@ -1,0 +1,6 @@
+# Files in .gitignore are skipped as well
+package-lock.json
+
+# Prettier lays HTML out by moving element text onto lines of its own, which
+# changes the text the page and its tests read
+index.html

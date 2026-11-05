@@ -8,7 +8,12 @@
 jest.mock("../src/steam/api-logger.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import SteamAPIClient from "../src/steam/steam-api-client.js";
@@ -40,15 +45,19 @@ test.each([
 ])("with %s, Steam's %i reads as %s", async (_, status, code, auth) => {
   global.fetch.mockResolvedValue(refusal(status));
 
-  await expect(SteamAPIClient.getFriendsList(USER, auth)).rejects.toMatchObject({
-    code,
-  });
+  await expect(SteamAPIClient.getFriendsList(USER, auth)).rejects.toMatchObject(
+    {
+      code,
+    }
+  );
 });
 
 test("a friends list Steam cannot be reached for is a network error", async () => {
   global.fetch.mockRejectedValue(new TypeError("Failed to fetch"));
 
-  await expect(SteamAPIClient.getFriendsList(USER, TOKEN)).rejects.toMatchObject({
+  await expect(
+    SteamAPIClient.getFriendsList(USER, TOKEN)
+  ).rejects.toMatchObject({
     code: ERROR_CODES.NETWORK_ERROR,
   });
 });

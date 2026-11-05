@@ -86,7 +86,8 @@ const PRIME_CHECK_ORDER = [
  * @returns {{verdict: string, reason: string|null}}
  */
 export function bestPrimeCheck(checks, hasKey) {
-  const rank = (check) => PRIME_CHECK_ORDER.indexOf(check.reason ?? check.verdict);
+  const rank = (check) =>
+    PRIME_CHECK_ORDER.indexOf(check.reason ?? check.verdict);
   const best = checks.reduce(
     (found, check) => (!found || rank(check) < rank(found) ? check : found),
     null
@@ -408,7 +409,9 @@ class MapFinder {
     return bestPrimeCheck(
       server.players
         .filter((player) => player.prime)
-        .map((player) => this._playerPrimeCheck(player.steamid, serverId, hasKey)),
+        .map((player) =>
+          this._playerPrimeCheck(player.steamid, serverId, hasKey)
+        ),
       hasKey
     );
   }
@@ -550,7 +553,10 @@ class MapFinder {
         this._addToPool(presence.values(), now);
         this._rememberPrime(presence.values(), now);
         if (polledSeeds.length) {
-          this.journal.record("seeds", this._takeSeedAnswers(polledSeeds, presence));
+          this.journal.record(
+            "seeds",
+            this._takeSeedAnswers(polledSeeds, presence)
+          );
         }
         this._prunePool(now);
 
@@ -916,7 +922,11 @@ class MapFinder {
     const ids = new Set();
     const add = (id) => {
       const steamId = String(id);
-      if (ids.size < cap && steamId !== userId && Validators.validateSteamId(steamId)) {
+      if (
+        ids.size < cap &&
+        steamId !== userId &&
+        Validators.validateSteamId(steamId)
+      ) {
         ids.add(steamId);
       }
     };
@@ -934,7 +944,8 @@ class MapFinder {
       for (let i = 0; i < room; i++) {
         add(candidates[(this._candidateOffset + i) % candidates.length]);
       }
-      this._candidateOffset = (this._candidateOffset + room) % candidates.length;
+      this._candidateOffset =
+        (this._candidateOffset + room) % candidates.length;
     }
     return ids;
   }
@@ -1013,7 +1024,8 @@ class MapFinder {
     return [...this.pool.entries()]
       .filter(
         ([id]) =>
-          now - (this.poolFriends.crawled[id] || 0) >= MAP_FINDER_CONFIG.FOF_REFRESH_MS
+          now - (this.poolFriends.crawled[id] || 0) >=
+          MAP_FINDER_CONFIG.FOF_REFRESH_MS
       )
       .sort((a, b) => b[1].lastSeen - a[1].lastSeen)
       .map(([id]) => id);
@@ -1095,7 +1107,9 @@ class MapFinder {
   _keepFriendChecks(presence, polled) {
     for (const [id, check] of this._friendChecks) {
       const player = presence.get(id);
-      const stays = player ? player.serverId === check.serverId : polled.has(id);
+      const stays = player
+        ? player.serverId === check.serverId
+        : polled.has(id);
       if (!stays) this._friendChecks.delete(id);
     }
   }
@@ -1132,10 +1146,14 @@ class MapFinder {
       });
     }
     if (due.length) {
-      logger.debug("MapFinder", "Checked friends of players with a sign of Prime", {
-        due: due.length,
-        asked,
-      });
+      logger.debug(
+        "MapFinder",
+        "Checked friends of players with a sign of Prime",
+        {
+          due: due.length,
+          asked,
+        }
+      );
       this._notify();
     }
   }
@@ -1299,7 +1317,8 @@ class MapFinder {
       );
     }
     for (const [id, entry] of this.pool) {
-      if (now - entry.lastSeen > MAP_FINDER_CONFIG.POOL_TTL_MS) this.pool.delete(id);
+      if (now - entry.lastSeen > MAP_FINDER_CONFIG.POOL_TTL_MS)
+        this.pool.delete(id);
     }
     if (this.pool.size > MAP_FINDER_CONFIG.POOL_MAX) {
       const keep = [...this.pool.entries()]
@@ -1332,7 +1351,10 @@ class MapFinder {
   async _readStore() {
     const data = await window.electronAPI?.mapFinder?.load?.();
     for (const [id, entry] of Object.entries(data?.pool || {})) {
-      if (!Validators.validateSteamId(id) || !Number.isFinite(entry?.lastSeen)) {
+      if (
+        !Validators.validateSteamId(id) ||
+        !Number.isFinite(entry?.lastSeen)
+      ) {
         continue;
       }
       this.pool.set(id, {
@@ -1358,7 +1380,8 @@ class MapFinder {
     if (Array.isArray(data?.poolFriends?.ids)) {
       const crawled = {};
       for (const [id, at] of Object.entries(data.poolFriends.crawled || {})) {
-        if (Validators.validateSteamId(id) && Number.isFinite(at)) crawled[id] = at;
+        if (Validators.validateSteamId(id) && Number.isFinite(at))
+          crawled[id] = at;
       }
       this.poolFriends = {
         ids: data.poolFriends.ids

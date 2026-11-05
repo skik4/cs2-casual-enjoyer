@@ -55,7 +55,9 @@ describe("FRIEND_ITEM", () => {
     expect(html).not.toContain("<img src=https://evil");
     expect(html).not.toContain("<img src=x");
     expect(html).not.toContain('onerror="alert');
-    expect(html).toContain("&lt;a href=&quot;file:///C:/Windows/System32/calc.exe&quot;");
+    expect(html).toContain(
+      "&lt;a href=&quot;file:///C:/Windows/System32/calc.exe&quot;"
+    );
     expect(html).toContain('src="x.jpg&quot; onerror=&quot;alert(1)"');
   });
 
@@ -66,11 +68,15 @@ describe("FRIEND_ITEM", () => {
 
     expect(html).not.toContain('onmouseover="alert');
     expect(html).toContain('id="friend-1&quot; onmouseover=&quot;alert(1)"');
-    expect(html).toContain('id="remove-fake-btn-1&quot; onmouseover=&quot;alert(1)"');
+    expect(html).toContain(
+      'id="remove-fake-btn-1&quot; onmouseover=&quot;alert(1)"'
+    );
   });
 
   test("adds the remove button only for manually added IDs", () => {
-    expect(FRIENDS_TEMPLATES.FRIEND_ITEM(row())).not.toContain("remove-fake-btn");
+    expect(FRIENDS_TEMPLATES.FRIEND_ITEM(row())).not.toContain(
+      "remove-fake-btn"
+    );
     expect(FRIENDS_TEMPLATES.FRIEND_ITEM(row({ removable: true }))).toContain(
       `id="remove-fake-btn-${STEAM_ID}"`
     );

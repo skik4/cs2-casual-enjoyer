@@ -25,12 +25,17 @@ function getSystemLanguage() {
 function resolvePath(object, path) {
   return path
     .split(".")
-    .reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), object);
+    .reduce(
+      (acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined),
+      object
+    );
 }
 
 function formatString(template, params = {}) {
   if (typeof template !== "string") return template ?? "";
-  return template.replace(/\{(\w+)\}/g, (_, key) => (params[key] !== undefined ? String(params[key]) : ""));
+  return template.replace(/\{(\w+)\}/g, (_, key) =>
+    params[key] !== undefined ? String(params[key]) : ""
+  );
 }
 
 function notifyListeners() {
@@ -72,17 +77,20 @@ export function tPlural(key, count, params = {}) {
   const forms = resolvePath(LOCALES[currentLanguage], key);
   if (!forms || typeof forms !== "object") return "";
   const category = new Intl.PluralRules(currentLanguage).select(count);
-  return formatString(forms[category] ?? forms.other ?? "", { count, ...params });
+  return formatString(forms[category] ?? forms.other ?? "", {
+    count,
+    ...params,
+  });
 }
 
 export function setLanguage(lang) {
   const next = lang === "ru" ? "ru" : "en";
   if (next === currentLanguage) return currentLanguage;
-  
+
   currentLanguage = next;
   saveToLocalStorage();
   notifyListeners();
-  
+
   return currentLanguage;
 }
 
@@ -116,7 +124,7 @@ export function onLanguageChange(callback) {
     listeners.add(callback);
     return () => listeners.delete(callback);
   }
-  return () => { };
+  return () => {};
 }
 
 export default {

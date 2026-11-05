@@ -5,7 +5,12 @@
 
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import userLocation from "../src/game/user-location.js";
@@ -51,7 +56,10 @@ test("in a match the server comes from Steam and the map from CS2", () => {
 
   expect(userLocation.getServerId()).toBe(SERVER);
   expect(userLocation.getMap()).toBe("de_inferno");
-  expect(userLocation.getOwnMatch()).toEqual({ map: "de_inferno", over: false });
+  expect(userLocation.getOwnMatch()).toEqual({
+    map: "de_inferno",
+    over: false,
+  });
 });
 
 test("a finished match or another mode is no map to block", () => {

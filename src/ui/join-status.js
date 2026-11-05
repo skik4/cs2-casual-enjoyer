@@ -20,7 +20,9 @@ const RUNNING = [
  * @returns {string}
  */
 export const formatScore = (score) =>
-  String(score ?? "").replace(/[[\]]/g, "").trim();
+  String(score ?? "")
+    .replace(/[[\]]/g, "")
+    .trim();
 
 /**
  * What a row knows about its target while no attempt runs. Rows keep it in
@@ -75,7 +77,10 @@ export function slotAttributes({ free, casual = true, here, over, idleText }) {
  * @returns {{kind: string, text: string}} - kind names the CSS modifier;
  *   "none" with no text hides the label
  */
-export function statusLabel(status, { free, casual = true, here, over, idleText }) {
+export function statusLabel(
+  status,
+  { free, casual = true, here, over, idleText }
+) {
   switch (status) {
     case STATUS_TYPES.CONNECTING:
       return { kind: "busy", text: t("join.connecting") };

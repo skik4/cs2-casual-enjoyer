@@ -258,9 +258,7 @@ class JoinManager {
     // whatever Steam still shows.
     const gsi = this.cs2Manager?.getGsiUserState?.() ?? null;
     const ownServerId = gsi && !gsi.inMatch ? null : user.serverId;
-    const running = eligible.filter(
-      (player) => !isMatchOver(player.score)
-    );
+    const running = eligible.filter((player) => !isMatchOver(player.score));
     const joinable = running.filter(
       (player) => !ownServerId || player.serverId !== ownServerId
     );
@@ -273,8 +271,9 @@ class JoinManager {
       user,
       target: {
         personaname:
-          (typeof target.label === "function" ? target.label() : target.label) ||
-          null,
+          (typeof target.label === "function"
+            ? target.label()
+            : target.label) || null,
         inSupportedMode: joinable.length > 0,
         connect: pick?.connect ?? null,
         joinAs: pick?.steamid ?? null,
@@ -292,7 +291,10 @@ class JoinManager {
           : null,
         isJoined: (userInfo) => {
           if (target.serverId) {
-            return Boolean(userInfo.serverId) && userInfo.serverId === target.serverId;
+            return (
+              Boolean(userInfo.serverId) &&
+              userInfo.serverId === target.serverId
+            );
           }
           // CS2 knows its map and mode at once; Steam keeps showing the old
           // ones for a while after the match ends and the server moves on.
@@ -356,15 +358,22 @@ class JoinManager {
             });
             if (!shouldLaunch) {
               // User cancelled, don't proceed with join
-              logger.info("JoinManager", "User cancelled launch, aborting join", {
-                join_id,
-              });
+              logger.info(
+                "JoinManager",
+                "User cancelled launch, aborting join",
+                {
+                  join_id,
+                }
+              );
               return;
             }
             // CS2 launch notification will handle waiting for CS2 to start
           }
         } else {
-          logger.debug("JoinManager", "User already in CS2, proceeding with join");
+          logger.debug(
+            "JoinManager",
+            "User already in CS2, proceeding with join"
+          );
         }
       }
 
@@ -434,8 +443,7 @@ class JoinManager {
     // attempt for the same target all end it, and any of them can land while a
     // request is out - so this is checked after every await, before the loop
     // touches the state, the UI or the game.
-    const alive = () =>
-      this.joinStates[join_id] === state && !state.cancelled;
+    const alive = () => this.joinStates[join_id] === state && !state.cancelled;
 
     let missingSince = null;
     let failingSince = null;
@@ -464,7 +472,9 @@ class JoinManager {
       if (Date.now() - failingSince <= API_CONFIG.MISSING_TIMEOUT_MS) {
         return false;
       }
-      logger.info("JoinManager", "Giving up after repeated errors", { join_id });
+      logger.info("JoinManager", "Giving up after repeated errors", {
+        join_id,
+      });
       this.cancelJoin(join_id, "no-answer");
       return true;
     };
@@ -487,8 +497,7 @@ class JoinManager {
 
         // Any change in what Steam shows about the target makes the next
         // connect worth sending, even one that changes back
-        const targetStatus =
-          target.statusKey ?? connectKind(target.connect);
+        const targetStatus = target.statusKey ?? connectKind(target.connect);
         if (connectedOn !== null && targetStatus !== connectedOn) {
           connectedOn = null;
         }
@@ -623,7 +632,11 @@ class JoinManager {
         // and its map joined at once through the same player. A second one
         // would only be turned away.
         const sender = this._sentConnects.get(target.connect);
-        if (sender && sender !== join_id && this.isActive(this.joinStates[sender])) {
+        if (
+          sender &&
+          sender !== join_id &&
+          this.isActive(this.joinStates[sender])
+        ) {
           connectedOn = targetStatus;
           connectedAt = Date.now();
           await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);

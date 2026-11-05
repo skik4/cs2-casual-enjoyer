@@ -14,7 +14,9 @@ jest.mock("electron", () => {
   return {
     safeStorage: {
       isAsyncEncryptionAvailable: jest.fn(async () => true),
-      encryptStringAsync: jest.fn(async (text) => Buffer.from(`${MARK}${text}`)),
+      encryptStringAsync: jest.fn(async (text) =>
+        Buffer.from(`${MARK}${text}`)
+      ),
       decryptStringAsync: jest.fn(async (buffer) => {
         const text = buffer.toString();
         if (!text.startsWith(MARK)) throw new Error("Decryption failed");
@@ -53,7 +55,9 @@ describe("SettingsStore", () => {
   });
   /** Everything the logger was given, as one string */
   const logged = () =>
-    JSON.stringify([logger.info, logger.warn, logger.error].map((fn) => fn.mock.calls));
+    JSON.stringify(
+      [logger.info, logger.warn, logger.error].map((fn) => fn.mock.calls)
+    );
 
   test("reads nothing when there is no file yet, without an error", async () => {
     const store = new SettingsStore(file, logger);
@@ -105,7 +109,10 @@ describe("SettingsStore", () => {
   });
 
   test("a failed write reports null and does not block later patches", async () => {
-    const store = new SettingsStore(path.join(dir, "missing", "settings.json"), logger);
+    const store = new SettingsStore(
+      path.join(dir, "missing", "settings.json"),
+      logger
+    );
 
     await expect(store.update({ language: "ru" })).resolves.toBeNull();
     expect(logger.error).toHaveBeenCalled();
@@ -152,10 +159,16 @@ describe("SettingsStore", () => {
     });
 
     test("a plain value from before keeps working and is encrypted by the next write", async () => {
-      fs.writeFileSync(file, JSON.stringify({ steam_id: "1", auth: "old-token" }));
+      fs.writeFileSync(
+        file,
+        JSON.stringify({ steam_id: "1", auth: "old-token" })
+      );
       const store = new SettingsStore(file, logger);
 
-      await expect(store.read()).resolves.toEqual({ steam_id: "1", auth: "old-token" });
+      await expect(store.read()).resolves.toEqual({
+        steam_id: "1",
+        auth: "old-token",
+      });
       expect(readFile().auth).toBe("old-token");
 
       await store.update({ language: "en" });
@@ -179,7 +192,11 @@ describe("SettingsStore", () => {
       await store.update({ steam_id: "1", auth: "token" });
       await store.update({ fof_api_key: "K" });
 
-      expect(readFile()).toEqual({ steam_id: "1", auth: "token", fof_api_key: "K" });
+      expect(readFile()).toEqual({
+        steam_id: "1",
+        auth: "token",
+        fof_api_key: "K",
+      });
       await expect(store.read()).resolves.toEqual({
         steam_id: "1",
         auth: "token",
@@ -195,13 +212,18 @@ describe("SettingsStore", () => {
         file,
         JSON.stringify({
           steam_id: "1",
-          auth: { encrypted: Buffer.from("written on another PC").toString("base64") },
+          auth: {
+            encrypted: Buffer.from("written on another PC").toString("base64"),
+          },
           fof_api_key: encrypted("K"),
         })
       );
       const store = new SettingsStore(file, logger);
 
-      await expect(store.read()).resolves.toEqual({ steam_id: "1", fof_api_key: "K" });
+      await expect(store.read()).resolves.toEqual({
+        steam_id: "1",
+        fof_api_key: "K",
+      });
       expect(logger.error).toHaveBeenCalledTimes(1);
       expect(logger.error.mock.calls[0][0]).toContain("auth");
       expect(logged()).not.toContain("written on another PC");
@@ -276,7 +298,10 @@ describe("isAllowedExternalUrl: steam:// commands", () => {
     ["steam://run/730/?-console", false],
     ["steam://run/440/", false],
     [`steam://rungame/730/${STEAM_ID}/+gcconnectG1A2B3C4D -console`, false],
-    [`steam://rungame/730/${STEAM_ID}/+gcconnectG1A2B3C4D/+map de_dust2`, false],
+    [
+      `steam://rungame/730/${STEAM_ID}/+gcconnectG1A2B3C4D/+map de_dust2`,
+      false,
+    ],
     [`steam://rungame/730/${STEAM_ID}/+connect 203.0.113.1:27015`, false],
     ["steam://rungame/730/not-a-steamid/+gcconnectG1A2B3C4D", false],
     [`steam://rungame/440/${STEAM_ID}/+gcconnectG1A2B3C4D`, false],

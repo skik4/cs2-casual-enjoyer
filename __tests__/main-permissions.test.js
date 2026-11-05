@@ -22,7 +22,9 @@ describe("isPermissionAllowed", () => {
     "unknown",
   ])("denies %s", (permission) => {
     expect(isPermissionAllowed(permission)).toBe(false);
-    expect(isPermissionAllowed(permission, { externalURL: "steam://run/730/" })).toBe(false);
+    expect(
+      isPermissionAllowed(permission, { externalURL: "steam://run/730/" })
+    ).toBe(false);
   });
 
   test("lets Chromium open only the links the app may open itself", () => {
@@ -40,7 +42,9 @@ describe("isPermissionAllowed", () => {
       })
     ).toBe(false);
     expect(
-      isPermissionAllowed("openExternal", { externalURL: "steam://install/730" })
+      isPermissionAllowed("openExternal", {
+        externalURL: "steam://install/730",
+      })
     ).toBe(false);
     expect(isPermissionAllowed("openExternal")).toBe(false);
   });

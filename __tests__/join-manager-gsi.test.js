@@ -7,7 +7,12 @@ jest.mock("../src/steam/steam-api.js");
 jest.mock("../src/utils/error-handler.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import joinManager from "../src/game/join-manager.js";
@@ -169,7 +174,9 @@ describe("JoinManager with CS2 Game State Integration", () => {
 
   test("training: a competitive game Steam shows offline on the same map may be left", async () => {
     SteamAPI.getJoinSnapshot.mockResolvedValue({
-      user: userInfo({ offlineGame: { map: "de_mirage", mode: "competitive" } }),
+      user: userInfo({
+        offlineGame: { map: "de_mirage", mode: "competitive" },
+      }),
       friend: friendInfo(),
     });
     cs2.gsiState = gsiMatch("competitive", Date.now(), "de_mirage");
@@ -183,7 +190,9 @@ describe("JoinManager with CS2 Game State Integration", () => {
   test("a competitive match just found after training is not taken for training", async () => {
     // Steam still shows the offline game on Mirage; CS2 is on Inferno
     SteamAPI.getJoinSnapshot.mockResolvedValue({
-      user: userInfo({ offlineGame: { map: "de_mirage", mode: "competitive" } }),
+      user: userInfo({
+        offlineGame: { map: "de_mirage", mode: "competitive" },
+      }),
       friend: friendInfo(),
     });
     cs2.gsiState = gsiMatch("competitive", Date.now(), "de_inferno");
@@ -389,8 +398,18 @@ describe("JoinManager with CS2 Game State Integration", () => {
       ["no GSI state", null, now - 1000, false],
       ["no connect sent yet", gsiMatch("casual", now - 500), null, false],
       ["the menu", gsiMenu(), now - 1000, false],
-      ["a map loaded before the connect", gsiMatch("casual", now - 2000), now - 1000, false],
-      ["a map loaded after the connect", gsiMatch("casual", now - 500), now - 1000, true],
+      [
+        "a map loaded before the connect",
+        gsiMatch("casual", now - 2000),
+        now - 1000,
+        false,
+      ],
+      [
+        "a map loaded after the connect",
+        gsiMatch("casual", now - 500),
+        now - 1000,
+        true,
+      ],
       [
         "a map loaded too long ago",
         gsiMatch("casual", now - API_CONFIG.JOIN_GSI_CONFIRM_MS),

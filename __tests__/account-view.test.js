@@ -40,7 +40,11 @@ beforeEach(() => {
   AccountView.reset();
   SteamAPI.getPlayerSummaries.mockReset();
   SteamAPI.getPlayerSummaries.mockResolvedValue({
-    [STEAM_ID]: { steamid: STEAM_ID, personaname: "skik4", avatarmedium: AVATAR },
+    [STEAM_ID]: {
+      steamid: STEAM_ID,
+      personaname: "skik4",
+      avatarmedium: AVATAR,
+    },
   });
   document.body.innerHTML = `
     <div id="account-bar" class="hidden">
@@ -65,9 +69,9 @@ test("a working account shows the bar: name, avatar and the token's expiry", asy
   expect(visible("account-bar")).toBe(true);
   expect(visible("account-panel")).toBe(false);
   expect(element("account-name").textContent).toBe("skik4");
-  expect(element("account-avatar").querySelector("img").getAttribute("src")).toBe(
-    AVATAR
-  );
+  expect(
+    element("account-avatar").querySelector("img").getAttribute("src")
+  ).toBe(AVATAR);
   expect(element("account-status").textContent).toMatch(
     /^Token valid until \d\d\.\d\d, \d\d:\d\d$/
   );
@@ -86,11 +90,17 @@ test("the avatar shows the first letter until Steam names a picture, and if it f
 
   AccountView.reset();
   SteamAPI.getPlayerSummaries.mockResolvedValue({
-    [STEAM_ID]: { steamid: STEAM_ID, personaname: "skik4", avatarmedium: AVATAR },
+    [STEAM_ID]: {
+      steamid: STEAM_ID,
+      personaname: "skik4",
+      avatarmedium: AVATAR,
+    },
   });
   AccountView.update(facts());
   await flush();
-  element("account-avatar").querySelector("img").dispatchEvent(new Event("error"));
+  element("account-avatar")
+    .querySelector("img")
+    .dispatchEvent(new Event("error"));
   expect(element("account-avatar").textContent).toBe("S");
 });
 
@@ -122,7 +132,12 @@ test("editing a working account opens the panel; closing brings the bar back", (
 test("the token is called out in its last hour and once it has expired", () => {
   const now = Date.now();
   const expiringIn = (seconds) =>
-    facts({ tokenInfo: { steamid: STEAM_ID, expires: Math.floor(now / 1000) + seconds } });
+    facts({
+      tokenInfo: {
+        steamid: STEAM_ID,
+        expires: Math.floor(now / 1000) + seconds,
+      },
+    });
 
   expect(AccountView.describeAuth(expiringIn(30 * 60), now)).toEqual({
     state: "warn",
@@ -138,22 +153,33 @@ test("the token is called out in its last hour and once it has expired", () => {
 });
 
 test("a token or key Steam turned down is called out until Steam takes it again", () => {
-    const now = Date.now();
-    const token = facts({ tokenInfo: { steamid: STEAM_ID, expires: Math.floor(now / 1000) + 3600 * 10 } });
-    credentialState.reject(token.auth);
-
-    expect(AccountView.describeAuth(token, now)).toEqual({
-      state: "expired",
-      text: "Steam turned the token down, get a new one",
-    });
-    const key = facts({ tokenInfo: null, isKey: true, auth: "ABCDEF0123456789ABCDEF0123456789" });
-    credentialState.reject(key.auth);
-    expect(AccountView.describeAuth(key, now).text).toBe("Steam turned the key down, check it");
-
-    credentialState.accept(token.auth);
-    expect(AccountView.describeAuth(token, now).state).toBe("ok");
-    credentialState.reset();
+  const now = Date.now();
+  const token = facts({
+    tokenInfo: {
+      steamid: STEAM_ID,
+      expires: Math.floor(now / 1000) + 3600 * 10,
+    },
   });
+  credentialState.reject(token.auth);
+
+  expect(AccountView.describeAuth(token, now)).toEqual({
+    state: "expired",
+    text: "Steam turned the token down, get a new one",
+  });
+  const key = facts({
+    tokenInfo: null,
+    isKey: true,
+    auth: "ABCDEF0123456789ABCDEF0123456789",
+  });
+  credentialState.reject(key.auth);
+  expect(AccountView.describeAuth(key, now).text).toBe(
+    "Steam turned the key down, check it"
+  );
+
+  credentialState.accept(token.auth);
+  expect(AccountView.describeAuth(token, now).state).toBe("ok");
+  credentialState.reset();
+});
 
 test("the SteamID step: read from a token, typed in for an API key", () => {
   AccountView.update(facts({ hasFriends: false }));
@@ -164,7 +190,12 @@ test("the SteamID step: read from a token, typed in for an API key", () => {
   expect(element("steamid-step-num").textContent).toBe("✓");
 
   AccountView.update(
-    facts({ tokenInfo: null, isKey: true, validSteamId: false, hasFriends: false })
+    facts({
+      tokenInfo: null,
+      isKey: true,
+      validSteamId: false,
+      hasFriends: false,
+    })
   );
   expect(element("steamid-step-title").textContent).toBe(
     "With an API key, enter your SteamID64 too"

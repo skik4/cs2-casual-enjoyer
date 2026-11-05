@@ -10,7 +10,12 @@
 
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 // The launch wait asks Steam between CS2's own posts: no network here
 jest.mock("../src/steam/steam-api.js", () => ({
@@ -139,7 +144,11 @@ describe("Waiting for CS2", () => {
 
     // Steam was asked whether CS2 runs, not whether it is in its menu
     expect(SteamAPI.isPlayerInCS2).toHaveBeenCalledTimes(1);
-    expect(SteamAPI.isPlayerInCS2).toHaveBeenCalledWith(USER_ID, "test_api_key", false);
+    expect(SteamAPI.isPlayerInCS2).toHaveBeenCalledWith(
+      USER_ID,
+      "test_api_key",
+      false
+    );
     expect(overlayUp()).toBe(true);
     expect(overlayTitle()).toBe(t("notifications.cs2Launch.running.title"));
     expect(element("launch-cs2-btn").classList.contains("hidden")).toBe(true);
@@ -300,20 +309,23 @@ test.each([
     "gsi.error",
     () => (gsiManager.setupStatus = { setup: GSI_SETUP.ERROR }),
   ],
-])("%s stays plain text: no click or key offers a launch", (state, titleKey, enter) => {
-  enter();
-  GsiStatusIndicator.render();
+])(
+  "%s stays plain text: no click or key offers a launch",
+  (state, titleKey, enter) => {
+    enter();
+    GsiStatusIndicator.render();
 
-  expect(badge().dataset.state).toBe(state);
-  expect(badge().title).toBe(t(titleKey));
-  expect(badge().hasAttribute("role")).toBe(false);
-  expect(badge().hasAttribute("tabindex")).toBe(false);
+    expect(badge().dataset.state).toBe(state);
+    expect(badge().title).toBe(t(titleKey));
+    expect(badge().hasAttribute("role")).toBe(false);
+    expect(badge().hasAttribute("tabindex")).toBe(false);
 
-  badge().click();
-  const enterDown = press("Enter");
-  press(" ");
+    badge().click();
+    const enterDown = press("Enter");
+    press(" ");
 
-  expect(enterDown.defaultPrevented).toBe(false);
-  expect(overlayUp()).toBe(false);
-  expect(window.electronAPI.shell.openExternal).not.toHaveBeenCalled();
-});
+    expect(enterDown.defaultPrevented).toBe(false);
+    expect(overlayUp()).toBe(false);
+    expect(window.electronAPI.shell.openExternal).not.toHaveBeenCalled();
+  }
+);

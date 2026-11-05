@@ -27,9 +27,9 @@ afterEach(() => {
 });
 
 test("a request that hangs fails after the timeout", async () => {
-  await expect(SteamAPIHttpClient.makeRequest("https://example.test/")).rejects.toThrow(
-    "HTTP request failed"
-  );
+  await expect(
+    SteamAPIHttpClient.makeRequest("https://example.test/")
+  ).rejects.toThrow("HTTP request failed");
 });
 
 test("a request that cannot reach Steam is a network error", async () => {
@@ -38,7 +38,9 @@ test("a request that cannot reach Steam is a network error", async () => {
     throw offline;
   });
 
-  await expect(SteamAPIHttpClient.makeRequest("https://example.test/")).rejects.toMatchObject({
+  await expect(
+    SteamAPIHttpClient.makeRequest("https://example.test/")
+  ).rejects.toMatchObject({
     code: ERROR_CODES.NETWORK_ERROR,
     cause: offline,
   });
@@ -60,8 +62,8 @@ test("an answer in time comes through untouched", async () => {
   const response = { ok: true };
   global.fetch = jest.fn(async () => response);
 
-  await expect(SteamAPIHttpClient.makeRequest("https://example.test/")).resolves.toBe(
-    response
-  );
+  await expect(
+    SteamAPIHttpClient.makeRequest("https://example.test/")
+  ).resolves.toBe(response);
   expect(global.fetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
 });

@@ -7,7 +7,12 @@ jest.mock("../src/steam/steam-api.js");
 jest.mock("../src/utils/error-handler.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import joinManager, {
@@ -44,7 +49,14 @@ const presence = (steamid, overrides = {}) => ({
 });
 
 const user = (overrides = {}) =>
-  presence(USER, { inSupportedMode: false, serverId: null, mode: null, map: null, official: false, ...overrides });
+  presence(USER, {
+    inSupportedMode: false,
+    serverId: null,
+    mode: null,
+    map: null,
+    official: false,
+    ...overrides,
+  });
 
 const presenceMap = (...players) =>
   new Map(players.map((player) => [player.steamid, player]));
@@ -93,12 +105,18 @@ describe("resolveMapTarget", () => {
 
   test("takes its status from the candidate it joins through", async () => {
     SteamAPI.getPresence.mockResolvedValue(
-      presenceMap(user(), presence(B, { connect: CONNECT_B, statusKey: "round 3" }))
+      presenceMap(
+        user(),
+        presence(B, { connect: CONNECT_B, statusKey: "round 3" })
+      )
     );
     const first = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
 
     SteamAPI.getPresence.mockResolvedValue(
-      presenceMap(user(), presence(B, { connect: CONNECT_B, statusKey: "round 4" }))
+      presenceMap(
+        user(),
+        presence(B, { connect: CONNECT_B, statusKey: "round 4" })
+      )
     );
     const second = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
 
@@ -115,19 +133,36 @@ describe("resolveMapTarget", () => {
       presenceMap(
         user(),
         presence(A, { map: "de_mirage", connect: CONNECT_B }),
-        presence(B, { mode: "competitive", official: false, inSupportedMode: false, connect: CONNECT_B }),
+        presence(B, {
+          mode: "competitive",
+          official: false,
+          inSupportedMode: false,
+          connect: CONNECT_B,
+        }),
         presence(C, { official: false, connect: CONNECT_C })
       )
     );
 
-    const { target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+    const { target } = await joinManager.resolveMapTarget(
+      dustTarget(),
+      USER,
+      AUTH
+    );
 
-    expect(target).toMatchObject({ inSupportedMode: false, connect: null, joinAs: null });
+    expect(target).toMatchObject({
+      inSupportedMode: false,
+      connect: null,
+      joinAs: null,
+    });
   });
 
   test("sticks to the chosen server", async () => {
     SteamAPI.getPresence.mockResolvedValue(
-      presenceMap(user(), presence(B, { connect: CONNECT_B }), presence(C, { serverId: DUST_2 }))
+      presenceMap(
+        user(),
+        presence(B, { connect: CONNECT_B }),
+        presence(C, { serverId: DUST_2 })
+      )
     );
 
     const { target } = await joinManager.resolveMapTarget(
@@ -149,17 +184,33 @@ describe("resolveMapTarget", () => {
 
   test("a map join succeeds on any server of the map", async () => {
     SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A)));
-    const { target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+    const { target } = await joinManager.resolveMapTarget(
+      dustTarget(),
+      USER,
+      AUTH
+    );
 
     expect(target.isJoined(user({ serverId: DUST_1 }))).toBe(true);
     // A Dust II server none of the candidates is on any more
     expect(
       target.isJoined(
-        user({ serverId: DUST_2, official: true, mode: "casual", map: "de_dust2" })
+        user({
+          serverId: DUST_2,
+          official: true,
+          mode: "casual",
+          map: "de_dust2",
+        })
       )
     ).toBe(true);
     expect(
-      target.isJoined(user({ serverId: DUST_2, official: true, mode: "casual", map: "de_mirage" }))
+      target.isJoined(
+        user({
+          serverId: DUST_2,
+          official: true,
+          mode: "casual",
+          map: "de_mirage",
+        })
+      )
     ).toBe(false);
     expect(target.isJoined(user())).toBe(false);
   });
@@ -168,16 +219,33 @@ describe("resolveMapTarget", () => {
     const DUST_3 = "90071992547409923";
     SteamAPI.getPresence.mockResolvedValue(
       presenceMap(
-        user({ serverId: DUST_1, official: true, mode: "casual", map: "de_dust2" }),
+        user({
+          serverId: DUST_1,
+          official: true,
+          mode: "casual",
+          map: "de_dust2",
+        }),
         presence(A, { connect: CONNECT_B }),
-        presence(B, { serverId: DUST_2, score: "[ 8 : 2 ]", connect: CONNECT_B }),
+        presence(B, {
+          serverId: DUST_2,
+          score: "[ 8 : 2 ]",
+          connect: CONNECT_B,
+        }),
         presence(C, { serverId: DUST_3, connect: CONNECT_C })
       )
     );
 
-    const { target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+    const { target } = await joinManager.resolveMapTarget(
+      dustTarget(),
+      USER,
+      AUTH
+    );
 
-    expect(target).toMatchObject({ inSupportedMode: true, connect: CONNECT_C, joinAs: C });
+    expect(target).toMatchObject({
+      inSupportedMode: true,
+      connect: CONNECT_C,
+      joinAs: C,
+    });
   });
 
   test("a map join goes by the map CS2 shows, not the one Steam still shows", async () => {
@@ -185,9 +253,23 @@ describe("resolveMapTarget", () => {
     joinManager.setCS2Manager({ getGsiUserState: () => gsi });
     try {
       SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A)));
-      const { target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
-      const onDust = user({ serverId: DUST_1, official: true, mode: "casual", map: "de_dust2" });
-      const inMatch = (mapName, phase) => ({ inMatch: true, mode: "casual", mapName, phase });
+      const { target } = await joinManager.resolveMapTarget(
+        dustTarget(),
+        USER,
+        AUTH
+      );
+      const onDust = user({
+        serverId: DUST_1,
+        official: true,
+        mode: "casual",
+        map: "de_dust2",
+      });
+      const inMatch = (mapName, phase) => ({
+        inMatch: true,
+        mode: "casual",
+        mapName,
+        phase,
+      });
 
       // As seen live: the match ended and the server loaded Inferno while
       // Steam still showed Dust II
@@ -209,8 +291,17 @@ describe("resolveMapTarget", () => {
     joinManager.setCS2Manager({ getGsiUserState: () => gsi });
     try {
       SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A)));
-      const { target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
-      const inMatch = (mode) => ({ inMatch: true, mode, mapName: "de_dust2", phase: "live" });
+      const { target } = await joinManager.resolveMapTarget(
+        dustTarget(),
+        USER,
+        AUTH
+      );
+      const inMatch = (mode) => ({
+        inMatch: true,
+        mode,
+        mapName: "de_dust2",
+        phase: "live",
+      });
 
       gsi = inMatch("deathmatch");
       expect(target.isJoined(user())).toBe(false);
@@ -235,16 +326,30 @@ describe("resolveMapTarget", () => {
       score: "[ 8 : 2 ]",
     });
     SteamAPI.getPresence.mockResolvedValue(
-      presenceMap(over, presence(A, { score: "[ 8 : 2 ]" }), presence(C, { serverId: DUST_3, connect: CONNECT_C }))
+      presenceMap(
+        over,
+        presence(A, { score: "[ 8 : 2 ]" }),
+        presence(C, { serverId: DUST_3, connect: CONNECT_C })
+      )
     );
 
-    const { user: userInfo, target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+    const { user: userInfo, target } = await joinManager.resolveMapTarget(
+      dustTarget(),
+      USER,
+      AUTH
+    );
 
-    expect(target).toMatchObject({ inSupportedMode: true, connect: CONNECT_C, joinAs: C });
+    expect(target).toMatchObject({
+      inSupportedMode: true,
+      connect: CONNECT_C,
+      joinAs: C,
+    });
     expect(target.isJoined(userInfo)).toBe(false);
     // Landing on the other server counts, as does any running Dust II match
     expect(target.isJoined(user({ serverId: DUST_3 }))).toBe(true);
-    expect(target.isJoined({ ...over, serverId: DUST_3, score: "[ 0 : 0 ]" })).toBe(true);
+    expect(
+      target.isJoined({ ...over, serverId: DUST_3, score: "[ 0 : 0 ]" })
+    ).toBe(true);
   });
 
   test("a join of several maps takes a server of any of them", async () => {
@@ -273,7 +378,8 @@ describe("resolveMapTarget", () => {
       connect: CONNECT_C,
       joinAs: B,
     });
-    const onMap = (map) => user({ serverId: DUST_1, official: true, mode: "casual", map });
+    const onMap = (map) =>
+      user({ serverId: DUST_1, official: true, mode: "casual", map });
     expect(target.isJoined(onMap("de_mirage"))).toBe(true);
     expect(target.isJoined(onMap("de_inferno"))).toBe(false);
   });
@@ -288,7 +394,14 @@ describe("resolveMapTarget", () => {
 
     expect(target.isJoined(user({ serverId: DUST_1 }))).toBe(true);
     expect(
-      target.isJoined(user({ serverId: DUST_2, official: true, mode: "casual", map: "de_dust2" }))
+      target.isJoined(
+        user({
+          serverId: DUST_2,
+          official: true,
+          mode: "casual",
+          map: "de_dust2",
+        })
+      )
     ).toBe(false);
   });
 
@@ -303,7 +416,10 @@ describe("resolveMapTarget", () => {
     );
 
     const { target } = await joinManager.resolveMapTarget(
-      dustTarget({ primeOnly: () => true, isPrime: (player) => player.steamid === C }),
+      dustTarget({
+        primeOnly: () => true,
+        isPrime: (player) => player.steamid === C,
+      }),
       USER,
       AUTH
     );
@@ -346,12 +462,18 @@ describe("resolveMapTarget", () => {
     );
 
     const { target } = await joinManager.resolveMapTarget(
-      dustTarget({ primeOnly: () => false, isPrime: (player) => player.steamid === A }),
+      dustTarget({
+        primeOnly: () => false,
+        isPrime: (player) => player.steamid === A,
+      }),
       USER,
       AUTH
     );
 
-    expect(target).toMatchObject({ connect: CONNECT_B, prime: { only: false, players: 1 } });
+    expect(target).toMatchObject({
+      connect: CONNECT_B,
+      prime: { only: false, players: 1 },
+    });
   });
 
   test("the friend check of the server picked is noted, and changes nothing about the pick", async () => {
@@ -363,7 +485,9 @@ describe("resolveMapTarget", () => {
         presence(C, { serverId: DUST_2, connect: CONNECT_C })
       )
     );
-    const primeCheck = jest.fn((serverId) => (serverId === DUST_1 ? "friend" : "alone"));
+    const primeCheck = jest.fn((serverId) =>
+      serverId === DUST_1 ? "friend" : "alone"
+    );
 
     const { target } = await joinManager.resolveMapTarget(
       dustTarget({ isPrime: (player) => player.steamid === A, primeCheck }),
@@ -411,7 +535,11 @@ describe("resolveMapTarget", () => {
       presenceMap(user(), presence(B, { connect: CONNECT_B }))
     );
 
-    const { target } = await joinManager.resolveMapTarget(dustTarget(), USER, AUTH);
+    const { target } = await joinManager.resolveMapTarget(
+      dustTarget(),
+      USER,
+      AUTH
+    );
 
     expect(target.prime).toBeNull();
   });
@@ -453,8 +581,12 @@ describe("startMapJoin", () => {
     joinManager.startMapJoin(dustTarget());
     await jest.advanceTimersByTimeAsync(100);
 
-    expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${B}/${CONNECT_B}`);
-    expect(joinManager.getJoinStates()[joinId].status).toBe(STATUS_TYPES.CONNECTING);
+    expect(openExternal).toHaveBeenCalledWith(
+      `steam://rungame/730/${B}/${CONNECT_B}`
+    );
+    expect(joinManager.getJoinStates()[joinId].status).toBe(
+      STATUS_TYPES.CONNECTING
+    );
     expect(updateDot).toHaveBeenCalledWith(joinId, STATUS_TYPES.CONNECTING);
 
     SteamAPI.getPresence.mockResolvedValue(
@@ -462,17 +594,24 @@ describe("startMapJoin", () => {
     );
     await jest.advanceTimersByTimeAsync(600);
 
-    expect(joinManager.getJoinStates()[joinId].status).toBe(STATUS_TYPES.JOINED);
+    expect(joinManager.getJoinStates()[joinId].status).toBe(
+      STATUS_TYPES.JOINED
+    );
   });
 
   test("the journal notes what the server showed of Prime when the connect went out", async () => {
-    const record = jest.spyOn(joinManager.journal, "record").mockImplementation(() => {});
+    const record = jest
+      .spyOn(joinManager.journal, "record")
+      .mockImplementation(() => {});
     SteamAPI.getPresence.mockResolvedValue(
       presenceMap(user(), presence(A), presence(B, { connect: CONNECT_B }))
     );
 
     joinManager.startMapJoin(
-      dustTarget({ primeOnly: () => true, isPrime: (player) => player.steamid === A })
+      dustTarget({
+        primeOnly: () => true,
+        isPrime: (player) => player.steamid === A,
+      })
     );
     await jest.advanceTimersByTimeAsync(100);
 
@@ -484,7 +623,9 @@ describe("startMapJoin", () => {
   });
 
   test("the journal's connect notes the friend check of the server joined", async () => {
-    const record = jest.spyOn(joinManager.journal, "record").mockImplementation(() => {});
+    const record = jest
+      .spyOn(joinManager.journal, "record")
+      .mockImplementation(() => {});
     SteamAPI.getPresence.mockResolvedValue(
       presenceMap(user(), presence(A), presence(B, { connect: CONNECT_B }))
     );
@@ -523,7 +664,12 @@ describe("startMapJoin", () => {
     });
     SteamAPI.getPresence.mockResolvedValue(
       presenceMap(
-        user({ serverId: DUST_1, official: true, mode: "casual", map: "de_dust2" }),
+        user({
+          serverId: DUST_1,
+          official: true,
+          mode: "casual",
+          map: "de_dust2",
+        }),
         presence(A)
       )
     );
@@ -556,9 +702,14 @@ describe("startMapJoin", () => {
     joinManager.startMapJoin(dustTarget());
     await jest.advanceTimersByTimeAsync(1000);
 
-    expect(updateDot).not.toHaveBeenCalledWith(getMapJoinId("de_dust2"), STATUS_TYPES.JOINED);
+    expect(updateDot).not.toHaveBeenCalledWith(
+      getMapJoinId("de_dust2"),
+      STATUS_TYPES.JOINED
+    );
     expect(openExternal).toHaveBeenCalledTimes(1);
-    expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${C}/${CONNECT_C}`);
+    expect(openExternal).toHaveBeenCalledWith(
+      `steam://rungame/730/${C}/${CONNECT_C}`
+    );
     expect(joinManager.getJoinStates()[getMapJoinId("de_dust2")].status).toBe(
       STATUS_TYPES.CONNECTING
     );
@@ -576,11 +727,15 @@ describe("startMapJoin", () => {
     await jest.advanceTimersByTimeAsync(1000);
 
     expect(openExternal).toHaveBeenCalledTimes(1);
-    expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${B}/${CONNECT_B}`);
+    expect(openExternal).toHaveBeenCalledWith(
+      `steam://rungame/730/${B}/${CONNECT_B}`
+    );
   });
 
   test("waits while every known server of the map is full", async () => {
-    SteamAPI.getPresence.mockResolvedValue(presenceMap(user(), presence(A), presence(B)));
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(user(), presence(A), presence(B))
+    );
 
     joinManager.startMapJoin(dustTarget());
     await jest.advanceTimersByTimeAsync(1000);
@@ -596,7 +751,9 @@ describe("startMapJoin", () => {
     // would otherwise read "srv-9007..." until the first snapshot is in
     SteamAPI.getPresence.mockReturnValue(new Promise(() => {}));
 
-    joinManager.startMapJoin(dustTarget({ serverId: DUST_2, label: "Dust II 3 : 1" }));
+    joinManager.startMapJoin(
+      dustTarget({ serverId: DUST_2, label: "Dust II 3 : 1" })
+    );
     await jest.advanceTimersByTimeAsync(0);
 
     const state = joinManager.getJoinStates()[getServerJoinId(DUST_2)];
@@ -612,7 +769,9 @@ describe("startMapJoin", () => {
     joinManager.startMapJoin(dustTarget({ serverId: DUST_2 }));
     await jest.advanceTimersByTimeAsync(100);
 
-    expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${C}/${CONNECT_C}`);
+    expect(openExternal).toHaveBeenCalledWith(
+      `steam://rungame/730/${C}/${CONNECT_C}`
+    );
     expect(joinManager.getJoinStates()[getServerJoinId(DUST_2)].status).toBe(
       STATUS_TYPES.CONNECTING
     );

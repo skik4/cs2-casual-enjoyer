@@ -19,10 +19,34 @@ describe("statusLabel", () => {
   test.each([
     ["no attempt", undefined, { free: true }, "free", "free slot"],
     ["no attempt", undefined, { free: false }, "full", "no free slot"],
-    ["a cancelled attempt", STATUS_TYPES.CANCELLED, { free: true }, "free", "free slot"],
-    ["connecting", STATUS_TYPES.CONNECTING, { free: false }, "busy", "connecting…"],
-    ["waiting", STATUS_TYPES.WAITING, { free: true }, "busy", "waiting for a slot"],
-    ["missing", STATUS_TYPES.MISSING, { free: true }, "missing", "not in casual"],
+    [
+      "a cancelled attempt",
+      STATUS_TYPES.CANCELLED,
+      { free: true },
+      "free",
+      "free slot",
+    ],
+    [
+      "connecting",
+      STATUS_TYPES.CONNECTING,
+      { free: false },
+      "busy",
+      "connecting…",
+    ],
+    [
+      "waiting",
+      STATUS_TYPES.WAITING,
+      { free: true },
+      "busy",
+      "waiting for a slot",
+    ],
+    [
+      "missing",
+      STATUS_TYPES.MISSING,
+      { free: true },
+      "missing",
+      "not in casual",
+    ],
     ["joined", STATUS_TYPES.JOINED, { free: false }, "done", "on the server ✓"],
   ])("%s (%s) on %j", (_name, status, facts, kind, text) => {
     expect(statusLabel(status, facts)).toEqual({ kind, text });
@@ -37,23 +61,27 @@ describe("statusLabel", () => {
     ).toEqual({ kind: "none", text: "" });
     // A running join shows even for someone out of casual
     expect(
-      statusLabel(STATUS_TYPES.MISSING, { free: false, casual: false, idleText: "" })
-        .kind
+      statusLabel(STATUS_TYPES.MISSING, {
+        free: false,
+        casual: false,
+        idleText: "",
+      }).kind
     ).toBe("missing");
   });
 });
 
 describe("joinButtonLook", () => {
-  test.each([STATUS_TYPES.WAITING, STATUS_TYPES.CONNECTING, STATUS_TYPES.MISSING])(
-    "Cancel while the attempt is %s",
-    (status) => {
-      expect(joinButtonLook(status, { free: true })).toEqual({
-        text: "Cancel",
-        className: "action-btn cancel-btn",
-        disabled: false,
-      });
-    }
-  );
+  test.each([
+    STATUS_TYPES.WAITING,
+    STATUS_TYPES.CONNECTING,
+    STATUS_TYPES.MISSING,
+  ])("Cancel while the attempt is %s", (status) => {
+    expect(joinButtonLook(status, { free: true })).toEqual({
+      text: "Cancel",
+      className: "action-btn cancel-btn",
+      disabled: false,
+    });
+  });
 
   test("Join for a free slot, Wait for a slot when full, Join out of casual", () => {
     expect(joinButtonLook(undefined, { free: true }).text).toBe("Join");
@@ -68,7 +96,9 @@ describe("joinButtonLook", () => {
   });
 
   test("disabled for the moment it shows a join that landed", () => {
-    expect(joinButtonLook(STATUS_TYPES.JOINED, { free: true }).disabled).toBe(true);
+    expect(joinButtonLook(STATUS_TYPES.JOINED, { free: true }).disabled).toBe(
+      true
+    );
   });
 });
 
@@ -80,8 +110,16 @@ describe("slot facts on elements", () => {
   };
 
   test("survive the trip through attributes, quotes and markup included", () => {
-    const facts = { free: true, casual: false, idleText: `say "hi", it's <b>&` };
-    expect(readSlotFacts(element(facts))).toEqual({ ...facts, here: false, over: false });
+    const facts = {
+      free: true,
+      casual: false,
+      idleText: `say "hi", it's <b>&`,
+    };
+    expect(readSlotFacts(element(facts))).toEqual({
+      ...facts,
+      here: false,
+      over: false,
+    });
   });
 
   test("leave the idle text out when there is none", () => {
@@ -95,7 +133,11 @@ describe("slot facts on elements", () => {
   });
 
   test("keep where the user already is and a finished match", () => {
-    expect(readSlotFacts(element({ free: true, casual: true, here: true, over: true }))).toMatchObject({
+    expect(
+      readSlotFacts(
+        element({ free: true, casual: true, here: true, over: true })
+      )
+    ).toMatchObject({
       here: true,
       over: true,
     });
@@ -106,19 +148,33 @@ describe("where the user already is, and finished matches", () => {
   test("a row where the user already is says so and cannot be joined", () => {
     const facts = { free: true, casual: true, here: true };
 
-    expect(statusLabel(undefined, facts)).toEqual({ kind: "here", text: "you're here" });
-    expect(statusLabel(undefined, { ...facts, idleText: "you're together" })).toEqual({
+    expect(statusLabel(undefined, facts)).toEqual({
+      kind: "here",
+      text: "you're here",
+    });
+    expect(
+      statusLabel(undefined, { ...facts, idleText: "you're together" })
+    ).toEqual({
       kind: "here",
       text: "you're together",
     });
-    expect(joinButtonLook(undefined, facts)).toMatchObject({ text: "Join", disabled: true });
+    expect(joinButtonLook(undefined, facts)).toMatchObject({
+      text: "Join",
+      disabled: true,
+    });
   });
 
   test("a finished match cannot be joined, even with a slot", () => {
     const facts = { free: true, casual: true, over: true, here: true };
 
-    expect(statusLabel(undefined, facts)).toEqual({ kind: "over", text: "match over" });
-    expect(joinButtonLook(undefined, facts)).toMatchObject({ text: "Join", disabled: true });
+    expect(statusLabel(undefined, facts)).toEqual({
+      kind: "over",
+      text: "match over",
+    });
+    expect(joinButtonLook(undefined, facts)).toMatchObject({
+      text: "Join",
+      disabled: true,
+    });
   });
 
   test("a running attempt still shows itself and can be cancelled", () => {

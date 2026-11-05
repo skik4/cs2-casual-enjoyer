@@ -62,21 +62,34 @@ describe("map finder store", () => {
     // Over the limit nothing would be saved any more, the pool included
     const file = path.join(dir, "map-finder.json");
     const id = (i) => String(76561198000000000n + BigInt(i));
-    const ids = (count, from) => Array.from({ length: count }, (_, i) => id(from + i));
+    const ids = (count, from) =>
+      Array.from({ length: count }, (_, i) => id(from + i));
     const now = Date.now();
     const poolIds = ids(MAP_FINDER_CONFIG.POOL_MAX, 0);
     // Lists of two hundred friends each
     const listSize = 200;
     const data = {
       version: 1,
-      pool: Object.fromEntries(poolIds.map((steamid) => [steamid, { lastSeen: now, map: "de_ancient" }])),
+      pool: Object.fromEntries(
+        poolIds.map((steamid) => [
+          steamid,
+          { lastSeen: now, map: "de_ancient" },
+        ])
+      ),
       poolFriends: {
         ids: ids(MAP_FINDER_CONFIG.POOL_FRIENDS_MAX_IDS, 100000),
         crawled: Object.fromEntries(poolIds.map((steamid) => [steamid, now])),
       },
-      fof: { ids: ids(MAP_FINDER_CONFIG.FOF_MAX_IDS, 200000), fetchedAt: now, friendsCount: 300 },
+      fof: {
+        ids: ids(MAP_FINDER_CONFIG.FOF_MAX_IDS, 200000),
+        fetchedAt: now,
+        friendsCount: 300,
+      },
       prime: Object.fromEntries(
-        ids(MAP_FINDER_CONFIG.PRIME_MAX_IDS, 300000).map((steamid) => [steamid, now])
+        ids(MAP_FINDER_CONFIG.PRIME_MAX_IDS, 300000).map((steamid) => [
+          steamid,
+          now,
+        ])
       ),
       friendLists: Object.fromEntries(
         Array.from({ length: FRIEND_LISTS_MAX_IDS / listSize }, (_, i) => [

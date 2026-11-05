@@ -5,7 +5,12 @@
 
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import joinJournal from "../src/game/join-journal.js";
@@ -32,7 +37,9 @@ describe("join journal", () => {
 
   /** Every event handed to the main process so far */
   const written = () =>
-    append.mock.calls.flatMap(([lines]) => lines).map((line) => JSON.parse(line));
+    append.mock.calls
+      .flatMap(([lines]) => lines)
+      .map((line) => JSON.parse(line));
   const gsiEvents = () => written().filter(({ event }) => event === "gsi");
 
   beforeEach(() => {
@@ -59,8 +66,15 @@ describe("join journal", () => {
     await jest.advanceTimersByTimeAsync(JOIN_JOURNAL_CONFIG.FLUSH_MS);
 
     expect(append).toHaveBeenCalledTimes(1);
-    expect(written().map(({ event }) => event)).toEqual(["connect", "snapshot"]);
-    expect(written()[0]).toEqual({ t: expect.any(Number), event: "connect", join: OTHER });
+    expect(written().map(({ event }) => event)).toEqual([
+      "connect",
+      "snapshot",
+    ]);
+    expect(written()[0]).toEqual({
+      t: expect.any(Number),
+      event: "connect",
+      join: OTHER,
+    });
   });
 
   test("a full buffer is handed over at once", async () => {
@@ -70,7 +84,9 @@ describe("join journal", () => {
     await jest.advanceTimersByTimeAsync(0);
 
     expect(append).toHaveBeenCalledTimes(1);
-    expect(append.mock.calls[0][0]).toHaveLength(JOIN_JOURNAL_CONFIG.MAX_LINES_PER_APPEND);
+    expect(append.mock.calls[0][0]).toHaveLength(
+      JOIN_JOURNAL_CONFIG.MAX_LINES_PER_APPEND
+    );
   });
 
   test("without the bridge nothing is written and nothing piles up", async () => {

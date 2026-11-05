@@ -9,10 +9,7 @@ import SettingsStore from "./settings-store.js";
 import { isAllowedExternalUrl } from "./external-links.js";
 import { isPermissionAllowed } from "./permissions.js";
 import { appendJoinJournal } from "./join-journal-file.js";
-import {
-  readMapFinderStore,
-  writeMapFinderStore,
-} from "./map-finder-store.js";
+import { readMapFinderStore, writeMapFinderStore } from "./map-finder-store.js";
 
 const SETTINGS_PATH = path.join(app.getPath("userData"), "settings.json");
 const GSI_STORE_PATH = path.join(app.getPath("userData"), "gsi.json");

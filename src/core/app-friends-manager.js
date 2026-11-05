@@ -122,7 +122,10 @@ class AppFriendsManager {
     try {
       // The user's own presence rides in the same Steam request
       const [allStatuses] = await Promise.all([
-        SteamAPI.getFriendsStatuses(FakeFriendsManager.mergeIds(friendIds), auth),
+        SteamAPI.getFriendsStatuses(
+          FakeFriendsManager.mergeIds(friendIds),
+          auth
+        ),
         this.updateUserLocation(auth),
       ]);
 

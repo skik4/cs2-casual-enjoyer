@@ -14,7 +14,12 @@ jest.mock("../src/steam/steam-api.js");
 jest.mock("../src/utils/error-handler.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import joinManager from "../src/game/join-manager.js";
@@ -90,8 +95,9 @@ describe("JoinManager - Competitive/Premier Mode Interruption", () => {
   const state = (id = FRIEND_ID) => joinManager.getJoinStates()[id];
   const status = (id = FRIEND_ID) => state(id)?.status;
   const polls = (id = FRIEND_ID) =>
-    SteamAPI.getJoinSnapshot.mock.calls.filter(([, friendId]) => friendId === id)
-      .length;
+    SteamAPI.getJoinSnapshot.mock.calls.filter(
+      ([, friendId]) => friendId === id
+    ).length;
   const connects = (id = FRIEND_ID) =>
     openExternal.mock.calls.filter(([url]) =>
       url.startsWith(`steam://rungame/730/${id}/`)
@@ -350,7 +356,9 @@ describe("JoinManager - Competitive/Premier Mode Interruption", () => {
       expect(status(FRIEND_ID)).toBe(CONNECTING);
       expect(status(FRIEND_2_ID)).toBe(CONNECTING);
       expect(openExternal).toHaveBeenCalledWith(joinUrl(FRIEND_ID, CONNECT));
-      expect(openExternal).toHaveBeenCalledWith(joinUrl(FRIEND_2_ID, CONNECT_2));
+      expect(openExternal).toHaveBeenCalledWith(
+        joinUrl(FRIEND_2_ID, CONNECT_2)
+      );
 
       // The first friend's connect works
       steam.user = userIn.server(FRIEND_SERVER);

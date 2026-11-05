@@ -75,7 +75,7 @@ export async function toggleLanguageAndApply() {
     applyI18nToDom();
     updateLanguageButton();
     await i18n.persistLanguageToSettings(i18n.getLanguage());
-  } catch { }
+  } catch {}
 }
 
 export function setupInitialLanguage(preferredLanguage) {

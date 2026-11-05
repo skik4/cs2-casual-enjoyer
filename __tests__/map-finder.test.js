@@ -8,7 +8,12 @@ jest.mock("../src/steam/steam-api.js", () => ({
 }));
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import mapFinder, {
@@ -112,13 +117,21 @@ describe("helpers", () => {
       freeSlot: true,
     });
     expect(servers[0].players.map((p) => p.steamid)).toEqual([A, B]);
-    expect(servers[1]).toMatchObject({ map: "de_mirage", rounds: null, freeSlot: false });
+    expect(servers[1]).toMatchObject({
+      map: "de_mirage",
+      rounds: null,
+      freeSlot: false,
+    });
   });
 
   test("buildServers marks a match that has ended", () => {
     const [server] = buildServers([presence(A, { score: "[ 8 : 2 ]" })]);
 
-    expect(server).toMatchObject({ score: "[ 8 : 2 ]", rounds: 10, over: true });
+    expect(server).toMatchObject({
+      score: "[ 8 : 2 ]",
+      rounds: 10,
+      over: true,
+    });
   });
 
   test("after a match a server's next map wins over players still showing the last one", () => {
@@ -155,7 +168,10 @@ describe("helpers", () => {
     const running = { freeSlot: false, rounds: 3, over: false };
     const finished = { freeSlot: true, rounds: 10, over: true };
 
-    expect([finished, running].sort(compareServers)).toEqual([running, finished]);
+    expect([finished, running].sort(compareServers)).toEqual([
+      running,
+      finished,
+    ]);
   });
 });
 
@@ -164,7 +180,9 @@ describe("a credential Steam turned down", () => {
 
   test("refreshes nothing and keeps the servers known until it is taken again", async () => {
     configure({ getFriendIds: () => [A] });
-    SteamAPI.getPresence.mockResolvedValue(presenceMap(presence(A, { connect: CONNECT })));
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(presence(A, { connect: CONNECT }))
+    );
     await mapFinder.refresh();
     expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A]);
 
@@ -197,7 +215,11 @@ describe("finished matches and the user's own server", () => {
       presenceMap(
         presence(A, { score: "[ 8 : 2 ]", connect: CONNECT }),
         presence(B, { serverId: OTHER_DUST, connect: CONNECT }),
-        presence(C, { serverId: MIRAGE_SERVER, map: "de_mirage", connect: CONNECT })
+        presence(C, {
+          serverId: MIRAGE_SERVER,
+          map: "de_mirage",
+          connect: CONNECT,
+        })
       )
     );
     userLocation.setSteamPresence(presence(USER, { serverId: OTHER_DUST }));
@@ -206,10 +228,12 @@ describe("finished matches and the user's own server", () => {
 
     expect(mapFinder.getCandidateIds("de_dust2")).toEqual([]);
     expect(mapFinder.getCandidateIds("de_mirage")).toEqual([C]);
-    expect(mapFinder.getMaps().find((m) => m.map === "de_dust2")).toMatchObject({
-      servers: 2,
-      freeServers: 0,
-    });
+    expect(mapFinder.getMaps().find((m) => m.map === "de_dust2")).toMatchObject(
+      {
+        servers: 2,
+        freeServers: 0,
+      }
+    );
   });
 
   test("the user's server follows CS2 when it moves on to its next map", async () => {
@@ -227,7 +251,12 @@ describe("finished matches and the user's own server", () => {
 
     expect(mapFinder.getServers("de_dust2")).toEqual([]);
     expect(mapFinder.getServers("de_inferno")).toEqual([
-      expect.objectContaining({ serverId: DUST_SERVER, over: false, score: null, players: [] }),
+      expect.objectContaining({
+        serverId: DUST_SERVER,
+        over: false,
+        score: null,
+        players: [],
+      }),
     ]);
   });
 });
@@ -247,8 +276,20 @@ describe("refresh", () => {
     await mapFinder.refresh();
 
     expect(mapFinder.getMaps()).toEqual([
-      { map: "de_dust2", label: "Dust II", servers: 1, freeServers: 1, primeServers: 0 },
-      { map: "de_mirage", label: "Mirage", servers: 1, freeServers: 0, primeServers: 0 },
+      {
+        map: "de_dust2",
+        label: "Dust II",
+        servers: 1,
+        freeServers: 1,
+        primeServers: 0,
+      },
+      {
+        map: "de_mirage",
+        label: "Mirage",
+        servers: 1,
+        freeServers: 0,
+        primeServers: 0,
+      },
     ]);
     expect([...mapFinder.pool.keys()].sort()).toEqual([A, B, C].sort());
     expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A, B]);
@@ -311,8 +352,9 @@ describe("refresh", () => {
 
   test("friends of friends take the room left, a different slice each time", async () => {
     configure({ getFriendIds: () => [A] });
-    const fof = Array.from({ length: MAP_FINDER_CONFIG.MAX_IDS_PER_REFRESH + 10 }, (_, i) =>
-      String(76561198100000000n + BigInt(i))
+    const fof = Array.from(
+      { length: MAP_FINDER_CONFIG.MAX_IDS_PER_REFRESH + 10 },
+      (_, i) => String(76561198100000000n + BigInt(i))
     );
     mapFinder.fof = { ids: fof, fetchedAt: Date.now(), friendsCount: 1 };
 
@@ -368,7 +410,10 @@ describe("refresh", () => {
       await mapFinder.refresh();
 
       expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A]);
-      expect(mapFinder.getStatus()).toMatchObject({ lastRefreshAt, refreshing: false });
+      expect(mapFinder.getStatus()).toMatchObject({
+        lastRefreshAt,
+        refreshing: false,
+      });
     } finally {
       jest.useRealTimers();
     }
@@ -377,7 +422,10 @@ describe("refresh", () => {
   test("drops pool entries past their time and keeps the newest", async () => {
     configure();
     const now = Date.now();
-    mapFinder.pool.set(A, { lastSeen: now - MAP_FINDER_CONFIG.POOL_TTL_MS - 1, map: "de_dust2" });
+    mapFinder.pool.set(A, {
+      lastSeen: now - MAP_FINDER_CONFIG.POOL_TTL_MS - 1,
+      map: "de_dust2",
+    });
     mapFinder.pool.set(B, { lastSeen: now - 1000, map: "de_dust2" });
     // Steam answers about both: neither is in CS2 right now
     SteamAPI.getPresence.mockResolvedValue(
@@ -526,11 +574,17 @@ describe("friends of friends", () => {
       mapFinder.fof = { ids: [A], fetchedAt: 123, friendsCount: 2 };
 
       const crawl = mapFinder._crawlFof();
-      await jest.advanceTimersByTimeAsync(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS * 2);
+      await jest.advanceTimersByTimeAsync(
+        MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS * 2
+      );
       await crawl;
 
       expect(mapFinder.getStatus().fof).toBe("error");
-      expect(mapFinder.fof).toEqual({ ids: [A], fetchedAt: 123, friendsCount: 2 });
+      expect(mapFinder.fof).toEqual({
+        ids: [A],
+        fetchedAt: 123,
+        friendsCount: 2,
+      });
     } finally {
       jest.useRealTimers();
     }
@@ -611,7 +665,11 @@ describe("store", () => {
     await mapFinder._load();
 
     expect([...mapFinder.pool.keys()]).toEqual([A]);
-    expect(mapFinder.fof).toEqual({ ids: [C], fetchedAt: 123, friendsCount: 4 });
+    expect(mapFinder.fof).toEqual({
+      ids: [C],
+      fetchedAt: 123,
+      friendsCount: 4,
+    });
   });
 
   test("a load asked for while the first is still reading waits for its data", async () => {
@@ -696,14 +754,25 @@ describe("friends of pool players", () => {
 
       expect(mapFinder.getStatus().poolFriendsDue).toBe(2);
       expect(mapFinder.readPoolFriends()).toBe(true);
-      expect(mapFinder.getStatus().poolFriendsProgress).toEqual({ done: 0, total: 2 });
-      await jest.advanceTimersByTimeAsync(MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS * 2);
+      expect(mapFinder.getStatus().poolFriendsProgress).toEqual({
+        done: 0,
+        total: 2,
+      });
+      await jest.advanceTimersByTimeAsync(
+        MAP_FINDER_CONFIG.FOF_REQUEST_DELAY_MS * 2
+      );
 
-      expect(SteamAPI.getFriendIdsOf.mock.calls.map(([id]) => id)).toEqual([A, B]);
+      expect(SteamAPI.getFriendIdsOf.mock.calls.map(([id]) => id)).toEqual([
+        A,
+        B,
+      ]);
       expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledWith(A, KEY);
       // Neither the user nor someone already in the pool
       expect(mapFinder.poolFriends.ids).toEqual([X, Y, Z]);
-      expect(mapFinder.getStatus()).toMatchObject({ poolFriends: "idle", poolFriendsDue: 0 });
+      expect(mapFinder.getStatus()).toMatchObject({
+        poolFriends: "idle",
+        poolFriendsDue: 0,
+      });
       expect(mapFinder.readPoolFriends()).toBe(false);
 
       jest.advanceTimersByTime(MAP_FINDER_CONFIG.FOF_REFRESH_MS);
@@ -773,7 +842,10 @@ describe("friends of pool players", () => {
     expect(mapFinder.pool.size).toBe(0);
     // The friends found before stay until they are cleared on their own
     expect(mapFinder.poolFriends).toEqual({ ids: [X], crawled: {} });
-    expect(mapFinder.getStatus()).toMatchObject({ poolSize: 0, poolFriendsSize: 1 });
+    expect(mapFinder.getStatus()).toMatchObject({
+      poolSize: 0,
+      poolFriendsSize: 1,
+    });
   });
 
   test("clearing the pool can keep the players seen with a sign of Prime", () => {
@@ -810,7 +882,10 @@ describe("friends of pool players", () => {
       mapFinder.poolFriends = { ids: [X], crawled: { [A]: 123 } };
       mapFinder._scheduleSave();
       jest.advanceTimersByTime(MAP_FINDER_CONFIG.SAVE_DEBOUNCE_MS);
-      expect(save.mock.calls[0][0].poolFriends).toEqual({ ids: [X], crawled: { [A]: 123 } });
+      expect(save.mock.calls[0][0].poolFriends).toEqual({
+        ids: [X],
+        crawled: { [A]: 123 },
+      });
     } finally {
       jest.useRealTimers();
     }
@@ -820,7 +895,10 @@ describe("friends of pool players", () => {
       mapFinder: {
         load: jest.fn().mockResolvedValue({
           pool: { [A]: { lastSeen: Date.now(), map: "de_dust2" } },
-          poolFriends: { ids: [X, "junk"], crawled: { [A]: 123, [B]: 456, bad: 1 } },
+          poolFriends: {
+            ids: [X, "junk"],
+            crawled: { [A]: 123, [B]: 456, bad: 1 },
+          },
         }),
       },
     };
@@ -850,7 +928,9 @@ describe("several maps", () => {
       server("4", "de_dust2", { score: "[ 8 : 1 ]", rounds: 9, over: true }, D),
     ];
 
-    expect(mapFinder.getCandidateIdsForMaps(["de_dust2", "de_mirage"])).toEqual([B, A]);
+    expect(mapFinder.getCandidateIdsForMaps(["de_dust2", "de_mirage"])).toEqual(
+      [B, A]
+    );
   });
 });
 
@@ -864,14 +944,22 @@ describe("Prime", () => {
       presenceMap(
         presence(A, { primeSign: true, ...overrides[A] }),
         presence(B, { connect: CONNECT, ...overrides[B] }),
-        presence(C, { serverId: MIRAGE_SERVER, map: "de_mirage", connect: CONNECT, ...overrides[C] })
+        presence(C, {
+          serverId: MIRAGE_SERVER,
+          map: "de_mirage",
+          connect: CONNECT,
+          ...overrides[C],
+        })
       )
     );
     await mapFinder.refresh();
   };
 
   test("buildServers counts the players with a sign of Prime", () => {
-    const [server] = buildServers([presence(A, { primeSign: true }), presence(B)]);
+    const [server] = buildServers([
+      presence(A, { primeSign: true }),
+      presence(B),
+    ]);
 
     expect(server.primePlayers).toBe(1);
     expect(server.players.map((player) => player.prime)).toEqual([true, false]);
@@ -891,11 +979,14 @@ describe("Prime", () => {
   test("with Prime only off every server is listed, and maps count those with Prime", async () => {
     await refreshWithPrime();
 
-    expect(mapFinder.getMaps().map(({ map, servers, primeServers }) => [map, servers, primeServers]))
-      .toEqual([
-        ["de_dust2", 1, 1],
-        ["de_mirage", 1, 0],
-      ]);
+    expect(
+      mapFinder
+        .getMaps()
+        .map(({ map, servers, primeServers }) => [map, servers, primeServers])
+    ).toEqual([
+      ["de_dust2", 1, 1],
+      ["de_mirage", 1, 0],
+    ]);
     expect(mapFinder.getStatus().hiddenServers).toBe(0);
   });
 
@@ -911,7 +1002,9 @@ describe("Prime", () => {
     expect(mapFinder.getServers("de_mirage")).toEqual([]);
     expect(mapFinder.getCandidateIds("de_mirage")).toEqual([]);
     expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A, B]);
-    expect(mapFinder.getCandidateIdsForMaps(["de_dust2", "de_mirage"])).toEqual([A, B]);
+    expect(mapFinder.getCandidateIdsForMaps(["de_dust2", "de_mirage"])).toEqual(
+      [A, B]
+    );
     expect(mapFinder.getStatus().hiddenServers).toBe(1);
   });
 
@@ -957,14 +1050,22 @@ describe("Prime", () => {
 
     expect(mapFinder.prime.size).toBe(limit);
     expect(mapFinder.prime.has("76561198100000000")).toBe(false);
-    expect(mapFinder.prime.has(String(76561198100000000n + BigInt(limit)))).toBe(true);
+    expect(
+      mapFinder.prime.has(String(76561198100000000n + BigInt(limit)))
+    ).toBe(true);
   });
 
   test("a seed showing a sign of Prime is remembered", async () => {
     configure();
     mapFinder.seeds.add(E);
     SteamAPI.getPresence.mockResolvedValue(
-      presenceMap(presence(E, { serverId: INFERNO_SERVER, map: "de_inferno", primeSign: true }))
+      presenceMap(
+        presence(E, {
+          serverId: INFERNO_SERVER,
+          map: "de_inferno",
+          primeSign: true,
+        })
+      )
     );
 
     await mapFinder._checkSeeds();
@@ -1003,13 +1104,16 @@ describe("friend check", () => {
   };
   /** Presence requests that asked about a friend */
   const friendAsks = (friend) =>
-    SteamAPI.getPresence.mock.calls.filter(([ids]) => ids.includes(friend)).length;
+    SteamAPI.getPresence.mock.calls.filter(([ids]) => ids.includes(friend))
+      .length;
 
   beforeEach(() => {
     world = new Map();
     SteamAPI.getPresence.mockImplementation(
       async (ids) =>
-        new Map(ids.filter((id) => world.has(id)).map((id) => [id, world.get(id)]))
+        new Map(
+          ids.filter((id) => world.has(id)).map((id) => [id, world.get(id)])
+        )
     );
   });
 
@@ -1029,7 +1133,10 @@ describe("friend check", () => {
     expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledWith(A, KEY);
     // Where the friends are is asked with the main credential, as any presence
     expect(SteamAPI.getPresence).toHaveBeenLastCalledWith([F1, F2], "token");
-    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({ verdict: "alone", reason: null });
+    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({
+      verdict: "alone",
+      reason: null,
+    });
     // No sign of Prime there, nothing to mark
     expect(mapFinder.getPrimeCheck(MIRAGE_SERVER)).toBeNull();
   });
@@ -1065,9 +1172,18 @@ describe("friend check", () => {
     await refresh();
     mapFinder.setPrimeOnly(true);
 
-    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({ verdict: "friend", reason: null });
+    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({
+      verdict: "friend",
+      reason: null,
+    });
     expect(mapFinder.getMaps()).toEqual([
-      { map: "de_dust2", label: "Dust II", servers: 1, freeServers: 1, primeServers: 1 },
+      {
+        map: "de_dust2",
+        label: "Dust II",
+        servers: 1,
+        freeServers: 1,
+        primeServers: 1,
+      },
     ]);
     expect(mapFinder.getServers("de_dust2")).toHaveLength(1);
     expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A]);
@@ -1086,7 +1202,10 @@ describe("friend check", () => {
     await refresh();
 
     expect(SteamAPI.getPresence).toHaveBeenCalledTimes(1);
-    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({ verdict: "unknown", reason: "closed" });
+    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({
+      verdict: "unknown",
+      reason: "closed",
+    });
   });
 
   test("without a key no list is read and no friend asked about", async () => {
@@ -1098,7 +1217,10 @@ describe("friend check", () => {
 
     expect(SteamAPI.getFriendIdsOf).not.toHaveBeenCalled();
     expect(SteamAPI.getPresence).toHaveBeenCalledTimes(2);
-    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({ verdict: "unknown", reason: "no-key" });
+    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({
+      verdict: "unknown",
+      reason: "no-key",
+    });
   });
 
   test("a player not checked yet is unknown until the check comes", async () => {
@@ -1108,7 +1230,10 @@ describe("friend check", () => {
 
     await mapFinder.refresh();
 
-    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({ verdict: "unknown", reason: "pending" });
+    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({
+      verdict: "unknown",
+      reason: "pending",
+    });
   });
 
   test("an answer missing a friend proves nobody absent: the player is checked again", async () => {
@@ -1118,7 +1243,10 @@ describe("friend check", () => {
     SteamAPI.getFriendIdsOf.mockResolvedValue([F1, F2]);
 
     await refresh();
-    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({ verdict: "unknown", reason: "pending" });
+    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({
+      verdict: "unknown",
+      reason: "pending",
+    });
 
     place(away(F2));
     await refresh();
@@ -1126,7 +1254,10 @@ describe("friend check", () => {
     // The list read before is used again
     expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledTimes(1);
     expect(friendAsks(F1)).toBe(2);
-    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({ verdict: "alone", reason: null });
+    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({
+      verdict: "alone",
+      reason: null,
+    });
   });
 
   test("a check holds while the player stays on the server and comes again on another one", async () => {
@@ -1152,13 +1283,19 @@ describe("friend check", () => {
 
     configure({ getFriendIds: () => [A, B], getFofKey: () => KEY });
     const onInferno = { serverId: INFERNO_SERVER, map: "de_inferno" };
-    place(presence(A, { primeSign: true, ...onInferno }), presence(F1, onInferno));
+    place(
+      presence(A, { primeSign: true, ...onInferno }),
+      presence(F1, onInferno)
+    );
     await refresh();
 
     // The friend now sits with the player on Inferno
     expect(friendAsks(F1)).toBe(2);
     expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledTimes(1);
-    expect(mapFinder.getPrimeCheck(INFERNO_SERVER)).toEqual({ verdict: "friend", reason: null });
+    expect(mapFinder.getPrimeCheck(INFERNO_SERVER)).toEqual({
+      verdict: "friend",
+      reason: null,
+    });
   });
 
   test("a friends list is read again only after a day", async () => {
@@ -1167,7 +1304,13 @@ describe("friend check", () => {
     SteamAPI.getFriendIdsOf.mockResolvedValue([F1]);
     await refresh();
 
-    place(presence(A, { primeSign: true, serverId: INFERNO_SERVER, map: "de_inferno" }));
+    place(
+      presence(A, {
+        primeSign: true,
+        serverId: INFERNO_SERVER,
+        map: "de_inferno",
+      })
+    );
     await refresh();
     expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledTimes(1);
 
@@ -1179,7 +1322,11 @@ describe("friend check", () => {
 
   test("a player alone settles the server: the others there need no check", async () => {
     configure({ getFriendIds: () => [A, B], getFofKey: () => KEY });
-    place(presence(A, { primeSign: true }), presence(B, { primeSign: true }), away(F1));
+    place(
+      presence(A, { primeSign: true }),
+      presence(B, { primeSign: true }),
+      away(F1)
+    );
     SteamAPI.getFriendIdsOf.mockResolvedValue([F1]);
 
     await refresh();
@@ -1189,13 +1336,23 @@ describe("friend check", () => {
 
   test("a server takes its best player's answer, whoever was checked first", async () => {
     configure({ getFriendIds: () => [A, B], getFofKey: () => KEY });
-    place(presence(A, { primeSign: true }), presence(B, { primeSign: true }), presence(F1), away(F2));
-    SteamAPI.getFriendIdsOf.mockImplementation(async (id) => (id === A ? [F1] : [F2]));
+    place(
+      presence(A, { primeSign: true }),
+      presence(B, { primeSign: true }),
+      presence(F1),
+      away(F2)
+    );
+    SteamAPI.getFriendIdsOf.mockImplementation(async (id) =>
+      id === A ? [F1] : [F2]
+    );
 
     await refresh();
 
     expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledTimes(2);
-    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({ verdict: "alone", reason: null });
+    expect(mapFinder.getPrimeCheck(DUST_SERVER)).toEqual({
+      verdict: "alone",
+      reason: null,
+    });
   });
 
   test("the order: alone, then Prime friends, then unknown, then a friend without Prime", () => {
@@ -1205,19 +1362,26 @@ describe("friend check", () => {
     const closed = { verdict: "unknown", reason: "closed" };
     const pending = { verdict: "unknown", reason: "pending" };
 
-    expect(bestPrimeCheck([friend, closed, primeFriends], true)).toBe(primeFriends);
+    expect(bestPrimeCheck([friend, closed, primeFriends], true)).toBe(
+      primeFriends
+    );
     expect(bestPrimeCheck([primeFriends, alone], true)).toBe(alone);
     expect(bestPrimeCheck([friend, closed], true)).toBe(closed);
     // A check still to come tells more than a closed list
     expect(bestPrimeCheck([closed, pending], true)).toBe(pending);
     expect(bestPrimeCheck([friend], true)).toBe(friend);
-    expect(bestPrimeCheck([], false)).toEqual({ verdict: "unknown", reason: "no-key" });
+    expect(bestPrimeCheck([], false)).toEqual({
+      verdict: "unknown",
+      reason: "no-key",
+    });
   });
 
   test("a refresh starts a few checks at most, the servers best to join first", async () => {
     // Six players with a sign of Prime, each alone on a server of their own;
     // the last two servers have a free slot
-    const players = Array.from({ length: 6 }, (_, i) => String(76561198000000051n + BigInt(i)));
+    const players = Array.from({ length: 6 }, (_, i) =>
+      String(76561198000000051n + BigInt(i))
+    );
     configure({ getFriendIds: () => players, getFofKey: () => KEY });
     players.forEach((id, i) =>
       place(
@@ -1245,8 +1409,9 @@ describe("friend check", () => {
   });
 
   test("a closed list read in the last day is not read again and costs none of the budget", async () => {
-    const players = Array.from({ length: FRIEND_CHECKS_PER_REFRESH + 1 }, (_, i) =>
-      String(76561198000000051n + BigInt(i))
+    const players = Array.from(
+      { length: FRIEND_CHECKS_PER_REFRESH + 1 },
+      (_, i) => String(76561198000000051n + BigInt(i))
     );
     configure({ getFriendIds: () => players, getFofKey: () => KEY });
     players.forEach((id, i) =>
@@ -1265,14 +1430,19 @@ describe("friend check", () => {
 
     await refresh();
 
-    expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledTimes(FRIEND_CHECKS_PER_REFRESH);
+    expect(SteamAPI.getFriendIdsOf).toHaveBeenCalledTimes(
+      FRIEND_CHECKS_PER_REFRESH
+    );
     expect(SteamAPI.getFriendIdsOf).not.toHaveBeenCalledWith(players[0], KEY);
     expect(mapFinder.getPrimeCheck(String(90071992547409931n))).toEqual({
       verdict: "unknown",
       reason: "closed",
     });
-    expect(mapFinder.getPrimeCheck(String(90071992547409931n + BigInt(players.length - 1))).verdict)
-      .toBe("alone");
+    expect(
+      mapFinder.getPrimeCheck(
+        String(90071992547409931n + BigInt(players.length - 1))
+      ).verdict
+    ).toBe("alone");
   });
 
   test("friends lists are saved, and loaded back without stale or broken entries", async () => {
@@ -1320,10 +1490,18 @@ describe("friend check", () => {
 
   test("over the size limit the lists read longest ago go first", () => {
     const ids = (count) =>
-      Array.from({ length: count }, (_, i) => String(76561198100000000n + BigInt(i)));
+      Array.from({ length: count }, (_, i) =>
+        String(76561198100000000n + BigInt(i))
+      );
     const now = Date.now();
-    mapFinder.friendLists.set(A, { at: now - 2000, ids: ids(FRIEND_LISTS_MAX_IDS / 2) });
-    mapFinder.friendLists.set(B, { at: now - 1000, ids: ids(FRIEND_LISTS_MAX_IDS / 2) });
+    mapFinder.friendLists.set(A, {
+      at: now - 2000,
+      ids: ids(FRIEND_LISTS_MAX_IDS / 2),
+    });
+    mapFinder.friendLists.set(B, {
+      at: now - 1000,
+      ids: ids(FRIEND_LISTS_MAX_IDS / 2),
+    });
 
     mapFinder._keepFriendList(C, [F1, F2]);
 

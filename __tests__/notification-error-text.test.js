@@ -16,7 +16,8 @@ const shownText = () =>
     ?.textContent.trim();
 
 beforeEach(() => {
-  document.body.innerHTML = '<div id="notifications"></div><input id="steam-id" />';
+  document.body.innerHTML =
+    '<div id="notifications"></div><input id="steam-id" />';
   setLanguage("ru");
 });
 

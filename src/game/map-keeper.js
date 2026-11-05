@@ -105,7 +105,8 @@ class MapKeeper {
       getCandidateIds: () => mapFinder.getCandidateIdsForMaps(this.getMaps()),
       primeOnly: () => mapFinder.primeOnly,
       isPrime: (player) => mapFinder.isPrimePlayer(player),
-      primeCheck: (serverId) => mapFinder.getPrimeCheck(serverId)?.verdict ?? null,
+      primeCheck: (serverId) =>
+        mapFinder.getPrimeCheck(serverId)?.verdict ?? null,
     });
   }
 
@@ -148,7 +149,9 @@ class MapKeeper {
    * @private
    */
   _joining() {
-    return joinManager.isActive(joinManager.getJoinStates()[PINNED_MAPS_JOIN_ID]);
+    return joinManager.isActive(
+      joinManager.getJoinStates()[PINNED_MAPS_JOIN_ID]
+    );
   }
 
   /**
@@ -157,7 +160,9 @@ class MapKeeper {
   _changed() {
     if (this.maps.length && !this._gsiUnsubscribe) {
       this._gsiUnsubscribe = gsiManager.onChange(() => this._check());
-      this._locationUnsubscribe = userLocation.onChange(() => this._updateNeed());
+      this._locationUnsubscribe = userLocation.onChange(() =>
+        this._updateNeed()
+      );
     }
     // With nothing pinned any more, its join has nowhere to go
     if (!this.maps.length && this._joining()) {

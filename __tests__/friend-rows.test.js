@@ -83,7 +83,11 @@ test("a status update shows the join, then falls back to the row's slot", () => 
 
 test("someone out of casual shows where they are, with no slot label", () => {
   FriendsRenderer.renderFakeFriendsList([
-    friend(FREE, { in_casual_mode: false, join_available: false, status: "Main Menu" }),
+    friend(FREE, {
+      in_casual_mode: false,
+      join_available: false,
+      status: "Main Menu",
+    }),
   ]);
 
   const row = element(`friend-${FREE}`);
@@ -104,9 +108,9 @@ test("a refresh updates a row in place, keeping a remove waiting for its second 
 
   expect(element(`remove-fake-btn-${FREE}`)).toBe(remove);
   expect(remove.textContent).toBe("Remove?");
-  expect(element(`friend-${FREE}`).querySelector(".game-score").textContent).toBe(
-    "4 : 1"
-  );
+  expect(
+    element(`friend-${FREE}`).querySelector(".game-score").textContent
+  ).toBe("4 : 1");
   expect(label(FREE).textContent).toBe("no free slot");
 });
 
@@ -156,10 +160,14 @@ describe("a friend on the user's own server", () => {
 
   test("can be joined again once the user leaves the server", () => {
     userLocation.setSteamPresence({ inCS2: true, serverId: SERVER });
-    FriendsRenderer.renderFriendsList([friend(FREE, { game_server_id: SERVER })]);
+    FriendsRenderer.renderFriendsList([
+      friend(FREE, { game_server_id: SERVER }),
+    ]);
 
     userLocation.setSteamPresence({ inCS2: true, serverId: null });
-    FriendsRenderer.renderFriendsList([friend(FREE, { game_server_id: SERVER })]);
+    FriendsRenderer.renderFriendsList([
+      friend(FREE, { game_server_id: SERVER }),
+    ]);
 
     expect(label(FREE).textContent).toBe("free slot");
     expect(button(FREE).disabled).toBe(false);
@@ -167,7 +175,9 @@ describe("a friend on the user's own server", () => {
 
   test("after an attempt the row goes back to showing the user beside the friend", () => {
     userLocation.setSteamPresence({ inCS2: true, serverId: SERVER });
-    FriendsRenderer.renderFriendsList([friend(FREE, { game_server_id: SERVER })]);
+    FriendsRenderer.renderFriendsList([
+      friend(FREE, { game_server_id: SERVER }),
+    ]);
 
     StatusManager.updateLabel(FREE, STATUS_TYPES.JOINED);
     StatusManager.updateLabel(FREE, STATUS_TYPES.CANCELLED);

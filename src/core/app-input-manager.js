@@ -165,14 +165,21 @@ class AppInputManager {
    */
   async saveFreshToken(token, info) {
     const saved = appStateManager.getState("savedSettings");
-    if (!token || !info || !saved?.steam_id || info.steamid !== saved.steam_id) {
+    if (
+      !token ||
+      !info ||
+      !saved?.steam_id ||
+      info.steamid !== saved.steam_id
+    ) {
       return;
     }
     if (info.expires * 1000 <= Date.now()) return;
     if (Validators.extractApiKeyOrToken(saved.auth || "") === token) return;
 
     try {
-      const updated = await window.electronAPI?.settings?.update?.({ auth: token });
+      const updated = await window.electronAPI?.settings?.update?.({
+        auth: token,
+      });
       if (updated) appStateManager.setState("savedSettings", updated);
     } catch (error) {
       logger.error("AppInputManager", "Saving the fresh token failed", {
@@ -263,7 +270,8 @@ class AppInputManager {
       isKey: Validators.isApiKey(auth),
       tokenInfo,
       tokenExpired: isTokenExpired,
-      hasFriends: (appStateManager.getState("savedFriendsIds") || []).length > 0,
+      hasFriends:
+        (appStateManager.getState("savedFriendsIds") || []).length > 0,
     });
 
     // Check if we should start auto-refresh

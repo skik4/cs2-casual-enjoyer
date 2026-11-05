@@ -9,7 +9,12 @@
 
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import MapFinderView from "../src/ui/map-finder-view.js";
@@ -58,7 +63,11 @@ beforeEach(() => {
       over: false,
       freeSlot: true,
       players: [
-        { steamid: "76561198000000011", personaname: "a", connect: "+gcconnect0A0B0C0D" },
+        {
+          steamid: "76561198000000011",
+          personaname: "a",
+          connect: "+gcconnect0A0B0C0D",
+        },
       ],
     },
   ];

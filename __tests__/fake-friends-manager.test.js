@@ -55,7 +55,12 @@ jest.mock("../src/ui/tutorial/tutorial-manager.js", () => ({
 }));
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 jest.mock("../src/i18n/i18n-manager.js", () => ({
   __esModule: true,

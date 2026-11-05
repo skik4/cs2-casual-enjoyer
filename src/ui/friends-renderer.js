@@ -195,7 +195,8 @@ class FriendsRenderer {
 
     return {
       steamid: friend.steamid,
-      avatarUrl: friend.avatarfull || friend.avatar || friend.avatarmedium || "",
+      avatarUrl:
+        friend.avatarfull || friend.avatar || friend.avatarmedium || "",
       personaname: friend.personaname || "",
       whereHtml,
       slot,

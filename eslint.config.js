@@ -128,7 +128,10 @@ export default [
   // preload is CommonJS
   {
     files: ["**/*.cjs"],
-    languageOptions: { sourceType: "commonjs", globals: { ...browser, ...node } },
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: { ...browser, ...node },
+    },
   },
 
   // Local test suite

@@ -11,7 +11,12 @@ jest.mock("../src/steam/steam-api.js");
 jest.mock("../src/utils/error-handler.js");
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
-  default: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 import joinManager, { getMapJoinId } from "../src/game/join-manager.js";
@@ -91,7 +96,11 @@ async function replay(start, steps, until, { withGsi = true } = {}) {
       let raw = null;
       if (id === USER && user) raw = account(USER, user.kv, user.server);
       if (id === PICK && pick) raw = account(PICK, pick.kv, pick.server);
-      if (raw) presence.set(id, SteamAPIResponseProcessor.processPresenceResponse(raw));
+      if (raw)
+        presence.set(
+          id,
+          SteamAPIResponseProcessor.processPresenceResponse(raw)
+        );
     }
     return presence;
   });
@@ -151,21 +160,37 @@ test("2026-10-25 20:53: the user's own arrival renews the join token, and no sec
   const renewed = "+gcconnect297784E91C0000AA139423A2";
   const menu = { activity: "menu" };
   const steps = [
-    { at: 0, gsi: menu, user: { kv: "" }, pick: { kv: dustKv("[ 7 : 3 ]"), server: PICK_SERVER } },
+    {
+      at: 0,
+      gsi: menu,
+      user: { kv: "" },
+      pick: { kv: dustKv("[ 7 : 3 ]"), server: PICK_SERVER },
+    },
     { at: 9003, pick: { kv: dustKv("[ 7 : 3 ]", first), server: PICK_SERVER } },
-    { at: 10976, pick: { kv: dustKv("[ 7 : 3 ]", renewed), server: PICK_SERVER } },
+    {
+      at: 10976,
+      pick: { kv: dustKv("[ 7 : 3 ]", renewed), server: PICK_SERVER },
+    },
     { at: 13001, user: { kv: dustKv("[ 7 : 3 ]"), server: PICK_SERVER } },
     {
       at: 13022,
-      gsi: { map: { name: "de_dust2", mode: "casual", phase: "live", round: 10 }, activity: "playing" },
+      gsi: {
+        map: { name: "de_dust2", mode: "casual", phase: "live", round: 10 },
+        activity: "playing",
+      },
     },
   ];
 
   await replay(Date.parse("2026-10-25T20:53:55.379Z"), steps, 14000);
 
   expect(openExternal).toHaveBeenCalledTimes(1);
-  expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${PICK}/${first}`);
-  expect(updateDot).toHaveBeenCalledWith(getMapJoinId("de_dust2"), STATUS_TYPES.JOINED);
+  expect(openExternal).toHaveBeenCalledWith(
+    `steam://rungame/730/${PICK}/${first}`
+  );
+  expect(updateDot).toHaveBeenCalledWith(
+    getMapJoinId("de_dust2"),
+    STATUS_TYPES.JOINED
+  );
 });
 
 describe("2026-10-30 20:26: the match ends at 8:2 while another Dust II server has a slot", () => {
@@ -186,25 +211,40 @@ describe("2026-10-30 20:26: the match ends at 8:2 while another Dust II server h
     { at: 9403, gsi: { activity: "menu" } },
     {
       at: 18322,
-      gsi: { map: { name: "de_mirage", mode: "casual", phase: "warmup", round: 0 }, activity: "playing" },
+      gsi: {
+        map: { name: "de_mirage", mode: "casual", phase: "warmup", round: 0 },
+        activity: "playing",
+      },
     },
   ];
 
   test("the map is not taken as joined, and another server is", async () => {
     await replay(Date.parse("2026-10-30T20:26:10.001Z"), steps, 1000);
 
-    expect(updateDot).not.toHaveBeenCalledWith(getMapJoinId("de_dust2"), STATUS_TYPES.JOINED);
+    expect(updateDot).not.toHaveBeenCalledWith(
+      getMapJoinId("de_dust2"),
+      STATUS_TYPES.JOINED
+    );
     expect(openExternal).toHaveBeenCalledTimes(1);
-    expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${PICK}/${offer}`);
+    expect(openExternal).toHaveBeenCalledWith(
+      `steam://rungame/730/${PICK}/${offer}`
+    );
   });
 
   test("the same without CS2's states: Steam's final score says the match is over", async () => {
     // Before CS2 has read the cfg there is no GSI, and Steam shows the user
     // on Dust II with the final score
-    await replay(Date.parse("2026-10-30T20:26:10.001Z"), steps, 1000, { withGsi: false });
+    await replay(Date.parse("2026-10-30T20:26:10.001Z"), steps, 1000, {
+      withGsi: false,
+    });
 
-    expect(updateDot).not.toHaveBeenCalledWith(getMapJoinId("de_dust2"), STATUS_TYPES.JOINED);
+    expect(updateDot).not.toHaveBeenCalledWith(
+      getMapJoinId("de_dust2"),
+      STATUS_TYPES.JOINED
+    );
     expect(openExternal).toHaveBeenCalledTimes(1);
-    expect(openExternal).toHaveBeenCalledWith(`steam://rungame/730/${PICK}/${offer}`);
+    expect(openExternal).toHaveBeenCalledWith(
+      `steam://rungame/730/${PICK}/${offer}`
+    );
   });
 });

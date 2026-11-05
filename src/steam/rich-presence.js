@@ -84,8 +84,7 @@ export function hasPrimeSign(richPresence) {
 export function richPresenceKey(kv) {
   const pairs = [];
   for (const match of String(kv ?? "").matchAll(/"([^"]*)"\s+"([^"]*)"/g)) {
-    const value =
-      match[1] === "connect" ? connectKind(match[2]) : match[2];
+    const value = match[1] === "connect" ? connectKind(match[2]) : match[2];
     pairs.push(`${match[1]}=${value}`);
   }
   return pairs.sort().join("\n");
@@ -144,8 +143,7 @@ export function isInSupportedMode(richPresence) {
  */
 export function isJoinAvailable(richPresence) {
   return (
-    isInSupportedMode(richPresence) &&
-    isValidConnect(richPresence.connect)
+    isInSupportedMode(richPresence) && isValidConnect(richPresence.connect)
   );
 }
 

@@ -21,7 +21,9 @@ export function interpretGsiPayload(payload) {
   const mode = inMatch && typeof map.mode === "string" ? map.mode : null;
 
   return {
-    steamId: payload?.provider?.steamid ? String(payload.provider.steamid) : null,
+    steamId: payload?.provider?.steamid
+      ? String(payload.provider.steamid)
+      : null,
     inMatch,
     inMenu: !inMatch,
     mode,
@@ -141,7 +143,9 @@ class GSIManager {
     const own = this.lastPayload?.provider?.steamid;
     const observed = this.lastPayload?.player?.steamid;
     if (!own || !observed || String(observed) === String(own)) return null;
-    return Validators.validateSteamId(String(observed)) ? String(observed) : null;
+    return Validators.validateSteamId(String(observed))
+      ? String(observed)
+      : null;
   }
 
   /**

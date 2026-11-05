@@ -129,7 +129,10 @@ describe("AppInputManager.saveFreshToken", () => {
   beforeEach(() => {
     update = jest.fn(async (patch) => ({ steam_id: USER, ...patch }));
     global.window.electronAPI = { settings: { update } };
-    appStateManager.setState("savedSettings", { steam_id: USER, auth: "old.expired.token" });
+    appStateManager.setState("savedSettings", {
+      steam_id: USER,
+      auth: "old.expired.token",
+    });
   });
 
   afterEach(() => {
@@ -139,7 +142,10 @@ describe("AppInputManager.saveFreshToken", () => {
   test("a fresh token for the saved account is kept at once", async () => {
     // Before, it was saved only with the next friends reload, and a restart
     // brought back the expired one
-    await appInputManager.saveFreshToken(TOKEN, { steamid: USER, expires: inAnHour() });
+    await appInputManager.saveFreshToken(TOKEN, {
+      steamid: USER,
+      expires: inAnHour(),
+    });
 
     expect(update).toHaveBeenCalledWith({ auth: TOKEN });
     expect(appStateManager.getState("savedSettings").auth).toBe(TOKEN);
@@ -160,7 +166,10 @@ describe("AppInputManager.saveFreshToken", () => {
       expires: Math.floor(Date.now() / 1000) - 60,
     });
     appStateManager.setState("savedSettings", { steam_id: USER, auth: TOKEN });
-    await appInputManager.saveFreshToken(TOKEN, { steamid: USER, expires: inAnHour() });
+    await appInputManager.saveFreshToken(TOKEN, {
+      steamid: USER,
+      expires: inAnHour(),
+    });
 
     expect(update).not.toHaveBeenCalled();
   });
