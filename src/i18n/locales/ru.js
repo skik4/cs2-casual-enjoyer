@@ -27,7 +27,7 @@ export default {
     friendFilterPlaceholder: "Фильтр по нику",
     footerSteamProfileTitle: "Открыть профиль skik4 в Steam",
     footerGithubProfileTitle: "Открыть GitHub профиль skik4",
-    hiddenH1Title: "CS2 Casual Enjoyer",
+    hiddenH1Title: "Casual Enjoyer",
   },
 
   notifications: {

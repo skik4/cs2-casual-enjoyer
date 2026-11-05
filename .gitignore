@@ -1,109 +1,34 @@
-# Node.js dependencies
+# Dependencies
 node_modules/
-
-# Development scripts (not for production)
-dev-scripts/
 
 # Build output
 dist/
 build/
+out/
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-.venv
+# Test coverage
+coverage/
 
-# VS Code settings (optional - можете оставить для общих настроек команды)
+# Local tools and editor settings
+dev-scripts/
+.claude/
 .vscode/
+.idea/
+.eslintcache
+
+# Environment
+.env
+.env.*
 
 # Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
-node_modules/
-jspm_packages/
-
-# Temporary folders
-tmp/
-temp/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# System files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-Desktop.ini
-
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
-
-# Folder config file
-Desktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Backup files from refactoring
-*.old
+# Backups
 *.bak
 *.backup
+*.old
 
-# Temporary documentation and migration files
-LOGGER_README.md
-migrate.js
-
-# Electron specific
-out/
-
-# Lock files (выберите один)
-package-lock.json
-# yarn.lock
-
-# IDE specific files
-.idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-
-# Configuration files
-.babelrc
-
-# SCSS compiled files (auto-generated from scss/ folder)
-css/*.css.map
+# System files
+Thumbs.db
+Desktop.ini
+.DS_Store

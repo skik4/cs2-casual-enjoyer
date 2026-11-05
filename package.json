@@ -1,15 +1,16 @@
 {
   "name": "cs2-casual-enjoyer",
   "version": "0.9.1",
-  "description": "CS2 Casual Enjoyer Electron App",
+  "description": "Joins a friend's CS2 Casual match the moment a slot frees up, and finds official casual servers by map",
   "keywords": [
     "cs2",
+    "counter-strike-2",
     "counter-strike",
-    "gaming",
-    "electron",
     "steam",
     "casual",
-    "auto-join"
+    "auto-join",
+    "electron",
+    "windows"
   ],
   "type": "module",
   "main": "src/main/main.js",
