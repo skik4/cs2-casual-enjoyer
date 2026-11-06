@@ -1,7 +1,7 @@
 /**
  * Jest tests for the preload's update bridge: the page's side of the
- * download and install clicks, and the channels the main process answers
- * them on
+ * check, download and install clicks, and the channels the main process
+ * answers them on
  */
 
 import fs from "fs";
@@ -26,10 +26,11 @@ const [[, api]] = contextBridge.exposeInMainWorld.mock.calls;
 
 beforeEach(() => ipcRenderer.invoke.mockReset());
 
-test("the page reads the status, hears its changes, downloads and installs", () => {
+test("the page reads the status, hears its changes, checks, downloads and installs", () => {
   expect(Object.keys(api.updates)).toEqual([
     "getStatus",
     "onStatus",
+    "check",
     "download",
     "install",
   ]);
@@ -42,6 +43,16 @@ test("download and install ask the main process", async () => {
   expect(ipcRenderer.invoke).toHaveBeenCalledWith("update-download");
   await expect(api.updates.install()).resolves.toBe(true);
   expect(ipcRenderer.invoke).toHaveBeenCalledWith("update-install");
+});
+
+test("a check asks the main process, and one it cannot run counts as failed", async () => {
+  ipcRenderer.invoke.mockResolvedValue("latest");
+  await expect(api.updates.check()).resolves.toBe("latest");
+  expect(ipcRenderer.invoke).toHaveBeenCalledWith("update-check");
+
+  ipcRenderer.invoke.mockRejectedValue(new Error("No handler registered"));
+  jest.spyOn(console, "error").mockImplementation(() => {});
+  await expect(api.updates.check()).resolves.toBe("failed");
 });
 
 test("a download the main process cannot start counts as not started", async () => {
@@ -61,6 +72,9 @@ test("the main process answers on the preload's channels", () => {
 
   expect(main).toContain(
     'ipcMain.handle("update-get-status", () => appUpdater.getStatus())'
+  );
+  expect(main).toContain(
+    'ipcMain.handle("update-check", () => appUpdater.check())'
   );
   expect(main).toContain(
     'ipcMain.handle("update-download", () => appUpdater.download())'

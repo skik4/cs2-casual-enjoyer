@@ -19,14 +19,14 @@ jest.mock("../src/utils/logger.js", () => ({
   },
 }));
 
-// The footer's notice as the page has it
+// The footer as the page has it: the notice and the version
 const MARKUP = (() => {
   const html = fs.readFileSync(
     path.join(__dirname, "..", "index.html"),
     "utf-8"
   );
   const doc = new DOMParser().parseFromString(html, "text/html");
-  return doc.getElementById("update-notice").outerHTML;
+  return doc.querySelector(".custom-footer-bar").outerHTML;
 })();
 
 const MB = 1024 * 1024;
@@ -55,6 +55,7 @@ function bridge(status = { state: "idle" }) {
       listener = callback;
       return () => {};
     }),
+    check: jest.fn().mockResolvedValue("latest"),
     download: jest.fn().mockResolvedValue(true),
     install: jest.fn().mockResolvedValue(true),
   };
@@ -91,6 +92,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  jest.useRealTimers();
   delete window.electronAPI;
 });
 
@@ -301,4 +303,90 @@ test("a language switch keeps the notice, in the other language", async () => {
   });
   expect(text("update-notice-text")).toBe("Скачивается обновление 0.9.5");
   expect(text("update-notice-size")).toBe("48 из 116 МБ");
+});
+
+/** Let the few promise steps of a check run, under fake timers too */
+async function settle() {
+  for (let i = 0; i < 5; i++) await Promise.resolve();
+}
+const version = () => byId("app-version");
+
+test("a click on the version checks at once, and says for a moment when nothing is newer", async () => {
+  jest.useFakeTimers();
+  const { updates } = bridge();
+  let answer;
+  updates.check.mockImplementation(
+    () => new Promise((resolve) => (answer = resolve))
+  );
+  await UpdateNotice.initialize();
+  expect(version().disabled).toBe(false);
+  expect(version().title).toBe("Check for updates");
+
+  version().click();
+  expect(updates.check).toHaveBeenCalledTimes(1);
+  expect(phase()).toBe("checking");
+  expect(text("update-notice-text")).toBe("Checking for updates…");
+  expect(shown("update-notice-action")).toBe(false);
+  // A second click while it runs asks nothing more
+  version().click();
+  expect(updates.check).toHaveBeenCalledTimes(1);
+
+  answer("latest");
+  await settle();
+  expect(phase()).toBe("latest");
+  expect(text("update-notice-text")).toBe("No updates available");
+
+  jest.advanceTimersByTime(5000);
+  expect(shown("update-notice")).toBe(false);
+});
+
+test("a check GitHub did not answer says so, and another click tries again", async () => {
+  jest.useFakeTimers();
+  const { updates } = bridge();
+  updates.check.mockResolvedValue("failed");
+  await UpdateNotice.initialize();
+
+  version().click();
+  await settle();
+  expect(phase()).toBe("checkFailed");
+  expect(text("update-notice-text")).toBe("Couldn't check for updates");
+
+  version().click();
+  expect(updates.check).toHaveBeenCalledTimes(2);
+  expect(phase()).toBe("checking");
+});
+
+test("a check that finds a version offers it", async () => {
+  const { updates, emit } = bridge();
+  updates.check.mockImplementation(async () => {
+    emit({ state: "checking" });
+    emit({ state: "available", version: "0.9.6" });
+    return "available";
+  });
+  await UpdateNotice.initialize();
+
+  version().click();
+  await flush();
+
+  expect(phase()).toBe("available");
+  expect(text("update-notice-text")).toBe("Update 0.9.6 available");
+  expect(text("update-notice-action")).toBe("Install");
+});
+
+test("a development run, with no updates, shows the version as a label only", async () => {
+  const { updates } = bridge({ state: "off" });
+  await UpdateNotice.initialize();
+
+  expect(version().disabled).toBe(true);
+  expect(version().title).toBe("");
+  version().click();
+  expect(updates.check).not.toHaveBeenCalled();
+});
+
+test("the version's title follows the language", async () => {
+  bridge();
+  await UpdateNotice.initialize();
+  i18n.setLanguage("ru");
+
+  expect(version().title).toBe("Проверить обновления");
 });

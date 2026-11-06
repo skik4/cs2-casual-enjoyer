@@ -8,12 +8,13 @@ export const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
 
 /**
  * Keeps the installed app up to date from the GitHub releases. It checks
- * when the app starts and every UPDATE_CHECK_INTERVAL_MS after, and offers
- * a newer version it finds. Nothing more happens without the user: Install
- * in the footer, once the user says yes to its question, downloads the
- * version, so the user picks the moment for a download that can run past
- * 100 MB, and restarts the app into it once it is in (download() and
- * install(), one after the other). A downloaded version that was not
+ * when the app starts, every UPDATE_CHECK_INTERVAL_MS after and whenever
+ * the user clicks the version in the footer, and offers a newer version it
+ * finds. Nothing more happens without the user: Install in the footer,
+ * once the user says yes to its question, downloads the version, so the
+ * user picks the moment for a download that can run past 100 MB, and
+ * restarts the app into it once it is in (download() and install(), one
+ * after the other). A downloaded version that was not
  * installed goes in the next time the app quits. It never restarts the app
  * on its own, so no join is cut short by surprise. The renderer only shows
  * the status this reports and passes the user's answer on.
@@ -40,6 +41,8 @@ export default class AppUpdater {
     /** @type {{state: string, version?: string, percent?: number, transferred?: number, total?: number, failed?: boolean}} */
     this.status = { state: isPackaged ? "idle" : "off" };
     this._timer = null;
+    /** @type {Promise<string>|null} The check under way */
+    this._checking = null;
   }
 
   /**
@@ -102,21 +105,37 @@ export default class AppUpdater {
 
   /**
    * Ask GitHub for a newer release, unless one is already found: offered,
-   * on its way or ready
+   * on its way or ready. The timer calls this, and so does a click on the
+   * version in the footer, for a release made since the last check; a
+   * click while a check runs gets that check's answer.
+   * @returns {Promise<"available"|"latest"|"failed"|"off">} - A version to
+   *   offer, found now or before; none newer; no answer from GitHub; or a
+   *   development run, which has nothing to check
    */
   check() {
-    if (!this.isPackaged) return;
-    if (
-      ["checking", "available", "downloading", "ready"].includes(
-        this.status.state
-      )
-    )
-      return;
-    Promise.resolve()
+    if (!this.isPackaged) return Promise.resolve("off");
+    if (["available", "downloading", "ready"].includes(this.status.state)) {
+      return Promise.resolve("available");
+    }
+    if (this._checking && this.status.state === "checking") {
+      return this._checking;
+    }
+    const run = Promise.resolve()
       .then(() => this.updater.checkForUpdates())
+      .then((result) => {
+        if (this.status.state === "available") return "available";
+        // No result: the updater did not run, so nothing was checked
+        return result ? "latest" : "failed";
+      })
       .catch((error) => {
         this.logger.warn("Update check failed", { error: error?.message });
+        return "failed";
       });
+    this._checking = run;
+    run.finally(() => {
+      if (this._checking === run) this._checking = null;
+    });
+    return run;
   }
 
   /**

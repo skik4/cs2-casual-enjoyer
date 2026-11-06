@@ -62,6 +62,8 @@ test("a development run neither checks, downloads nor installs", async () => {
   expect(appUpdater.getStatus()).toEqual({ state: "off" });
   expect(appUpdater.download()).toBe(false);
   expect(appUpdater.install()).toBe(false);
+  await expect(appUpdater.check()).resolves.toBe("off");
+  expect(updater.checkForUpdates).not.toHaveBeenCalled();
   expect(updater.downloadUpdate).not.toHaveBeenCalled();
   expect(send).not.toHaveBeenCalled();
 });
@@ -272,4 +274,55 @@ test("a check that throws is logged rather than left unhandled", async () => {
   expect(log.warn).toHaveBeenCalledWith("Update check failed", {
     error: "no release",
   });
+});
+
+test("a check asked for says what it found: none newer, no answer, or a version", async () => {
+  const { updater } = startInstalled();
+  await settle();
+  const answer = (events, outcome) =>
+    updater.checkForUpdates.mockImplementation(async () => {
+      updater.emit("checking-for-update");
+      for (const [name, payload] of events) updater.emit(name, payload);
+      if (outcome instanceof Error) throw outcome;
+      return outcome;
+    });
+
+  answer([["update-not-available", { version: "0.9.5" }]], {
+    isUpdateAvailable: false,
+  });
+  await expect(appUpdater.check()).resolves.toBe("latest");
+
+  const offline = new Error("net::ERR_INTERNET_DISCONNECTED");
+  answer([["error", offline]], offline);
+  await expect(appUpdater.check()).resolves.toBe("failed");
+  expect(appUpdater.getStatus()).toEqual({ state: "idle" });
+
+  answer([["update-available", { version: "0.9.6" }]], {
+    isUpdateAvailable: true,
+  });
+  await expect(appUpdater.check()).resolves.toBe("available");
+  // With a version on offer nothing more is asked: the answer stands
+  await expect(appUpdater.check()).resolves.toBe("available");
+  expect(updater.checkForUpdates).toHaveBeenCalledTimes(4);
+});
+
+test("a check asked for while one runs gets that one's answer", async () => {
+  const { updater } = startInstalled();
+  await settle();
+  let finish;
+  updater.checkForUpdates.mockImplementation(() => {
+    updater.emit("checking-for-update");
+    return new Promise((resolve) => (finish = resolve));
+  });
+
+  const first = appUpdater.check();
+  await settle();
+  const second = appUpdater.check();
+  updater.emit("update-not-available", { version: "0.9.5" });
+  finish({ isUpdateAvailable: false });
+
+  await expect(first).resolves.toBe("latest");
+  await expect(second).resolves.toBe("latest");
+  // The check at start, and this one
+  expect(updater.checkForUpdates).toHaveBeenCalledTimes(2);
 });

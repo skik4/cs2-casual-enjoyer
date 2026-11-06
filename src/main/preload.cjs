@@ -137,6 +137,18 @@ const electronAPI = {
       return () => ipcRenderer.removeListener("update-status", listener);
     },
     /**
+     * Ask GitHub for a newer version now
+     * @returns {Promise<"available"|"latest"|"failed"|"off">} - What it found
+     */
+    check: async () => {
+      try {
+        return await ipcRenderer.invoke("update-check");
+      } catch (error) {
+        console.error("Failed to check for updates:", error);
+        return "failed";
+      }
+    },
+    /**
      * Download the new version the updater offers
      * @returns {Promise<boolean>} - Whether there was one to download
      */

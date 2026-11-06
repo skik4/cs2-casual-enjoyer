@@ -310,6 +310,10 @@ export default {
     failed: "Update {version} did not download",
     retry: "Retry",
     ready: "Update {version} downloaded",
+    checkTitle: "Check for updates",
+    checking: "Checking for updates…",
+    latest: "No updates available",
+    checkFailed: "Couldn't check for updates",
   },
 
   gsi: {

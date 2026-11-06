@@ -314,6 +314,10 @@ export default {
     failed: "Обновление {version} не скачалось",
     retry: "Повторить",
     ready: "Обновление {version} скачано",
+    checkTitle: "Проверить обновления",
+    checking: "Проверка обновлений…",
+    latest: "Обновлений нет",
+    checkFailed: "Не удалось проверить обновления",
   },
 
   gsi: {

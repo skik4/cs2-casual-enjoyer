@@ -77,6 +77,27 @@
   opacity: 0.7;
 }
 
+/* The version, a click on which checks for updates: the footer's own
+   words, underlined under the mouse as the app's links are. A button, so
+   it takes the font of the page only when told to. */
+.footer-version {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.footer-version:hover:not(:disabled) {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.footer-version:disabled {
+  cursor: default;
+}
+
 .footer-author-info {
   display: flex;
   align-items: center;

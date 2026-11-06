@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A click on the version in the footer checks for a new version at once, so a release made while the app is open shows without a restart. The app still checks by itself at start and every four hours. A version found is offered in the footer as before; otherwise the footer says for a moment that there is none, or that GitHub did not answer.
+
 ### Changed
 
 - The footer's words share one size: the version was larger and spaced out.

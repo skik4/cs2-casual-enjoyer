@@ -352,7 +352,7 @@ class App {
         if (window.electronAPI && window.electronAPI.app.getVersion) {
           const version = await window.electronAPI.app.getVersion();
           const el = document.getElementById("app-version");
-          if (el && version) el.textContent = "v" + version + " ";
+          if (el && version) el.textContent = "v" + version;
         }
       } catch (e) {
         logger.warn("App", "Unable to read app version", e?.message);

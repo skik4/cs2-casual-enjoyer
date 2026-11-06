@@ -203,9 +203,10 @@ class IPCManager {
       steamGameLog.serverChangesSince(since)
     );
 
-    // Updates: what the updater is doing, then the download of a new
-    // version and the restart into it, each at the user's click
+    // Updates: what the updater is doing, a check, then the download of a
+    // new version and the restart into it, each at the user's click
     ipcMain.handle("update-get-status", () => appUpdater.getStatus());
+    ipcMain.handle("update-check", () => appUpdater.check());
     ipcMain.handle("update-download", () => appUpdater.download());
     ipcMain.handle("update-install", () => appUpdater.install());
 
