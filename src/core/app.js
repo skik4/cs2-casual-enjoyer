@@ -117,6 +117,10 @@ class App {
         "input",
         this.inputManager.handleAuthInput.bind(this.inputManager)
       );
+      authInput.addEventListener(
+        "paste",
+        this.inputManager.handleAuthPaste.bind(this.inputManager)
+      );
     }
 
     // Help links

@@ -59,6 +59,11 @@ class AccountView {
         DOMUtils.getElementById("auth")?.focus();
       }
     );
+    // The token page opens in Steam, and the next step is the paste: the
+    // field has the keyboard when the user comes back with the token
+    DOMUtils.getElementById("token-page-btn")?.addEventListener("click", () =>
+      DOMUtils.getElementById("auth")?.focus()
+    );
     DOMUtils.getElementById("account-status")?.addEventListener("click", () => {
       if (this.describeAuth(this.facts).state !== "ok") this.open();
     });

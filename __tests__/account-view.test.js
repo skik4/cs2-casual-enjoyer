@@ -216,3 +216,18 @@ test("the Steam profile is asked for once per account, and not without one", asy
   AccountView.update(facts({ steamId: "76561198000000002", validAuth: false }));
   expect(SteamAPI.getPlayerSummaries).toHaveBeenCalledTimes(1);
 });
+
+test("Open in Steam leaves the keyboard in the token field for the paste", () => {
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    `<a id="token-page-btn">Open in Steam</a>
+    <input id="auth" type="password" />`
+  );
+  // Wired once per app run; this suite fills a new page for every test
+  AccountView._initialized = false;
+  AccountView.initialize({ onRefresh: jest.fn() });
+
+  element("token-page-btn").click();
+
+  expect(document.activeElement).toBe(element("auth"));
+});

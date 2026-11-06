@@ -156,6 +156,23 @@ class AppInputManager {
   }
 
   /**
+   * A paste into the token field replaces what the field held. The field
+   * keeps the saved token, expired ones included, and a paste at the caret
+   * joined the new token to it, so the old one had to be deleted by hand.
+   * The field only ever holds one credential, pasted whole.
+   * @param {ClipboardEvent} event - Paste event
+   */
+  handleAuthPaste(event) {
+    const authInput = this.getAuthInput();
+    const pasted = event.clipboardData?.getData("text")?.trim();
+    if (!authInput || !pasted) return;
+
+    event.preventDefault();
+    authInput.value = pasted;
+    this.handleAuthInput();
+  }
+
+  /**
    * Keep a new token for the account already saved. It used to be saved
    * only with the next friends reload, so a restart brought the expired one
    * back. A token for another account still waits for its friends list,

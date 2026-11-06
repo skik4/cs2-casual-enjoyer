@@ -174,3 +174,43 @@ describe("AppInputManager.saveFreshToken", () => {
     expect(update).not.toHaveBeenCalled();
   });
 });
+
+describe("AppInputManager.handleAuthPaste", () => {
+  const paste = (text) => ({
+    clipboardData: { getData: jest.fn(() => text) },
+    preventDefault: jest.fn(),
+  });
+
+  test("a paste replaces the saved token instead of joining it", () => {
+    // What Ctrl+A, Ctrl+C copies from Steam's token page
+    const fresh = JSON.stringify({ data: { webapi_token: "new.fresh.token" } });
+    const event = paste(`${fresh}\n`);
+
+    appInputManager.handleAuthPaste(event);
+
+    // The browser would have put it at the caret, next to the saved key
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(authInput.value).toBe(fresh);
+    expect(appInputManager.getAuth()).toBe("new.fresh.token");
+    expect(joinManager.resetAll).toHaveBeenCalledTimes(1);
+    expect(appInputManager.validateInputs).toHaveBeenCalled();
+  });
+
+  test("pasting the saved credential again changes nothing", () => {
+    appInputManager.handleAuthPaste(paste(` ${SAVED_KEY} `));
+
+    expect(authInput.value).toBe(SAVED_KEY);
+    expect(joinManager.resetAll).not.toHaveBeenCalled();
+  });
+
+  test("a paste without text is left to the browser", () => {
+    const events = [paste(""), paste(" \n "), { preventDefault: jest.fn() }];
+    for (const event of events) appInputManager.handleAuthPaste(event);
+
+    for (const event of events) {
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    }
+    expect(authInput.value).toBe(SAVED_KEY);
+    expect(appInputManager.validateInputs).not.toHaveBeenCalled();
+  });
+});
