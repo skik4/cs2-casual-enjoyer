@@ -47,7 +47,7 @@ describe("statusLabel", () => {
       "missing",
       "not in casual",
     ],
-    ["joined", STATUS_TYPES.JOINED, { free: false }, "done", "on the server ✓"],
+    ["joined", STATUS_TYPES.JOINED, { free: false }, "done", "on the server"],
   ])("%s (%s) on %j", (_name, status, facts, kind, text) => {
     expect(statusLabel(status, facts)).toEqual({ kind, text });
   });

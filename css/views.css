@@ -173,10 +173,26 @@
   box-shadow: inset 3px 0 0 var(--blue-primary);
 }
 
+/* A drawn triangle, pointing down once the map is open: the ▸ and ▾
+   glyphs are in neither Motiva Sans nor Arial */
 .map-expander {
   width: 14px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-secondary);
+}
+
+.map-expander::before {
+  content: "";
+  border-style: solid;
+  border-width: 4px 0 4px 6px;
+  border-color: transparent transparent transparent currentColor;
+}
+
+.map-card.expanded .map-expander::before {
+  transform: rotate(90deg);
 }
 
 /* The pinned maps, above the list, joined as one */

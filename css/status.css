@@ -13,6 +13,20 @@
   color: var(--steam-in-game);
 }
 
+/* "On the server" with the app's check icon after it, as no font of the
+   app has a ✓ */
+.status-done::after {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  vertical-align: middle;
+  background: currentColor;
+  mask: url("../assets/icons-svg/check_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg")
+    center / contain no-repeat;
+}
+
 .status-full {
   color: var(--text-secondary);
 }

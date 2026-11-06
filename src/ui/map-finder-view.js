@@ -677,7 +677,7 @@ class MapFinderView {
     return `
       <div class="map-card${expanded ? " expanded" : ""}" data-map="${escapeHtml(entry.map)}">
         <div class="friend map-row" data-toggle-map="${escapeHtml(entry.map)}">
-          <span class="map-expander" aria-hidden="true">${expanded ? "▾" : "▸"}</span>
+          <span class="map-expander" aria-hidden="true"></span>
           <div class="friend-info">
             <span class="personaname">${escapeHtml(entry.label)}</span>
             <span class="game-line"><span class="game-where">${escapeHtml(where)}</span>${prime}${this.renderLabel(joinId, joinStates, slot)}</span>

@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The footer's words share one size: the version was larger and spaced out.
+
 ### Fixed
 
 - A token pasted into the token field replaces the one it held, expired or not. The field keeps the saved token, and a paste went in next to it, so the old one had to be deleted first. Open in Steam also leaves the keyboard in the field, so Ctrl+V works as soon as you come back with the new token.
+- Every text is drawn in the app's own fonts: Motiva Sans, with Russian in Arial as in Steam. Four signs were left to other Windows fonts: the check of a step done and of "on the server", the triangles of the map list, the account bar's status dot, and a hyphen in the Russian help. The check is now the app's own icon, the triangles and the dot are drawn, and the hyphen is gone.
 
 ## [0.9.5] - 2026-11-07
 

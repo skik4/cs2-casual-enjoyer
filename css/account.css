@@ -54,11 +54,17 @@
   color: var(--text-secondary);
 }
 
+/* A drawn dot, as the footer's GSI dot: a "●" glyph is in neither Motiva
+   Sans nor Arial */
 .account-status::before {
-  content: "●";
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
   margin-right: 6px;
-  font-size: 10px;
-  color: var(--green-primary);
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--green-primary);
 }
 
 .account-status:empty::before {
@@ -70,14 +76,20 @@
   cursor: pointer;
 }
 
-.account-status[data-state="warn"],
-.account-status[data-state="warn"]::before {
+.account-status[data-state="warn"] {
   color: var(--yellow-primary);
 }
 
-.account-status[data-state="expired"],
-.account-status[data-state="expired"]::before {
+.account-status[data-state="warn"]::before {
+  background: var(--yellow-primary);
+}
+
+.account-status[data-state="expired"] {
   color: var(--red-light);
+}
+
+.account-status[data-state="expired"]::before {
+  background: var(--red-light);
 }
 
 /* ===== Account panel ===== */
@@ -143,6 +155,16 @@
 .step-num.done {
   background: color-mix(in srgb, var(--green-primary) 25%, transparent);
   color: #8ff09c;
+}
+
+/* The step done: the app's check icon, as no font of the app has a ✓ */
+.step-num.done::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  mask: url("../assets/icons-svg/check_24dp_000000_FILL0_wght400_GRAD0_opsz24.svg")
+    center / contain no-repeat;
 }
 
 .step-body {

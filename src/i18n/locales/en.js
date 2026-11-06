@@ -174,7 +174,7 @@ export default {
     connecting: "connecting…",
     waitingForSlot: "waiting for a slot",
     missing: "not in casual",
-    joined: "on the server ✓",
+    joined: "on the server",
     waitButton: "Wait for a slot",
     notInCS2: "Not in CS2",
     youAreHere: "you're here",
@@ -391,7 +391,7 @@ export default {
       "For example, your best friend <strong>Gabe Newell</strong> is playing Casual on Dust 2.<br>Click 'Join' to automatically connect to his match!",
     step9Title: "Connection Process",
     step9ContentTop:
-      "The label next to the score shows what is going on: «free slot» or «no free slot» before you join, «connecting…» once the connect is sent, «waiting for a slot» while the server is full, and «on the server ✓» once you are in. A friend on your server says «you're together» and cannot be joined.",
+      "The label next to the score shows what is going on: «free slot» or «no free slot» before you join, «connecting…» once the connect is sent, «waiting for a slot» while the server is full, and «on the server» once you are in. A friend on your server says «you're together» and cannot be joined.",
     step9ContentNote1:
       "While waiting for a slot, the app joins by itself as soon as one opens.",
     step9ContentNote2:

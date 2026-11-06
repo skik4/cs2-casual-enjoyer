@@ -187,7 +187,9 @@ test("the SteamID step: read from a token, typed in for an API key", () => {
     `SteamID taken from the token: ${STEAM_ID}`
   );
   expect(visible("steamid-input-row")).toBe(false);
-  expect(element("steamid-step-num").textContent).toBe("✓");
+  // The stylesheet draws the check of a step done
+  expect(element("steamid-step-num").textContent).toBe("");
+  expect(element("steamid-step-num").classList.contains("done")).toBe(true);
 
   AccountView.update(
     facts({

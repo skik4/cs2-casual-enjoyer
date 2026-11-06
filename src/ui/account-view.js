@@ -240,7 +240,8 @@ class AccountView {
     const number = DOMUtils.getElementById("steamid-step-num");
     if (number) {
       const done = Boolean(facts?.validSteamId);
-      number.textContent = done ? "✓" : "3";
+      // Done, the stylesheet draws a check in place of the number
+      number.textContent = done ? "" : "3";
       number.classList.toggle("done", done);
     }
   }
