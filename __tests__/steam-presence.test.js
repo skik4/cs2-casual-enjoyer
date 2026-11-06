@@ -13,6 +13,7 @@ import SteamAPIResponseProcessor from "../src/steam/steam-api-response-processor
 import {
   connectKind,
   isAnonymousGameServer,
+  isJoinToken,
   isMatchOver,
   isOfficialServer,
   parseRichPresence,
@@ -187,6 +188,15 @@ describe("status key", () => {
       "+gcconnectL"
     );
     expect(connectKind(null)).toBeNull();
+  });
+
+  test("isJoinToken tells a server's join token from lobby and local connects", () => {
+    expect(isJoinToken("+gcconnect62805B3F4B1347F135DF8FBE")).toBe(true);
+    expect(isJoinToken("+gcconnect62805b3f4b1347f135df8fbe")).toBe(true);
+    expect(isJoinToken("+gcconnectG4B1347F1")).toBe(false);
+    expect(isJoinToken("+gcconnectL0A0B0C0D0E0F0A0B0C0D0E0F")).toBe(false);
+    expect(isJoinToken("+gcconnect")).toBe(false);
+    expect(isJoinToken(null)).toBe(false);
   });
 
   test("a player's key covers the whole rich presence and the server", () => {

@@ -6,13 +6,18 @@ import {
   STATUS_TYPES,
 } from "../shared/constants.js";
 import SteamAPI from "../steam/steam-api.js";
-import { connectKind, isMatchOver } from "../steam/rich-presence.js";
+import {
+  connectKind,
+  isJoinToken,
+  isMatchOver,
+} from "../steam/rich-presence.js";
 import logger from "../utils/logger.js";
 
 // Game singletons
 import joinJournal from "./join-journal.js";
 
 // The Steam client
+import steamLog from "./steam-log.js";
 import { joinUrl, openSteamUrl } from "./steam-protocol.js";
 
 /**
@@ -57,9 +62,22 @@ class JoinManager {
     // Set by configure: the user's Steam ID and token or key
     this.getCredentials = null;
     this.journal = joinJournal;
-    // Connect string -> the attempt that sent it, so two attempts going
-    // through the same player send it once
-    this._sentConnects = new Map();
+    this.steamLog = steamLog;
+    // Join tokens sent, or taken for the user's own arrival: none goes out
+    // twice, from any attempt. CS2 turns a token away for as long as the
+    // server stays full, and a player arriving or leaving gives a new one -
+    // a replaced token never came back in the journal. Token -> {at, sent}
+    this._usedTokens = new Map();
+    // When the last connect of any attempt went out
+    this._lastSentAt = null;
+    // Steam's game log is trusted until a join it should have logged is
+    // missing from it. The last attempt that joined waits to be looked up
+    // there: {from: its first connect, to: when it joined}
+    this._steamLogTrusted = true;
+    this._joinToCheck = null;
+    // What the journal last heard about the log: "usable", "untrusted" or
+    // "missing"
+    this._steamLogNoted = null;
   }
 
   /**
@@ -447,18 +465,18 @@ class JoinManager {
 
     let missingSince = null;
     let failingSince = null;
-    // When this attempt first asked CS2 to connect
+    // When this attempt started, and when it first asked CS2 to connect
+    const startedAt = Date.now();
     let firstConnectAt = null;
     // The server Steam showed for the user while CS2 had them out of a match
     // and this attempt had not connected yet: the one they just left
     let leftServerId = null;
-    // What Steam showed about the target when the last connect went out, until
-    // it shows something else. A connect on the same status would only be
-    // turned away again or - while CS2 is still connecting - run after the
-    // join as a second connect, so the next one waits for a new status.
-    let connectedOn = null;
-    // When the connect on connectedOn went out
-    let connectedAt = null;
+    // Every player this attempt has watched: the connect they show, since
+    // when, and what they showed before (see _watch)
+    const watched = new Map();
+    // Connects without a join token this attempt has sent; a token is
+    // remembered for every attempt (_usedTokens)
+    const sentHere = new Map();
     // Facts of the last snapshot written to the journal
     let journaled = null;
 
@@ -494,13 +512,7 @@ class JoinManager {
         }
         failingSince = null;
         journaled = this._journalSnapshot(join_id, user, target, journaled);
-
-        // Any change in what Steam shows about the target makes the next
-        // connect worth sending, even one that changes back
-        const targetStatus = target.statusKey ?? connectKind(target.connect);
-        if (connectedOn !== null && targetStatus !== connectedOn) {
-          connectedOn = null;
-        }
+        this._watch(watched, target, startedAt);
 
         // CS2 reports the user's own game the moment it changes, while
         // Steam's copy of it lags by seconds - a fresh GSI state wins
@@ -547,6 +559,11 @@ class JoinManager {
         if (!onLeftServer && target.isJoined(user)) {
           this.updateJoinState(join_id, { status: STATUS_TYPES.JOINED });
           this.journal.attemptEnded(join_id, "joined");
+          // Steam's game log should hold this join, logged between the first
+          // connect and now; the next time the loop asks it, it looks
+          if (firstConnectAt !== null) {
+            this._joinToCheck = { from: firstConnectAt, to: Date.now() };
+          }
 
           // Stop all other join loops
           this.cancelAllExcept(join_id);
@@ -603,19 +620,50 @@ class JoinManager {
           continue;
         }
 
-        // The last connect went out on this very status: CS2 is connecting
-        // or was turned away, and nothing says another one would do better.
-        // Once CS2 has had the time to load a map for it and has not, it was
-        // turned away, so the user reads that the attempt waits for a slot.
-        if (connectedOn !== null) {
+        // This connect has gone out already, from this attempt or another,
+        // or was taken for the user's own arrival. CS2 turns a token away for
+        // as long as the server stays full, and someone arriving or leaving
+        // gives the player a new one, so the loop waits for that. Once CS2
+        // has had the time to load a map for it and has not, it was turned
+        // away, and the user reads that the attempt waits for a slot.
+        const used = this._usedConnect(target.connect, sentHere);
+        if (used) {
           const mapLoadedSince = Boolean(
-            gsiState?.inMatch && gsiState.mapLoadedAt >= connectedAt
+            gsiState?.inMatch && gsiState.mapLoadedAt >= used.at
           );
           const turnedAway =
             !mapLoadedSince &&
-            Date.now() - connectedAt >= API_CONFIG.JOIN_LOAD_WINDOW_MS;
+            Date.now() - used.at >= API_CONFIG.JOIN_LOAD_WINDOW_MS;
           this.updateJoinState(join_id, {
             status: turnedAway ? STATUS_TYPES.WAITING : STATUS_TYPES.CONNECTING,
+            personaname,
+          });
+          await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+          continue;
+        }
+
+        // A new token: someone arrived or left. It may be the user, whose
+        // own arrival renews the token of every player on the server - a
+        // connect then would only run into the user's own slot.
+        const seen = watched.get(target.joinAs);
+        const ownArrival = await this._isOwnArrival(seen);
+        if (!alive()) break;
+        // Another attempt may have sent it meanwhile - a server and its map
+        // joined at once through the same player
+        if (this._usedConnect(target.connect, sentHere)) {
+          await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+          continue;
+        }
+        if (ownArrival) {
+          this._useConnect(target.connect, sentHere, false);
+          this.journal.record("skip", {
+            join: join_id,
+            joinAs: target.joinAs,
+            connect: target.connect,
+            why: "own-arrival",
+          });
+          this.updateJoinState(join_id, {
+            status: STATUS_TYPES.CONNECTING,
             personaname,
           });
           await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
@@ -628,30 +676,15 @@ class JoinManager {
           personaname,
         });
 
-        // Another running attempt has just sent this very connect - a server
-        // and its map joined at once through the same player. A second one
-        // would only be turned away.
-        const sender = this._sentConnects.get(target.connect);
-        if (
-          sender &&
-          sender !== join_id &&
-          this.isActive(this.joinStates[sender])
-        ) {
-          connectedOn = targetStatus;
-          connectedAt = Date.now();
-          await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
-          continue;
-        }
-
         // Attempt to join via Steam protocol through main process
+        const why = this._connectReason(seen, firstConnectAt);
         if (firstConnectAt === null) firstConnectAt = Date.now();
-        connectedOn = targetStatus;
-        connectedAt = Date.now();
-        this._sentConnects.set(target.connect, join_id);
+        this._useConnect(target.connect, sentHere, true);
         this.journal.record("connect", {
           join: join_id,
           joinAs: target.joinAs,
           connect: target.connect,
+          why,
           // If the user lands in a match without Prime, this says what the
           // server showed when the connect went out
           ...(target.prime ? { prime: target.prime } : {}),
@@ -712,7 +745,6 @@ class JoinManager {
     const state = this.joinStates[friend_id];
     if (!state) return;
 
-    this._forgetConnects(friend_id);
     this.journal.attemptEnded(friend_id, reason);
     // updateJoinState pushes the CANCELLED status to the UI
     this.updateJoinState(friend_id, {
@@ -742,12 +774,12 @@ class JoinManager {
   }
 
   /**
-   * Reset all join states and stop all join loops
+   * Reset all join states and stop all join loops. Another account or
+   * credential starts over: no token counts as sent.
    */
   resetAll() {
     Object.keys(this.joinStates).forEach((friendId) => {
       delete this.joinStates[friendId];
-      this._forgetConnects(friendId);
       this.journal.attemptEnded(friendId, "reset");
 
       // The loops notice the missing state and stop without touching the UI,
@@ -756,17 +788,136 @@ class JoinManager {
       if (this.onUpdateJoinButton)
         this.onUpdateJoinButton(friendId, STATUS_TYPES.CANCELLED);
     });
+    this._usedTokens.clear();
+    this._lastSentAt = null;
+    this._steamLogTrusted = true;
+    this._joinToCheck = null;
+    this._steamLogNoted = null;
   }
 
   /**
-   * Drop the connects an attempt sent, once it is over
-   * @param {string} join_id - The attempt
+   * Follow what a player shows. A connect that differs from the last one
+   * seen starts a new entry: the connect, when it showed, and since when the
+   * one before it showed - the attempt's start for a player not watched
+   * before, `previous` undefined for one, null after no connect.
+   * @param {Map<string, Object>} watched - The attempt's players
+   * @param {import('../shared/types.js').JoinTarget} target - This snapshot's target
+   * @param {number} startedAt - When the attempt started
    * @private
    */
-  _forgetConnects(join_id) {
-    for (const [connect, sender] of this._sentConnects) {
-      if (sender === join_id) this._sentConnects.delete(connect);
+  _watch(watched, target, startedAt) {
+    if (!target.joinAs) return;
+    const connect = target.connect ?? null;
+    const last = watched.get(target.joinAs);
+    if (last && last.connect === connect) return;
+    watched.set(target.joinAs, {
+      connect,
+      since: Date.now(),
+      before: last ? last.since : startedAt,
+      previous: last ? last.connect : undefined,
+    });
+  }
+
+  /**
+   * A connect that went out already, or was taken for the user's own arrival
+   * @param {string} connect - Connect string
+   * @param {Map<string, Object>} sentHere - The attempt's connects without a token
+   * @returns {{at: number, sent: boolean}|null} - When, or null for a new one
+   * @private
+   */
+  _usedConnect(connect, sentHere) {
+    const used = isJoinToken(connect)
+      ? this._usedTokens.get(connect)
+      : sentHere.get(connect);
+    return used ?? null;
+  }
+
+  /**
+   * Remember a connect so it never goes out again
+   * @param {string} connect - Connect string
+   * @param {Map<string, Object>} sentHere - The attempt's connects without a token
+   * @param {boolean} sent - Sent, rather than taken for the user's own arrival
+   * @private
+   */
+  _useConnect(connect, sentHere, sent) {
+    const at = Date.now();
+    if (sent) this._lastSentAt = at;
+    if (!isJoinToken(connect)) {
+      sentHere.set(connect, { at, sent });
+      return;
     }
+    this._usedTokens.set(connect, { at, sent });
+    if (this._usedTokens.size > API_CONFIG.JOIN_USED_TOKENS_MAX) {
+      this._usedTokens.delete(this._usedTokens.keys().next().value);
+    }
+  }
+
+  /**
+   * Whether a player's new token is the user's own arrival. That arrival
+   * renews the token of every player on the server, and Steam logs CS2's
+   * change of server first: in the joins of 2026-11-05 0-3 s after each
+   * accepted connect, before the token changed. Only the first change of a
+   * player after the last connect can be it. Without Steam's log, or with
+   * one that missed a join, every new token counts as someone else's.
+   * @param {Object|undefined} seen - The player's entry (see _watch)
+   * @returns {Promise<boolean>}
+   * @private
+   */
+  async _isOwnArrival(seen) {
+    const sentAt = this._lastSentAt;
+    if (sentAt === null || !seen || seen.before > sentAt) return false;
+    try {
+      if (this._joinToCheck !== null) {
+        const { from, to } = this._joinToCheck;
+        const check = await this.steamLog.serverChangesSince(from);
+        this._joinToCheck = null;
+        if (check.usable) {
+          this._steamLogTrusted = check.changes.some((at) => at <= to);
+        }
+      }
+      const { usable, changes } =
+        await this.steamLog.serverChangesSince(sentAt);
+      this._noteSteamLog(
+        !usable ? "missing" : this._steamLogTrusted ? "usable" : "untrusted"
+      );
+      if (!usable || !this._steamLogTrusted) return false;
+      return changes.some((at) => at <= seen.since);
+    } catch (error) {
+      logger.warn("JoinManager", "Could not read Steam's game log", {
+        error: error.message,
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Note in the join journal what Steam's game log is good for, when that
+   * changes
+   * @param {string} state - "usable", "untrusted" or "missing"
+   * @private
+   */
+  _noteSteamLog(state) {
+    if (state === this._steamLogNoted) return;
+    this._steamLogNoted = state;
+    this.journal.record("steam-log", { state });
+  }
+
+  /**
+   * Why a connect goes out, for the join journal: "start" for the connect a
+   * player showed when the attempt started (or when it first saw them,
+   * before any connect of its own), "link" for one that showed up after
+   * none, "token" for a new token in place of another, "player" for a
+   * player the attempt turned to after connecting through someone else
+   * @param {Object|undefined} seen - The player's entry (see _watch)
+   * @param {number|null} firstConnectAt - The attempt's first connect, if any
+   * @returns {string}
+   * @private
+   */
+  _connectReason(seen, firstConnectAt) {
+    if (!seen || seen.previous === undefined) {
+      return firstConnectAt === null ? "start" : "player";
+    }
+    return seen.previous === null ? "link" : "token";
   }
 
   /**

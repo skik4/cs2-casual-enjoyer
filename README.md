@@ -12,7 +12,7 @@ The app keeps itself up to date from the same page. When a new version is out, t
 
 ## Features
 
-- **Friends**: join a friend in Casual or Deathmatch. The app sends a connect only when the friend's status changes, says when the server is full, and stops rather than pull you out of a match of another mode (Competitive, Premier, Wingman).
+- **Friends**: join a friend in Casual or Deathmatch. The app connects on every new join token the friend shows and never sends the same one twice, says when the server is full, and stops rather than pull you out of a match of another mode (Competitive, Premier, Wingman).
 - **Maps**: official casual servers by map, found through other players: your friends, players seen on official servers before, their friends and friends of friends (read with an API key when you ask), and the players of your own matches. Join any server of a map or a chosen one. Pin maps, and the app rejoins one of them when a match ends. "Prime only" keeps to servers where a player shows a sign of Prime (CS2 XP or a Premier match).
 - **Fake friends**: join any Steam ID like a friend.
 - **CS2 Game State Integration**: CS2 reports your own state (menu, match, mode, map) to the app directly. The app writes its config into CS2's `game/csgo/cfg` folder; restart CS2 once after the first start.
@@ -26,7 +26,7 @@ The app keeps itself up to date from the same page. When a new version is out, t
 2. Click **Load friends**.
 3. Click **Join** next to a friend, or open **Maps**.
 
-Everything stays on your computer. The token and the key are encrypted with Windows' own keys. Every join attempt is written to `%APPDATA%\cs2-casual-enjoyer\join-journal.log` (kept under 10 MB) to help with troubleshooting.
+Everything stays on your computer. The token and the key are encrypted with Windows' own keys. Every join attempt is written to `%APPDATA%\cs2-casual-enjoyer\join-journal.log` (kept under 10 MB) to help with troubleshooting. To tell your own arrival on a server from someone else's, the app reads Steam's own log of the games it runs, `logs\gameprocess_log.txt` in the Steam folder; Steam writes it without any launch option.
 
 ## Building from source
 

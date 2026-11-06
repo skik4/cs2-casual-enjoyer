@@ -21,6 +21,7 @@ jest.mock("../src/utils/logger.js", () => ({
 
 import joinManager, { getMapJoinId } from "../src/game/join-manager.js";
 import { interpretGsiPayload } from "../src/game/gsi-manager.js";
+import steamLog from "../src/game/steam-log.js";
 import SteamAPIResponseProcessor from "../src/steam/steam-api-response-processor.js";
 import { STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
@@ -73,6 +74,32 @@ const account = (steamid, kv, server) => ({
     ],
   },
 });
+
+/**
+ * Steam's game log for a replay. The recordings are older than the app
+ * reading it, so it is modelled on the joins of 2026-11-05: Steam logged
+ * CS2's change of server 0-3 s after each connect CS2 accepted, before the
+ * target's token changed, and nothing after one it turned away.
+ * @param {Set<string>} acceptedUrls - Join URLs CS2 accepts
+ */
+const STEAM_LOG_DELAY_MS = 1000;
+function modelSteamLog(acceptedUrls) {
+  const logged = [];
+  openExternal.mockImplementation(async (url) => {
+    if (acceptedUrls.has(url)) logged.push(Date.now() + STEAM_LOG_DELAY_MS);
+    return true;
+  });
+  joinManager.steamLog = {
+    serverChangesSince: async (since) => ({
+      usable: true,
+      // Steam writes whole seconds, and only what has happened by now
+      changes: logged
+        .filter((at) => at <= Date.now())
+        .map((at) => Math.floor(at / 1000) * 1000)
+        .filter((at) => at >= Math.floor(since / 1000) * 1000),
+    }),
+  };
+}
 
 /**
  * Run a map join for Dust II against a recording
@@ -148,12 +175,13 @@ beforeEach(() => {
 
 afterEach(() => {
   joinManager.resetAll();
+  joinManager.steamLog = steamLog;
   jest.clearAllTimers();
   jest.useRealTimers();
   delete global.window.electronAPI;
 });
 
-test("2026-10-25 20:53: the user's own arrival renews the join token, and no second connect goes out", async () => {
+describe("2026-10-25 20:53: the user's own arrival renews the join token", () => {
   // The loop of that day connected again 2 s later, on the new token alone,
   // and CS2 answered "Game is full"
   const first = "+gcconnect7F8619FB1C0000AA56F804EE";
@@ -181,16 +209,34 @@ test("2026-10-25 20:53: the user's own arrival renews the join token, and no sec
     },
   ];
 
-  await replay(Date.parse("2026-10-25T20:53:55.379Z"), steps, 14000);
+  const firstUrl = `steam://rungame/730/${PICK}/${first}`;
 
-  expect(openExternal).toHaveBeenCalledTimes(1);
-  expect(openExternal).toHaveBeenCalledWith(
-    `steam://rungame/730/${PICK}/${first}`
-  );
-  expect(updateDot).toHaveBeenCalledWith(
-    getMapJoinId("de_dust2"),
-    STATUS_TYPES.JOINED
-  );
+  test("Steam logs the change of server, and no second connect goes out", async () => {
+    modelSteamLog(new Set([firstUrl]));
+    await replay(Date.parse("2026-10-25T20:53:55.379Z"), steps, 14000);
+
+    expect(openExternal).toHaveBeenCalledTimes(1);
+    expect(openExternal).toHaveBeenCalledWith(firstUrl);
+    expect(updateDot).toHaveBeenCalledWith(
+      getMapJoinId("de_dust2"),
+      STATUS_TYPES.JOINED
+    );
+  });
+
+  test("without Steam's log the renewed token gets a connect too, and the join still lands", async () => {
+    // The user's choice for a missing log: a "server full" message to
+    // close beats a slot missed
+    await replay(Date.parse("2026-10-25T20:53:55.379Z"), steps, 14000);
+
+    expect(openExternal.mock.calls.map(([url]) => url)).toEqual([
+      firstUrl,
+      `steam://rungame/730/${PICK}/${renewed}`,
+    ]);
+    expect(updateDot).toHaveBeenCalledWith(
+      getMapJoinId("de_dust2"),
+      STATUS_TYPES.JOINED
+    );
+  });
 });
 
 describe("2026-10-30 20:26: the match ends at 8:2 while another Dust II server has a slot", () => {

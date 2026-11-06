@@ -20,6 +20,7 @@ jest.mock("../src/utils/logger.js", () => ({
 
 import joinManager from "../src/game/join-manager.js";
 import joinJournal from "../src/game/join-journal.js";
+import steamLog from "../src/game/steam-log.js";
 import { API_CONFIG, STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
 import logger from "../src/utils/logger.js";
@@ -162,8 +163,35 @@ describe("JoinManager join loop", () => {
     delete global.window.electronAPI;
   });
 
-  describe("one connect per status of the friend", () => {
-    test("an unchanged status gets a single connect, however long it lasts", async () => {
+  describe("one connect per join token", () => {
+    // Steam's game log as the main process reads it: the changes of server
+    // a test logs, or none to read at all
+    let logged;
+    let logUsable;
+
+    /** Steam logs CS2 changing game server now, to the second */
+    const logServerChange = () =>
+      logged.push(Math.floor(Date.now() / 1000) * 1000);
+    const CONNECT_C = "+gcconnect0C0C0C0C0C0C0C0C0C0C0C0C";
+
+    beforeEach(() => {
+      logged = [];
+      logUsable = true;
+      joinManager.steamLog = {
+        serverChangesSince: jest.fn(async (since) => ({
+          usable: logUsable,
+          changes: logUsable
+            ? logged.filter((at) => at >= Math.floor(since / 1000) * 1000)
+            : [],
+        })),
+      };
+    });
+
+    afterEach(() => {
+      joinManager.steamLog = steamLog;
+    });
+
+    test("an unchanged token gets a single connect, however long it lasts", async () => {
       joinManager.startJoin(FRIEND_ID);
       await jest.advanceTimersByTimeAsync(10000);
 
@@ -172,7 +200,7 @@ describe("JoinManager join loop", () => {
       expect(polls()).toBeGreaterThan(10);
     });
 
-    test("a connect CS2 never acts on turns into waiting for a slot, and a new status connects again", async () => {
+    test("a connect CS2 never acts on turns into waiting for a slot, and a new status with the same token sends nothing", async () => {
       // As on 2026-11-04: CS2 answered "Game is full", stayed in the menu, and
       // the friend kept the same join token for over a minute
       joinManager.startJoin(FRIEND_ID);
@@ -190,33 +218,44 @@ describe("JoinManager join loop", () => {
       expect(
         reported(onUpdateDot).filter((seen, i, all) => seen !== all[i - 1])
       ).toEqual([WAITING, CONNECTING, WAITING]);
-      expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
 
-      // The score changed: a new chance, taken at once
+      // The round ended, and nobody came or left: the token CS2 turned away
+      // is not sent again
       steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 1:0" });
+      await jest.advanceTimersByTimeAsync(5000);
+
+      expect(status()).toBe(WAITING);
+      expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
+    });
+
+    test("a token renewed by someone else after the connect gets a connect at once", async () => {
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(20000);
+
+      // Someone arrived or left; Steam logged no change of server for CS2
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
       await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
 
       expect(status()).toBe(CONNECTING);
       expect(openedUrls()).toEqual([
         joinUrl(FRIEND_ID, CONNECT),
-        joinUrl(FRIEND_ID, CONNECT),
+        joinUrl(FRIEND_ID, CONNECT_B),
       ]);
     });
 
-    test("a new join token alone gets no second connect: the user's own arrival brings one", async () => {
-      steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 7:3" });
+    test("the user's own arrival: Steam logs the change of server, and the token it renews gets no connect", async () => {
       joinManager.startJoin(FRIEND_ID);
       await flush();
 
-      // As seen live: the friend's join token changed 1.8 s after the
-      // connect, as the user took the slot, and Steam showed the user on the
-      // server 1.3 s later
-      await jest.advanceTimersByTimeAsync(1800);
-      steam.friends[FRIEND_ID] = friendInfo({
-        statusKey: "score 7:3",
-        connect: CONNECT_B,
-      });
+      // As on 2026-11-05: Steam logged CS2's change of server 0-3 s after
+      // the connect, the friend's token changed after that, and Steam then
+      // showed the user on the server
+      await jest.advanceTimersByTimeAsync(1000);
+      logServerChange();
+      await jest.advanceTimersByTimeAsync(800);
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
       await jest.advanceTimersByTimeAsync(1300);
+      expect(status()).toBe(CONNECTING);
       steam.user = userInfo({ inSupportedMode: true, serverId: FRIEND_SERVER });
       await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
 
@@ -224,24 +263,14 @@ describe("JoinManager join loop", () => {
       expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
     });
 
-    test("without a status key the connect stands in for it, minus its token", async () => {
+    test("without Steam's game log every new token gets a connect, the user's own arrival's too", async () => {
+      // The user's choice: a "server full" message to close beats a slot missed
+      logUsable = false;
       joinManager.startJoin(FRIEND_ID);
       await flush();
+      await jest.advanceTimersByTimeAsync(1800);
       steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
-      await jest.advanceTimersByTimeAsync(5000);
-
-      expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
-    });
-
-    test("any change in the friend's status gets a connect at once", async () => {
-      steam.friends[FRIEND_ID] = friendInfo({ statusKey: "score 3:1" });
-      joinManager.startJoin(FRIEND_ID);
-      await flush();
-      steam.friends[FRIEND_ID] = friendInfo({
-        statusKey: "score 3:2",
-        connect: CONNECT_B,
-      });
-      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
 
       expect(openedUrls()).toEqual([
         joinUrl(FRIEND_ID, CONNECT),
@@ -249,20 +278,120 @@ describe("JoinManager join loop", () => {
       ]);
     });
 
-    test("a status that changes and changes back is new again", async () => {
+    test("only the first new token after a connect can be the user's own arrival", async () => {
       joinManager.startJoin(FRIEND_ID);
       await flush();
-      // The server fills up, then a slot opens with the very same status
-      steam.friends[FRIEND_ID] = friendInfo({ connect: null });
-      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
-      expect(status()).toBe(WAITING);
+      await jest.advanceTimersByTimeAsync(1000);
+      logServerChange();
+      await jest.advanceTimersByTimeAsync(1000);
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+      expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
 
-      steam.friends[FRIEND_ID] = friendInfo();
+      // The change of server was not the join after all (the user left a
+      // match by hand), and the next token is someone else's
+      await jest.advanceTimersByTimeAsync(20000);
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_C });
       await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
 
       expect(openedUrls()).toEqual([
         joinUrl(FRIEND_ID, CONNECT),
+        joinUrl(FRIEND_ID, CONNECT_C),
+      ]);
+    });
+
+    test("a token never goes out twice, not even from a new attempt", async () => {
+      // As on 2026-11-04: Cancel and Join again, three times in a minute,
+      // each on the same token CS2 had turned away
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(5000);
+      joinManager.cancelJoin(FRIEND_ID);
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+
+      expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
+      // Waits for a slot as soon as CS2 has had the time to act on the first
+      expect(status()).toBe(CONNECTING);
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOAD_WINDOW_MS);
+      expect(status()).toBe(WAITING);
+      expect(openedUrls()).toEqual([joinUrl(FRIEND_ID, CONNECT)]);
+
+      // A new token is taken at once
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+      expect(openedUrls()).toEqual([
         joinUrl(FRIEND_ID, CONNECT),
+        joinUrl(FRIEND_ID, CONNECT_B),
+      ]);
+    });
+
+    test("a link that goes away and comes back gets a connect on its new token", async () => {
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      // The server fills up, then someone leaves
+      steam.friends[FRIEND_ID] = friendInfo({ connect: null });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+      expect(status()).toBe(WAITING);
+
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+
+      expect(openedUrls()).toEqual([
+        joinUrl(FRIEND_ID, CONNECT),
+        joinUrl(FRIEND_ID, CONNECT_B),
+      ]);
+    });
+
+    test("a Steam log that missed a join is not trusted until it logs one", async () => {
+      // A join Steam's log should hold, and does not
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      steam.user = userInfo({ inSupportedMode: true, serverId: FRIEND_SERVER });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+      expect(status()).toBe(JOINED);
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_SUCCESS_DISPLAY_MS);
+
+      // The next attempt: a change of server logged, then a new token. The
+      // log is not trusted, so the token is taken for someone else's.
+      steam.user = userInfo();
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      await jest.advanceTimersByTimeAsync(1000);
+      logServerChange();
+      await jest.advanceTimersByTimeAsync(1000);
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_C });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+
+      expect(openedUrls()).toEqual([
+        joinUrl(FRIEND_ID, CONNECT),
+        joinUrl(FRIEND_ID, CONNECT_B),
+        joinUrl(FRIEND_ID, CONNECT_C),
+      ]);
+    });
+
+    test("a join Steam's log holds keeps it trusted", async () => {
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      logServerChange();
+      steam.user = userInfo({ inSupportedMode: true, serverId: FRIEND_SERVER });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_RETRY_INTERVAL_MS);
+      expect(status()).toBe(JOINED);
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_SUCCESS_DISPLAY_MS);
+
+      steam.user = userInfo();
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
+      joinManager.startJoin(FRIEND_ID);
+      await flush();
+      await jest.advanceTimersByTimeAsync(1000);
+      logServerChange();
+      await jest.advanceTimersByTimeAsync(1000);
+      steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_C });
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+
+      expect(openedUrls()).toEqual([
+        joinUrl(FRIEND_ID, CONNECT),
+        joinUrl(FRIEND_ID, CONNECT_B),
       ]);
     });
   });
@@ -302,6 +431,7 @@ describe("JoinManager join loop", () => {
         join: FRIEND_ID,
         joinAs: FRIEND_ID,
         connect: CONNECT,
+        why: "start",
       });
       // Only what changed is noted again
       expect(journal.record).toHaveBeenLastCalledWith("snapshot", {
@@ -309,6 +439,49 @@ describe("JoinManager join loop", () => {
         userServer: FRIEND_SERVER,
       });
       expect(journal.attemptEnded).toHaveBeenCalledWith(FRIEND_ID, "joined");
+    });
+
+    test("notes why each connect went out, and a token taken for the user's own arrival", async () => {
+      const CONNECT_C = "+gcconnect0C0C0C0C0C0C0C0C0C0C0C0C";
+      const changes = [];
+      joinManager.steamLog = {
+        serverChangesSince: async () => ({ usable: true, changes }),
+      };
+      try {
+        steam.friends[FRIEND_ID] = friendInfo({ connect: null });
+        joinManager.startJoin(FRIEND_ID);
+        await flush();
+        // The link shows up
+        steam.friends[FRIEND_ID] = friendInfo();
+        await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+        // Someone else renews the token
+        await jest.advanceTimersByTimeAsync(20000);
+        steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_B });
+        await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+        // Then the user arrives: Steam logs it, and the token changes again
+        await jest.advanceTimersByTimeAsync(1000);
+        changes.push(Math.floor(Date.now() / 1000) * 1000);
+        await jest.advanceTimersByTimeAsync(1000);
+        steam.friends[FRIEND_ID] = friendInfo({ connect: CONNECT_C });
+        await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+      } finally {
+        joinManager.steamLog = steamLog;
+      }
+
+      expect(
+        journal.record.mock.calls
+          .filter(([event]) => event === "connect")
+          .map(([, data]) => data.why)
+      ).toEqual(["link", "token"]);
+      expect(journal.record).toHaveBeenCalledWith("skip", {
+        join: FRIEND_ID,
+        joinAs: FRIEND_ID,
+        connect: CONNECT_C,
+        why: "own-arrival",
+      });
+      expect(journal.record).toHaveBeenCalledWith("steam-log", {
+        state: "usable",
+      });
     });
 
     test("a cancel is noted with its reason", async () => {

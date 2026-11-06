@@ -185,6 +185,26 @@ const electronAPI = {
   },
 
   /**
+   * Steam's own log of the games it runs
+   */
+  steamLog: {
+    /**
+     * When Steam logged CS2 changing game server, from a moment on
+     * @param {number} since - Epoch ms
+     * @returns {Promise<{usable: boolean, changes: number[]}>} - Unusable
+     *   when the main process cannot say
+     */
+    serverChangesSince: async (since) => {
+      try {
+        return await ipcRenderer.invoke("steam-log-server-changes", since);
+      } catch (error) {
+        console.error("Failed to read Steam's game log:", error);
+        return { usable: false, changes: [] };
+      }
+    },
+  },
+
+  /**
    * Join journal: what happens during join attempts, appended to a local file
    */
   joinJournal: {

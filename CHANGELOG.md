@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Joins follow the join tokens players show, no longer their status. A new token gets a connect at once, and a token already sent never goes out again, from any attempt: clicking Join again no longer resends one CS2 has just turned away, and a new score or map with the same token sends nothing.
+- The user's own arrival renews the tokens of the players on that server. The app tells it apart by Steam's own log of the games it runs (`logs\gameprocess_log.txt`, written without any launch option), where Steam notes CS2 changing server before the tokens change. Without that log, or after a join it failed to note, every new token gets a connect: a "server full" message beats a missed slot.
+- The join journal says why each connect went out and notes the tokens taken for the user's own arrival.
+
 ## [0.9.3] - 2026-11-06
 
 ### Changed

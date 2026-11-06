@@ -19,6 +19,7 @@ import joinManager, {
   getMapJoinId,
   getServerJoinId,
 } from "../src/game/join-manager.js";
+import steamLog from "../src/game/steam-log.js";
 import { STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
 
@@ -730,6 +731,83 @@ describe("startMapJoin", () => {
     expect(openExternal).toHaveBeenCalledWith(
       `steam://rungame/730/${B}/${CONNECT_B}`
     );
+  });
+
+  test("the user's own arrival renews every token on the server: no connect through another player there", async () => {
+    const logged = [];
+    joinManager.steamLog = {
+      serverChangesSince: async (since) => ({
+        usable: true,
+        changes: logged.filter((at) => at >= Math.floor(since / 1000) * 1000),
+      }),
+    };
+    try {
+      SteamAPI.getPresence.mockResolvedValue(
+        presenceMap(user(), presence(A), presence(B, { connect: CONNECT_B }))
+      );
+      joinManager.startMapJoin(dustTarget());
+      await jest.advanceTimersByTimeAsync(100);
+      expect(openExternal).toHaveBeenCalledTimes(1);
+
+      // CS2 accepted: Steam logs the change of server, then the players
+      // there show new tokens, and the first one offering one is not B
+      await jest.advanceTimersByTimeAsync(900);
+      logged.push(Math.floor(Date.now() / 1000) * 1000);
+      await jest.advanceTimersByTimeAsync(1000);
+      SteamAPI.getPresence.mockResolvedValue(
+        presenceMap(
+          user(),
+          presence(A),
+          presence(B),
+          presence(C, { connect: CONNECT_C })
+        )
+      );
+      await jest.advanceTimersByTimeAsync(1000);
+      expect(openExternal).toHaveBeenCalledTimes(1);
+
+      SteamAPI.getPresence.mockResolvedValue(
+        presenceMap(user({ serverId: DUST_1 }), presence(A), presence(B))
+      );
+      await jest.advanceTimersByTimeAsync(500);
+      expect(updateDot).toHaveBeenCalledWith(
+        getMapJoinId("de_dust2"),
+        STATUS_TYPES.JOINED
+      );
+      expect(openExternal).toHaveBeenCalledTimes(1);
+    } finally {
+      joinManager.steamLog = steamLog;
+    }
+  });
+
+  test("another player's token after a refusal gets a connect, and the journal says why", async () => {
+    const record = jest.spyOn(joinManager.journal, "record");
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(user(), presence(A), presence(B, { connect: CONNECT_B }))
+    );
+    joinManager.startMapJoin(dustTarget());
+    await jest.advanceTimersByTimeAsync(20000);
+
+    // B's server stays full; C on another server shows a token
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(
+        user(),
+        presence(A),
+        presence(B),
+        presence(C, { serverId: DUST_2, connect: CONNECT_C })
+      )
+    );
+    await jest.advanceTimersByTimeAsync(500);
+
+    expect(openExternal.mock.calls.map(([url]) => url)).toEqual([
+      `steam://rungame/730/${B}/${CONNECT_B}`,
+      `steam://rungame/730/${C}/${CONNECT_C}`,
+    ]);
+    expect(
+      record.mock.calls
+        .filter(([event]) => event === "connect")
+        .map(([, data]) => data.why)
+    ).toEqual(["start", "player"]);
+    record.mockRestore();
   });
 
   test("waits while every known server of the map is full", async () => {

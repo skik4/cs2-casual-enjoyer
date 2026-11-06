@@ -28,6 +28,7 @@ import joinManager, {
   getServerJoinId,
 } from "../src/game/join-manager.js";
 import { interpretGsiPayload } from "../src/game/gsi-manager.js";
+import steamLog from "../src/game/steam-log.js";
 import SteamAPIResponseProcessor from "../src/steam/steam-api-response-processor.js";
 import { STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
@@ -39,6 +40,12 @@ const AUTH = "ABCD1234EFGH5678IJKL9012MNOP3456";
 // How long the replay runs past the recorded end: the loop polls on its own
 // schedule, so it may notice the arrival a poll later than the recorded loop
 const SETTLE_MS = 2000;
+// When Steam logs an accepted connect's change of server, in the model
+const STEAM_LOG_DELAY_MS = 1000;
+
+/** The URL a recorded connect opens */
+const urlOf = ({ player, connect }) =>
+  `steam://rungame/730/${player}/${connect}`;
 
 /**
  * What Steam and CS2 showed at a moment of a recording: the latest step at
@@ -174,6 +181,27 @@ async function replay(recording) {
     },
   });
 
+  // Steam's game log, which the recordings are older than: modelled on the
+  // joins of 2026-11-05, where Steam logged CS2's change of server 0-3 s
+  // after each connect CS2 accepted, before the target's token changed. The
+  // recorded connects are the ones that got the user in.
+  const accepted = new Set(recording.connects.map(urlOf));
+  const logged = [];
+  openExternal.mockImplementation(async (url) => {
+    if (accepted.has(url)) logged.push(Date.now() + STEAM_LOG_DELAY_MS);
+    return true;
+  });
+  joinManager.steamLog = {
+    serverChangesSince: async (since) => ({
+      usable: true,
+      // Steam writes whole seconds, and only what has happened by now
+      changes: logged
+        .filter((at) => at <= Date.now())
+        .map((at) => Math.floor(at / 1000) * 1000)
+        .filter((at) => at >= Math.floor(since / 1000) * 1000),
+    }),
+  };
+
   for (const attempt of recording.attempts) {
     await jest.advanceTimersByTimeAsync(attempt.startAt - elapsed());
     startAttempt(attempt);
@@ -198,6 +226,7 @@ beforeEach(() => {
 
 afterEach(() => {
   joinManager.resetAll();
+  joinManager.steamLog = steamLog;
   jest.clearAllTimers();
   jest.useRealTimers();
   delete global.window.electronAPI;
@@ -224,9 +253,7 @@ test.each(RECORDINGS.map((recording) => [recording.name, recording]))(
     // Every connect of that day was needed: one less never joins, one more
     // can find the user's own slot taken
     expect(openExternal.mock.calls.map(([url]) => url)).toEqual(
-      recording.connects.map(
-        ({ player, connect }) => `steam://rungame/730/${player}/${connect}`
-      )
+      recording.connects.map(urlOf)
     );
   }
 );

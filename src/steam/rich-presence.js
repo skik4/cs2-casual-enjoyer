@@ -74,10 +74,10 @@ export function hasPrimeSign(richPresence) {
 /**
  * Rich presence reduced to a string that changes whenever any of its values
  * does, whatever order Steam lists them in - except the join token in
- * connect. CS2 hands out a new token as players arrive and leave, the
- * user's own arrival included, and in live joins a new token alone never
- * meant a slot the user could take. A connect showing up or going away
- * still counts.
+ * connect, which CS2 renews as players arrive and leave. A connect showing
+ * up or going away still counts. The map finder tells by it which of a
+ * server's players moved on last, and the join journal notes it; the join
+ * loop follows the tokens themselves.
  * @param {string|null|undefined} kv - Key-value string from Steam rich presence
  * @returns {string}
  */
@@ -99,6 +99,18 @@ export function richPresenceKey(kv) {
 export function connectKind(connect) {
   if (!connect) return null;
   return String(connect).replace(/^(\+gcconnect[GL]?)[0-9A-F]+$/i, "$1");
+}
+
+/**
+ * Whether a connect string carries a server's join token: "+gcconnect" and
+ * hex digits only - in CS2 today a token, the player's own account id and a
+ * second token, 8 digits each. Lobby (G) and local server (L) connects start
+ * with a letter that is no hex digit, and carry no token.
+ * @param {string|null|undefined} connect - Connect value from rich presence
+ * @returns {boolean}
+ */
+export function isJoinToken(connect) {
+  return /^\+gcconnect[0-9A-F]+$/i.test(String(connect ?? ""));
 }
 
 /**

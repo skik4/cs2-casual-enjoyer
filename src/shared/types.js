@@ -85,7 +85,7 @@
  * @property {string|null} connect - Connect string to join with
  * @property {string|null} joinAs - SteamID64 the connect string belongs to
  * @property {string|null} statusKey - What Steam shows about the player the
- *   connect belongs to; a connect is only sent again once it changes
+ *   connect belongs to, but the join token; noted in the join journal
  * @property {Function} isJoined - Tells from the user's info whether the join succeeded
  * @property {{only: boolean, players: number, check?: string|null}|null} [prime] -
  *   For a join through the map finder: whether only servers with a sign of

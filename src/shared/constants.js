@@ -24,8 +24,11 @@ export const API_CONFIG = {
   // 2026-10-25). A connect that has had no map loaded after this long was
   // turned away, as every one in CS2's log of 2026-11-04 was ("Game is
   // full"), and the attempt says it waits for a slot. Only that label
-  // depends on it: the next connect still waits for the target to change.
+  // depends on it: the next connect still waits for a new join token.
   JOIN_LOAD_WINDOW_MS: 15000,
+  // Join tokens remembered as sent, so none goes out twice. The journal of
+  // 2026-10-25 to 11-06 holds 87 connects; the oldest go first past this.
+  JOIN_USED_TOKENS_MAX: 500,
   // A request that hangs would hold up the join loop or the map refresh
   // until the connection broke. Steam answers in well under a second, so
   // this only ends a stuck request, which then counts as a failed one.

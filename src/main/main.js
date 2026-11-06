@@ -10,6 +10,7 @@ import { isAllowedExternalUrl } from "./external-links.js";
 import { isPermissionAllowed } from "./permissions.js";
 import { appendJoinJournal } from "./join-journal-file.js";
 import { readMapFinderStore, writeMapFinderStore } from "./map-finder-store.js";
+import SteamGameLog from "./steam-game-log.js";
 
 const SETTINGS_PATH = path.join(app.getPath("userData"), "settings.json");
 const GSI_STORE_PATH = path.join(app.getPath("userData"), "gsi.json");
@@ -190,10 +191,17 @@ class IPCManager {
    * Setup all IPC handlers
    * @param {GsiService} gsiService - CS2 Game State Integration service
    * @param {AppUpdater} appUpdater - Updates the installed app
+   * @param {SteamGameLog} steamGameLog - Steam's own log of the games it runs
    */
-  static setupHandlers(gsiService, appUpdater) {
+  static setupHandlers(gsiService, appUpdater, steamGameLog) {
     // GSI setup status; resolves once the service has finished starting
     ipcMain.handle("gsi-get-status", () => gsiService.getStatus());
+
+    // Steam's log of CS2 changing game server: the join loop tells the
+    // user's own arrival from someone else's by it
+    ipcMain.handle("steam-log-server-changes", (event, since) =>
+      steamGameLog.serverChangesSince(since)
+    );
 
     // Updates: what the updater is doing, then the download of a new
     // version and the restart into it, each at the user's click
@@ -275,6 +283,7 @@ class AppManager {
         }
       },
     });
+    this.steamGameLog = new SteamGameLog();
   }
 
   /**
@@ -282,7 +291,16 @@ class AppManager {
    */
   async initialize() {
     // Setup IPC handlers
-    IPCManager.setupHandlers(this.gsiService, this.appUpdater);
+    IPCManager.setupHandlers(
+      this.gsiService,
+      this.appUpdater,
+      this.steamGameLog
+    );
+
+    // Only what Steam logs from now on can follow a connect of this run, so
+    // the log's end is marked before any join starts. Not awaited: a join
+    // that asks earlier waits for it.
+    this.steamGameLog.start();
 
     // Create main window
     this.mainWindow = WindowManager.createMainWindow();
