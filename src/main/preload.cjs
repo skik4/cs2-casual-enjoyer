@@ -137,6 +137,18 @@ const electronAPI = {
       return () => ipcRenderer.removeListener("update-status", listener);
     },
     /**
+     * Download the new version the updater offers
+     * @returns {Promise<boolean>} - Whether there was one to download
+     */
+    download: async () => {
+      try {
+        return await ipcRenderer.invoke("update-download");
+      } catch (error) {
+        console.error("Failed to download the update:", error);
+        return false;
+      }
+    },
+    /**
      * Restart into the downloaded version
      * @returns {Promise<boolean>} - Whether there was one to install
      */

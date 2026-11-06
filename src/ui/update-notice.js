@@ -4,14 +4,16 @@ import logger from "../utils/logger.js";
 import { t, onLanguageChange } from "../i18n/i18n-manager.js";
 
 /**
- * The update notice in the footer, beside the version: a newer version
- * downloading, then a link that restarts the app into it. It says nothing
- * the rest of the time. The restart waits for the user's click, so no join
- * is cut short; without one the update goes in the next time the app quits.
+ * The update notice in the footer, beside the version. It offers a newer
+ * version, shows it downloading once clicked, then offers to restart into
+ * it. It says nothing the rest of the time. Both the download and the
+ * restart wait for the user's click, so neither comes at a bad moment; a
+ * downloaded version that no click installed goes in the next time the app
+ * quits.
  */
 class UpdateNotice {
   static _initialized = false;
-  /** @type {{state: string, version?: string, percent?: number}|null} */
+  /** @type {{state: string, version?: string, percent?: number, failed?: boolean}|null} */
   static _status = null;
 
   /**
@@ -24,7 +26,7 @@ class UpdateNotice {
     if (!api) return;
 
     DOMUtils.getElementById("update-notice")?.addEventListener("click", () =>
-      this.install()
+      this._onClick()
     );
     api.onStatus((status) => this.render(status));
     onLanguageChange(() => this.render(this._status));
@@ -33,39 +35,56 @@ class UpdateNotice {
   }
 
   /**
-   * @param {{state: string, version?: string, percent?: number}|null} status
+   * @param {{state: string, version?: string, percent?: number, failed?: boolean}|null} status
    */
   static render(status) {
     this._status = status;
     const notice = DOMUtils.getElementById("update-notice");
     if (!notice) return;
 
-    const ready = status?.state === "ready";
+    const version = status?.version;
+    const state = version ? status.state : null;
     let text = "";
-    if (status?.state === "downloading" && status.version) {
+    let title = "";
+    if (state === "available") {
+      text = t(status.failed ? "update.failed" : "update.available", {
+        version,
+      });
+      title = t("update.availableTitle");
+    } else if (state === "downloading") {
       text = t("update.downloading", {
-        version: status.version,
+        version,
         percent: status.percent ?? 0,
       });
-    } else if (ready) {
-      text = t("update.ready", { version: status.version });
+    } else if (state === "ready") {
+      text = t("update.ready", { version });
+      title = t("update.readyTitle");
     }
     notice.textContent = text;
-    notice.title = ready ? t("update.readyTitle") : "";
-    notice.disabled = !ready;
-    notice.classList.toggle("ready", ready);
+    notice.title = title;
+    notice.disabled = state !== "available" && state !== "ready";
+    notice.classList.toggle("ready", state === "ready");
     notice.classList.toggle("hidden", !text);
   }
 
   /**
-   * Restart into the downloaded version
+   * Download the offered version, or restart into the downloaded one
+   * @private
    */
-  static async install() {
-    if (this._status?.state !== "ready") return;
-    logger.info("UpdateNotice", "Restarting into the update", {
-      version: this._status.version,
-    });
-    await window.electronAPI.updates.install();
+  static async _onClick() {
+    const status = this._status;
+    const updates = window.electronAPI.updates;
+    if (status?.state === "available") {
+      logger.info("UpdateNotice", "Downloading the update", {
+        version: status.version,
+      });
+      await updates.download();
+    } else if (status?.state === "ready") {
+      logger.info("UpdateNotice", "Restarting into the update", {
+        version: status.version,
+      });
+      await updates.install();
+    }
   }
 }
 

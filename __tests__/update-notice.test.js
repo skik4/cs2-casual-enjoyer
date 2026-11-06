@@ -2,7 +2,8 @@
  * @jest-environment jsdom
  *
  * Jest tests for the update notice in the footer: quiet until a newer
- * version downloads, then a link that restarts into it
+ * version is out, then an offer to download it, the download, and an
+ * offer to install it
  */
 
 jest.mock("../src/utils/logger.js", () => ({
@@ -31,13 +32,17 @@ beforeAll(async () => {
       statusListener = listener;
       return () => {};
     }),
+    download: jest.fn().mockResolvedValue(true),
     install: jest.fn().mockResolvedValue(true),
   };
   window.electronAPI = { updates: api };
   await UpdateNotice.initialize();
 });
 
-beforeEach(() => api.install.mockClear());
+beforeEach(() => {
+  api.download.mockClear();
+  api.install.mockClear();
+});
 
 test("says nothing while there is no new version", () => {
   expect(api.onStatus).toHaveBeenCalled();
@@ -47,33 +52,64 @@ test("says nothing while there is no new version", () => {
   expect(notice().classList.contains("hidden")).toBe(true);
 });
 
-test("shows a new version downloading, and cannot be clicked yet", () => {
-  statusListener({ state: "downloading", version: "0.9.0", percent: 42 });
+test("offers a new version, and a click downloads it", () => {
+  statusListener({ state: "available", version: "0.9.3" });
 
   expect(notice().classList.contains("hidden")).toBe(false);
-  expect(notice().textContent).toBe("Downloading update 0.9.0… 42%");
-  expect(notice().disabled).toBe(true);
+  expect(notice().textContent).toBe("Update 0.9.3 available — download");
+  expect(notice().title).toBe(
+    "Downloads in the background, then offers to install"
+  );
+  expect(notice().disabled).toBe(false);
+  expect(notice().classList.contains("ready")).toBe(false);
 
   notice().click();
+  expect(api.download).toHaveBeenCalledTimes(1);
   expect(api.install).not.toHaveBeenCalled();
 });
 
-test("once ready, a click restarts into the new version", () => {
-  statusListener({ state: "ready", version: "0.9.0" });
+test("shows the download, and cannot be clicked meanwhile", () => {
+  statusListener({ state: "downloading", version: "0.9.3", percent: 42 });
 
-  expect(notice().textContent).toBe("Update 0.9.0 is ready — restart");
+  expect(notice().textContent).toBe("Downloading update 0.9.3… 42%");
+  expect(notice().title).toBe("");
+  expect(notice().disabled).toBe(true);
+
+  notice().click();
+  expect(api.download).not.toHaveBeenCalled();
+  expect(api.install).not.toHaveBeenCalled();
+});
+
+test("once downloaded, a click installs it", () => {
+  statusListener({ state: "ready", version: "0.9.3" });
+
+  expect(notice().textContent).toBe("Update 0.9.3 downloaded — install");
   expect(notice().title).toBe("The app closes, updates and opens again");
   expect(notice().classList.contains("ready")).toBe(true);
   expect(notice().disabled).toBe(false);
 
   notice().click();
   expect(api.install).toHaveBeenCalledTimes(1);
+  expect(api.download).not.toHaveBeenCalled();
+});
+
+test("after a download broke off, a click tries again", () => {
+  statusListener({ state: "available", version: "0.9.3", failed: true });
+
+  expect(notice().textContent).toBe("Update 0.9.3 did not download — retry");
+  expect(notice().classList.contains("ready")).toBe(false);
+  expect(notice().disabled).toBe(false);
+
+  notice().click();
+  expect(api.download).toHaveBeenCalledTimes(1);
 });
 
 test("a language switch keeps the notice", () => {
-  statusListener({ state: "ready", version: "0.9.0" });
+  statusListener({ state: "available", version: "0.9.3" });
   setLanguage("ru");
+  expect(notice().textContent).toBe("Доступно обновление 0.9.3 — загрузить");
 
-  expect(notice().textContent).toBe("Обновление 0.9.0 готово — перезапустить");
+  statusListener({ state: "ready", version: "0.9.3" });
+  expect(notice().textContent).toBe("Обновление 0.9.3 загружено — установить");
   setLanguage("en");
 });

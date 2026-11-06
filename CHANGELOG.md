@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Updates no longer download by themselves. The footer offers a new version, a click downloads it in the background, and a second click installs it; a download that breaks off is offered again. A downloaded version that no click installed still goes in when the app closes. This holds from the next update on: 0.9.2 and earlier download this one by themselves.
+
 ## [0.9.2] - 2026-11-06
 
 ### Added

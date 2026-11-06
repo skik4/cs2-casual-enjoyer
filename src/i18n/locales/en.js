@@ -297,8 +297,11 @@ export default {
   },
 
   update: {
+    available: "Update {version} available — download",
+    availableTitle: "Downloads in the background, then offers to install",
+    failed: "Update {version} did not download — retry",
     downloading: "Downloading update {version}… {percent}%",
-    ready: "Update {version} is ready — restart",
+    ready: "Update {version} downloaded — install",
     readyTitle: "The app closes, updates and opens again",
   },
 

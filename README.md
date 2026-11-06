@@ -8,7 +8,7 @@ Steam has no way to wait for a free slot in a friend's Casual match, and the slo
 
 Get `Casual-Enjoyer-Setup-<version>.exe` from [Releases](https://github.com/skik4/cs2-casual-enjoyer/releases/latest) and run it. Installing for yourself alone needs no administrator rights. The installer is not signed, so Windows may warn about an unrecognized app on the first install: choose "More info", then "Run anyway".
 
-The app keeps itself up to date from the same page. A new version downloads in the background, and "Update … is ready — restart" in the footer installs it; without a click it goes in when you close the app.
+The app keeps itself up to date from the same page. When a new version is out, the footer offers it: a click downloads it in the background, and a second click on "Update … downloaded — install" installs it. A downloaded version you did not install goes in when you close the app.
 
 ## Features
 

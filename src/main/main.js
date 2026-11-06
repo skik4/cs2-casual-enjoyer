@@ -195,8 +195,10 @@ class IPCManager {
     // GSI setup status; resolves once the service has finished starting
     ipcMain.handle("gsi-get-status", () => gsiService.getStatus());
 
-    // Updates: what the updater is doing, and the restart into a new version
+    // Updates: what the updater is doing, then the download of a new
+    // version and the restart into it, each at the user's click
     ipcMain.handle("update-get-status", () => appUpdater.getStatus());
+    ipcMain.handle("update-download", () => appUpdater.download());
     ipcMain.handle("update-install", () => appUpdater.install());
 
     // Map finder: the player pool and friends of friends kept between runs
