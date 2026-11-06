@@ -84,21 +84,54 @@
   margin-left: var(--space-xs);
 }
 
-/* A newer version on offer, downloading, then ready to install: beside
-   the version but outside its dimmed block, so it is not missed */
+/* A newer version, all in the footer: the offer with its Install link, the
+   question that asks before anything downloads, the download's bar in
+   Steam's blue with the megabytes in, and the restart in green. Beside the
+   version but outside its dimmed block, so it is not missed */
 .update-notice {
-  margin-right: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-right: var(--space-md);
   font-size: 12.5px;
   white-space: nowrap;
-}
-
-.link-btn.update-notice:disabled {
   color: var(--text-secondary);
-  opacity: 1;
 }
 
-.link-btn.update-notice.ready {
+.update-notice[data-phase="confirm"] .update-notice-text {
+  color: var(--text-primary);
+}
+
+.update-notice[data-phase="installing"] .update-notice-text {
   color: var(--steam-in-game);
+}
+
+.update-notice-bar {
+  width: 90px;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--blue-primary) 20%, transparent);
+}
+
+.update-notice-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--blue-primary);
+  transition: width 0.3s ease;
+}
+
+.update-notice[data-phase="installing"] .update-notice-fill {
+  background: var(--steam-in-game);
+}
+
+.update-notice-size {
+  font-variant-numeric: tabular-nums;
+}
+
+.link-btn.update-notice-link {
+  font-size: inherit;
 }
 
 .footer-social-link {

@@ -1,10 +1,13 @@
 /**
  * @jest-environment jsdom
  *
- * Jest tests for the update notice in the footer: quiet until a newer
- * version is out, then an offer to download it, the download, and an
- * offer to install it
+ * Jest tests for the update in the footer: quiet until a newer version is
+ * out, then the offer with Install, the question that asks before anything
+ * downloads, the download's bar with the megabytes in, and the restart
  */
+
+import fs from "fs";
+import path from "path";
 
 jest.mock("../src/utils/logger.js", () => ({
   __esModule: true,
@@ -16,100 +19,286 @@ jest.mock("../src/utils/logger.js", () => ({
   },
 }));
 
-import UpdateNotice from "../src/ui/update-notice.js";
-import { setLanguage } from "../src/i18n/i18n-manager.js";
+// The footer's notice as the page has it
+const MARKUP = (() => {
+  const html = fs.readFileSync(
+    path.join(__dirname, "..", "index.html"),
+    "utf-8"
+  );
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  return doc.getElementById("update-notice").outerHTML;
+})();
 
-const notice = () => document.getElementById("update-notice");
-let statusListener;
-let api;
+const MB = 1024 * 1024;
 
-beforeAll(async () => {
-  setLanguage("en");
-  document.body.innerHTML = `<button id="update-notice" class="hidden" disabled></button>`;
-  api = {
-    getStatus: jest.fn().mockResolvedValue({ state: "idle" }),
-    onStatus: jest.fn((listener) => {
-      statusListener = listener;
+let UpdateNotice;
+let i18n;
+
+/** A fresh notice module, as a page load has it */
+function load() {
+  jest.isolateModules(() => {
+    UpdateNotice = require("../src/ui/update-notice.js").default;
+    i18n = require("../src/i18n/i18n-manager.js");
+  });
+  i18n.setLanguage("en");
+}
+
+/**
+ * The updater as the preload passes it on
+ * @param {Object} [status] - Its status at the start
+ */
+function bridge(status = { state: "idle" }) {
+  let listener = null;
+  const updates = {
+    getStatus: jest.fn().mockResolvedValue(status),
+    onStatus: jest.fn((callback) => {
+      listener = callback;
       return () => {};
     }),
     download: jest.fn().mockResolvedValue(true),
     install: jest.fn().mockResolvedValue(true),
   };
-  window.electronAPI = { updates: api };
+  window.electronAPI = { updates };
+  return { updates, emit: (next) => listener(next) };
+}
+
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+const byId = (id) => document.getElementById(id);
+const text = (id) => byId(id).textContent;
+const shown = (id) => !byId(id).classList.contains("hidden");
+const phase = () => byId("update-notice").dataset.phase;
+const fill = () =>
+  byId("update-notice-bar").querySelector(".update-notice-fill");
+const action = () => byId("update-notice-action");
+const cancel = () => byId("update-notice-cancel");
+/** A click as a mouse makes it: detail counts the clicks of a double click */
+const clickWith = (element, detail) =>
+  element.dispatchEvent(
+    new window.MouseEvent("click", { bubbles: true, detail })
+  );
+
+/** A started notice with a version on offer */
+async function offered() {
+  const api = bridge();
   await UpdateNotice.initialize();
-});
+  api.emit({ state: "available", version: "0.9.5" });
+  return api;
+}
 
 beforeEach(() => {
-  api.download.mockClear();
-  api.install.mockClear();
+  document.body.innerHTML = MARKUP;
+  load();
 });
 
-test("says nothing while there is no new version", () => {
-  expect(api.onStatus).toHaveBeenCalled();
-  expect(notice().classList.contains("hidden")).toBe(true);
-
-  statusListener({ state: "checking" });
-  expect(notice().classList.contains("hidden")).toBe(true);
+afterEach(() => {
+  delete window.electronAPI;
 });
 
-test("offers a new version, and a click downloads it", () => {
-  statusListener({ state: "available", version: "0.9.3" });
+test("says nothing while there is no new version", async () => {
+  const { emit } = bridge();
+  await UpdateNotice.initialize();
+  expect(shown("update-notice")).toBe(false);
 
-  expect(notice().classList.contains("hidden")).toBe(false);
-  expect(notice().textContent).toBe("Update 0.9.3 available — download");
-  expect(notice().title).toBe(
-    "Downloads in the background, then offers to install"
+  emit({ state: "checking" });
+  expect(shown("update-notice")).toBe(false);
+});
+
+test("offers a new version with an Install link", async () => {
+  await offered();
+
+  expect(shown("update-notice")).toBe(true);
+  expect(phase()).toBe("available");
+  expect(text("update-notice-text")).toBe("Update 0.9.5 available");
+  expect(shown("update-notice-action")).toBe(true);
+  expect(text("update-notice-action")).toBe("Install");
+  expect(action().title).toBe("Downloads the update and restarts the app");
+  expect(shown("update-notice-cancel")).toBe(false);
+  expect(shown("update-notice-bar")).toBe(false);
+});
+
+test("Install asks first, in the footer, and downloads nothing yet", async () => {
+  const { updates } = await offered();
+
+  action().click();
+
+  expect(phase()).toBe("confirm");
+  expect(text("update-notice-text")).toBe(
+    "Install update 0.9.5? The app restarts"
   );
-  expect(notice().disabled).toBe(false);
-  expect(notice().classList.contains("ready")).toBe(false);
-
-  notice().click();
-  expect(api.download).toHaveBeenCalledTimes(1);
-  expect(api.install).not.toHaveBeenCalled();
+  expect(text("update-notice-action")).toBe("Yes");
+  expect(text("update-notice-cancel")).toBe("No");
+  // Enter right after lands on No
+  expect(document.activeElement).toBe(cancel());
+  await flush();
+  expect(updates.download).not.toHaveBeenCalled();
 });
 
-test("shows the download, and cannot be clicked meanwhile", () => {
-  statusListener({ state: "downloading", version: "0.9.3", percent: 42 });
+test("No, or Escape, goes back to the offer", async () => {
+  await offered();
 
-  expect(notice().textContent).toBe("Downloading update 0.9.3… 42%");
-  expect(notice().title).toBe("");
-  expect(notice().disabled).toBe(true);
+  action().click();
+  cancel().click();
+  expect(phase()).toBe("available");
+  expect(document.activeElement).toBe(action());
 
-  notice().click();
-  expect(api.download).not.toHaveBeenCalled();
-  expect(api.install).not.toHaveBeenCalled();
+  action().click();
+  byId("update-notice").dispatchEvent(
+    new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+  );
+  expect(phase()).toBe("available");
 });
 
-test("once downloaded, a click installs it", () => {
-  statusListener({ state: "ready", version: "0.9.3" });
+test("the second click of a double click on Install is no Yes", async () => {
+  const { updates } = await offered();
 
-  expect(notice().textContent).toBe("Update 0.9.3 downloaded — install");
-  expect(notice().title).toBe("The app closes, updates and opens again");
-  expect(notice().classList.contains("ready")).toBe(true);
-  expect(notice().disabled).toBe(false);
+  clickWith(action(), 1);
+  clickWith(action(), 2);
+  await flush();
 
-  notice().click();
-  expect(api.install).toHaveBeenCalledTimes(1);
-  expect(api.download).not.toHaveBeenCalled();
+  expect(phase()).toBe("confirm");
+  expect(updates.download).not.toHaveBeenCalled();
 });
 
-test("after a download broke off, a click tries again", () => {
-  statusListener({ state: "available", version: "0.9.3", failed: true });
+test("Yes downloads the version, the bar showing the megabytes in", async () => {
+  const { updates, emit } = await offered();
+  action().click();
 
-  expect(notice().textContent).toBe("Update 0.9.3 did not download — retry");
-  expect(notice().classList.contains("ready")).toBe(false);
-  expect(notice().disabled).toBe(false);
+  action().click();
+  expect(phase()).toBe("downloading");
+  expect(text("update-notice-text")).toBe("Downloading update 0.9.5");
+  expect(shown("update-notice-bar")).toBe(true);
+  expect(fill().style.width).toBe("0%");
+  expect(shown("update-notice-action")).toBe(false);
+  expect(shown("update-notice-cancel")).toBe(false);
+  await flush();
+  expect(updates.download).toHaveBeenCalledTimes(1);
 
-  notice().click();
-  expect(api.download).toHaveBeenCalledTimes(1);
+  emit({ state: "downloading", version: "0.9.5", percent: 10 });
+  expect(text("update-notice-size")).toBe("10%");
+
+  emit({
+    state: "downloading",
+    version: "0.9.5",
+    percent: 41,
+    transferred: 48.4 * MB,
+    total: 116.2 * MB,
+  });
+  expect(text("update-notice-size")).toBe("48 of 116 MB");
+  expect(fill().style.width).toBe("41%");
 });
 
-test("a language switch keeps the notice", () => {
-  statusListener({ state: "available", version: "0.9.3" });
-  setLanguage("ru");
-  expect(notice().textContent).toBe("Доступно обновление 0.9.3 — загрузить");
+test("once the version is in, the app restarts into it at once", async () => {
+  const { updates, emit } = await offered();
+  action().click();
+  action().click();
+  emit({ state: "downloading", version: "0.9.5", percent: 99 });
 
-  statusListener({ state: "ready", version: "0.9.3" });
-  expect(notice().textContent).toBe("Обновление 0.9.3 загружено — установить");
-  setLanguage("en");
+  emit({ state: "ready", version: "0.9.5" });
+
+  expect(phase()).toBe("installing");
+  expect(text("update-notice-text")).toBe(
+    "Installing update 0.9.5 and restarting…"
+  );
+  expect(fill().style.width).toBe("100%");
+  expect(shown("update-notice-size")).toBe(false);
+  expect(shown("update-notice-action")).toBe(false);
+  await flush();
+  expect(updates.install).toHaveBeenCalledTimes(1);
+
+  // The same news again asks nothing more
+  emit({ state: "ready", version: "0.9.5" });
+  await flush();
+  expect(updates.install).toHaveBeenCalledTimes(1);
+});
+
+test("a download that broke off offers Retry, which downloads again without asking", async () => {
+  const { updates, emit } = await offered();
+  action().click();
+  action().click();
+  emit({ state: "downloading", version: "0.9.5", percent: 30 });
+
+  emit({ state: "available", version: "0.9.5", failed: true });
+  expect(phase()).toBe("failed");
+  expect(text("update-notice-text")).toBe("Update 0.9.5 did not download");
+  expect(text("update-notice-action")).toBe("Retry");
+  expect(shown("update-notice-bar")).toBe(false);
+
+  action().click();
+  expect(phase()).toBe("downloading");
+  await flush();
+  expect(updates.download).toHaveBeenCalledTimes(2);
+});
+
+test("a download that could not start puts the offer back", async () => {
+  const { updates } = await offered();
+  updates.download.mockResolvedValue(false);
+
+  action().click();
+  action().click();
+  await flush();
+
+  expect(phase()).toBe("available");
+});
+
+test("an install the main process turns down offers Install again, and asks again", async () => {
+  const { updates, emit } = await offered();
+  updates.install.mockResolvedValue(false);
+  action().click();
+  action().click();
+
+  emit({ state: "ready", version: "0.9.5" });
+  await flush();
+  expect(phase()).toBe("ready");
+  expect(text("update-notice-text")).toBe("Update 0.9.5 downloaded");
+  expect(text("update-notice-action")).toBe("Install");
+
+  updates.install.mockResolvedValue(true);
+  action().click();
+  expect(phase()).toBe("confirm");
+  action().click();
+  await flush();
+  expect(updates.install).toHaveBeenCalledTimes(2);
+});
+
+test("an offer that goes away takes its question along", async () => {
+  const { emit } = await offered();
+  action().click();
+
+  emit({ state: "idle" });
+  expect(shown("update-notice")).toBe(false);
+
+  emit({ state: "available", version: "0.9.6" });
+  expect(phase()).toBe("available");
+});
+
+test("a version found before the notice was there is offered at the start", async () => {
+  bridge({ state: "available", version: "0.9.5" });
+  await UpdateNotice.initialize();
+
+  expect(phase()).toBe("available");
+});
+
+test("a language switch keeps the notice, in the other language", async () => {
+  const { emit } = await offered();
+  i18n.setLanguage("ru");
+  expect(text("update-notice-text")).toBe("Доступно обновление 0.9.5");
+  expect(text("update-notice-action")).toBe("Установить");
+
+  action().click();
+  expect(text("update-notice-text")).toBe(
+    "Установить обновление 0.9.5? Приложение перезапустится"
+  );
+  expect(text("update-notice-action")).toBe("Да");
+  expect(text("update-notice-cancel")).toBe("Нет");
+
+  action().click();
+  emit({
+    state: "downloading",
+    version: "0.9.5",
+    percent: 41,
+    transferred: 48 * MB,
+    total: 116 * MB,
+  });
+  expect(text("update-notice-text")).toBe("Скачивается обновление 0.9.5");
+  expect(text("update-notice-size")).toBe("48 из 116 МБ");
 });

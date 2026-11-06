@@ -301,12 +301,19 @@ export default {
   },
 
   update: {
-    available: "Доступно обновление {version} — загрузить",
-    availableTitle: "Загрузится в фоне, затем предложит установку",
-    failed: "Обновление {version} не загрузилось — повторить",
-    downloading: "Загружается обновление {version}… {percent}%",
-    ready: "Обновление {version} загружено — установить",
-    readyTitle: "Приложение закроется, обновится и откроется снова",
+    available: "Доступно обновление {version}",
+    install: "Установить",
+    installTitle: "Скачает обновление и перезапустит приложение",
+    confirm: "Установить обновление {version}? Приложение перезапустится",
+    yes: "Да",
+    no: "Нет",
+    downloading: "Скачивается обновление {version}",
+    size: "{transferred} из {total} МБ",
+    percent: "{percent}%",
+    installing: "Установка обновления {version} и перезапуск…",
+    failed: "Обновление {version} не скачалось",
+    retry: "Повторить",
+    ready: "Обновление {version} скачано",
   },
 
   gsi: {

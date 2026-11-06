@@ -9,13 +9,14 @@ export const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
 /**
  * Keeps the installed app up to date from the GitHub releases. It checks
  * when the app starts and every UPDATE_CHECK_INTERVAL_MS after, and offers
- * a newer version it finds. Nothing more happens without the user: a click
- * on the offer downloads the version in the background, so the user picks
- * the moment for a download that can run past 100 MB, and a second click
- * restarts the app into it. A downloaded version that no click installed
- * goes in the next time the app quits. It never restarts the app on its
- * own, so no join is cut short. The renderer only shows the status this
- * reports and passes the clicks on.
+ * a newer version it finds. Nothing more happens without the user: Install
+ * in the footer, once the user says yes to its question, downloads the
+ * version, so the user picks the moment for a download that can run past
+ * 100 MB, and restarts the app into it once it is in (download() and
+ * install(), one after the other). A downloaded version that was not
+ * installed goes in the next time the app quits. It never restarts the app
+ * on its own, so no join is cut short by surprise. The renderer only shows
+ * the status this reports and passes the user's answer on.
  *
  * Nothing runs unless the app is packaged: a development run has no
  * installer to update and no release to compare with.
@@ -36,7 +37,7 @@ export default class AppUpdater {
     this.isPackaged = isPackaged;
     this.send = send;
     this.logger = logger;
-    /** @type {{state: string, version?: string, percent?: number, failed?: boolean}} */
+    /** @type {{state: string, version?: string, percent?: number, transferred?: number, total?: number, failed?: boolean}} */
     this.status = { state: isPackaged ? "idle" : "off" };
     this._timer = null;
   }
@@ -72,6 +73,13 @@ export default class AppUpdater {
         state: "downloading",
         version: this.status.version,
         percent: Math.floor(progress?.percent ?? 0),
+        // Bytes so far and in all, for the megabytes beside the footer's bar
+        ...(Number.isFinite(progress?.total) && progress.total > 0
+          ? {
+              transferred: Math.max(0, progress.transferred ?? 0),
+              total: progress.total,
+            }
+          : {}),
       })
     );
     updater.on("update-downloaded", (info) =>

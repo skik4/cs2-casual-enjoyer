@@ -121,6 +121,33 @@ test("a click downloads the offered version, reported until it is ready", async 
   ]);
 });
 
+test("the download's progress carries its sizes once the updater knows them", () => {
+  const { updater, send } = startInstalled();
+  updater.emit("update-available", { version: "0.9.5" });
+  appUpdater.download();
+
+  updater.emit("download-progress", {
+    percent: 41.6,
+    transferred: 50000000,
+    total: 121000000,
+  });
+  expect(send).toHaveBeenLastCalledWith({
+    state: "downloading",
+    version: "0.9.5",
+    percent: 41,
+    transferred: 50000000,
+    total: 121000000,
+  });
+
+  // Without a total there is nothing to measure against
+  updater.emit("download-progress", { percent: 42, transferred: 5, total: 0 });
+  expect(send).toHaveBeenLastCalledWith({
+    state: "downloading",
+    version: "0.9.5",
+    percent: 42,
+  });
+});
+
 test("a download that breaks off offers the version again, and a click retries it", async () => {
   const { updater, log } = startInstalled();
   const error = new Error("net::ERR_CONNECTION_RESET");

@@ -297,12 +297,19 @@ export default {
   },
 
   update: {
-    available: "Update {version} available — download",
-    availableTitle: "Downloads in the background, then offers to install",
-    failed: "Update {version} did not download — retry",
-    downloading: "Downloading update {version}… {percent}%",
-    ready: "Update {version} downloaded — install",
-    readyTitle: "The app closes, updates and opens again",
+    available: "Update {version} available",
+    install: "Install",
+    installTitle: "Downloads the update and restarts the app",
+    confirm: "Install update {version}? The app restarts",
+    yes: "Yes",
+    no: "No",
+    downloading: "Downloading update {version}",
+    size: "{transferred} of {total} MB",
+    percent: "{percent}%",
+    installing: "Installing update {version} and restarting…",
+    failed: "Update {version} did not download",
+    retry: "Retry",
+    ready: "Update {version} downloaded",
   },
 
   gsi: {

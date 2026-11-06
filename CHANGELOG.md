@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Updates stay in the footer. A newer version is offered with Install, which asks "Install update X? The app restarts" in the same place before anything downloads. After Yes, a bar shows the download with the megabytes in, and the app restarts into the new version as soon as it is in; a download that breaks off offers Retry. This shows from the update after the one that ships it.
+
 ## [0.9.4] - 2026-11-06
 
 ### Changed
