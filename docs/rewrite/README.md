@@ -58,11 +58,13 @@ The 0.x code stays the reference. The `path:line` references point at commit `4f
 ## First steps of the rewrite session
 
 1. Confirm the decisions above with the owner.
-2. **Tools**, with the owner's OK; the installers ask for administrator rights, so the owner must be at the PC.
-   - Rust through rustup, with the stable MSVC toolchain, for example `winget install --id Rustlang.Rustup -e`.
-   - Visual Studio 2022 Build Tools with the C++ workload (MSVC and the Windows SDK), for example `winget install --id Microsoft.VisualStudio.2022.BuildTools -e --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"`.
-   - Already there on 2026-11-07: WebView2 157, Node.js 24 with npm 11, Git, winget 1.29.
+2. **Tools.** Installed on 2026-11-07 at the owner's word; check they are still there.
+   - Visual Studio 2022 Build Tools 17.14 with the C++ workload: MSVC 14.44, Windows SDK 10.0.26100. Installed with `winget install --id Microsoft.VisualStudio.2022.BuildTools -e --override "--passive --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"`. It asks for administrator rights.
+   - Rust through rustup 1.29.3: rustc and cargo 1.99.1, default toolchain `stable-x86_64-pc-windows-msvc`, cargo in the user's PATH. Installed with `winget install --id Rustlang.Rustup -e`, after the Build Tools, so rustup did not offer its own Visual Studio.
+   - Checked: a release build of a small program with a crates.io dependency linked and ran.
+   - Already there before: WebView2 157, Node.js 24 with npm 11, Git, winget 1.29.
    - The Tauri CLI comes as a dev dependency of the project; nothing global is needed.
+   - A shell opened before the install does not see the new PATH yet; open a new one, or call `%USERPROFILE%\.cargo\bin\cargo.exe` directly.
 3. **Working tree.**
    - Clone `skik4/cs2-casual-enjoyer` into a new folder, then start the fresh history (step 1 of the decisions).
    - Give it the layout in [architecture.md](architecture.md).
