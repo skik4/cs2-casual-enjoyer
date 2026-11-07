@@ -1,6 +1,6 @@
 # Working rules for the rewrite
 
-How the owner of this project wants work done. The rules are collected from many sessions on the 0.x app. Copy this file into the new repository as its `CLAUDE.md`, or point the new `CLAUDE.md` at it, so every session starts from it.
+How the owner of this project wants work done. The rules are collected from many sessions on the 0.x app. Copy this file into the rebuilt tree as its `CLAUDE.md`, or point the new `CLAUDE.md` at it, so every session starts from it.
 
 ## Talking to the owner
 

@@ -30,13 +30,13 @@ Users of 0.9.x should land on 1.0 by themselves, with their settings, their key,
 
 ## Getting users from the old updater to 1.0
 
-electron-updater in 0.9.x only knows the releases of `skik4/cs2-casual-enjoyer` and runs the `.exe` named in `latest.yml`. Options:
+electron-updater in 0.9.x only knows the releases of `skik4/cs2-casual-enjoyer` and runs the `.exe` named in `latest.yml`. The owner decided on 2026-11-07 to keep this repository and rebuild it from scratch (see [README](README.md)), so 1.0 is published there as the next release, and 0.9.x sees it.
 
-- **Same repository.** 1.0 is published there as the next release, with a `latest.yml` the old updater understands. Its `.exe` is the new installer.
-  - What has to be checked is what happens when electron-updater runs a Tauri NSIS installer. It passes its own silent-install arguments and restarts the app.
-  - Expect the new app to be installed beside the old one, since the product registry keys differ. 1.0 should then remove 0.9 through its uninstall entry, keeping the data folder.
-- **New repository.** A last 0.9.x release in the old repository has to bring users over: a bridging updater, or at least a footer notice with a link. The old repository's latest release keeps pointing there.
-- In both cases test the whole path on a spare Windows user before publishing:
+- The 1.0 release carries a `latest.yml` the old updater understands, next to Tauri's own update files. Its `.exe` is the new installer.
+- What has to be checked is what happens when electron-updater runs a Tauri NSIS installer. It passes its own silent-install arguments and restarts the app.
+- Expect the new app to be installed beside the old one, since the product registry keys differ. 1.0 should then remove 0.9 through its uninstall entry, keeping the data folder.
+- If running Tauri's installer from electron-updater does not work, a last 0.9.x release can bring users over instead: a bridging updater, or at least a footer notice with a link.
+- Test the whole path on a spare Windows user before publishing:
   - a 0.9.7 install;
   - its update offer;
   - the switch;
@@ -45,6 +45,6 @@ electron-updater in 0.9.x only knows the releases of `skik4/cs2-casual-enjoyer` 
 
 ## Decisions this needs from the owner
 
-- Same repository with a fresh history (for example a new default branch), or a new repository. The release history and the updater URL stay with the old one.
+- Decided 2026-11-07: the same repository, rebuilt from scratch with a fresh history; 0.x is kept in the branch `legacy/electron` and its tags.
 - Product name, app identifier and install folder of 1.0.
 - Whether 1.0 removes 0.9 by itself.

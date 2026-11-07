@@ -97,4 +97,4 @@ The owner's decisions that shaped the app. Areas documents hold the details.
   - One answer to whether CS2 is open, from Steam's game log. GSI says what CS2 is doing.
   - Fewer requests while nobody can use them.
   - For 1.0: the coplay candidates (Steam's "recently played with" list) become a pool source, and the PR #16 UI checklist becomes tests.
-  - 1.0 is a rewrite from a specification, in a clean repository.
+  - 1.0 is a rewrite from a specification, on Tauri 2, in the same repository rebuilt from scratch with a fresh history. 0.x is kept in the branch `legacy/electron`, its tags and a local backup. The Python versions of 2024 are not kept.

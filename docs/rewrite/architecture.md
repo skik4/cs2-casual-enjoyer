@@ -1,10 +1,10 @@
 # Architecture proposal for 1.0
 
-This is a proposal, not a decision. The platform is still the owner's call (see [README](README.md)). The layering below holds either way.
+The owner chose the platform on 2026-11-07: Tauri 2. The rest is a proposal for the rewrite session to refine with the owner.
 
 ## Platform
 
-**Recommended: Tauri 2, with a Rust core and a web UI in TypeScript.**
+**Chosen: Tauri 2, with a Rust core and a web UI in TypeScript.** The reasons it was recommended:
 
 - The UI stays HTML and CSS, so the Steam look, the fonts and the translations carry over.
 - All logic runs in the Rust core: joins, the map finder, the Steam client, GSI and Steam's logs. The window only shows state. A web page covered by fullscreen CS2 gets its timers slowed, and Tauri on Windows has no switch against that. Its `backgroundThrottling` option is unsupported on Windows per a mirror of its docs. In this design nothing time-critical runs in the page.
@@ -15,9 +15,9 @@ This is a proposal, not a decision. The platform is still the owner's call (see 
   - WebView2 updates with Edge, not with the app.
   - Moving users from 0.9 needs a bridging release (see [migration](migration.md)).
 
-**Fallback: Electron from scratch, in TypeScript.** The same layers, with the core in the main process or a utility process, where timers are not slowed either. Familiar and low risk, but the installer and memory stay as they are.
+**Not chosen: Electron from scratch, in TypeScript.** The same layers, with the core in the main process or a utility process, where timers are not slowed either. Familiar and low risk, but the installer and memory stay as they are.
 
-Advised against:
+Advised against as well:
 
 - .NET (WPF, WinUI, Avalonia): the UI would be redrawn in XAML;
 - native Rust GUIs (egui, iced, Slint): Steam's look, overlays and the tutorial are hard to build there;
