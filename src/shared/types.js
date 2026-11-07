@@ -114,6 +114,17 @@
  */
 
 /**
+ * CS2's game process on this computer, as Steam's own game log has it
+ * @typedef {Object} Cs2ProcessState
+ * @property {boolean} usable - Steam's game log could be read
+ * @property {boolean} seen - The log has shown CS2 starting or ending; until it has, it tells nothing
+ * @property {boolean} running - A CS2 process runs
+ * @property {boolean} fromAppStart - One that ran when the app started still does
+ * @property {number} startedAt - When the newest running one started (epoch ms of the log's second), 0 if none runs
+ * @property {number} exitedAt - When a CS2 process last ended (epoch ms of the log's second), 0 if never seen
+ */
+
+/**
  * @typedef {Object} GsiSetupStatus
  * @property {string} setup - ready, cs2-not-found or error (GSI_SETUP)
  * @property {number} [port] - Port the GSI endpoint listens on

@@ -25,6 +25,7 @@ jest.mock("../src/utils/logger.js", () => ({
 }));
 
 import cs2Manager from "../src/game/cs2-manager.js";
+import cs2Process from "../src/game/cs2-process.js";
 import gsiManager from "../src/game/gsi-manager.js";
 import SteamAPI from "../src/steam/steam-api.js";
 import { API_CONFIG, GSI_CONFIG } from "../src/shared/constants.js";
@@ -219,6 +220,61 @@ describe("CS2Manager", () => {
       });
     }
   );
+
+  describe("with Steam's game log", () => {
+    let cs2State;
+
+    beforeEach(() => {
+      cs2Process.reset();
+      cs2State = {
+        usable: true,
+        seen: true,
+        running: false,
+        fromAppStart: false,
+        startedAt: 0,
+        exitedAt: 1000,
+      };
+      global.window.electronAPI.steamLog = {
+        cs2State: jest.fn(async () => cs2State),
+        onCs2State: jest.fn(() => jest.fn()),
+      };
+    });
+
+    afterEach(() => {
+      cs2Process.reset();
+    });
+
+    test("CS2 closed by the log is not in CS2, and Steam is not asked", async () => {
+      SteamAPI.isPlayerInCS2.mockResolvedValue(true);
+
+      await expect(cs2Manager.checkUserInCS2()).resolves.toBe(false);
+      await expect(cs2Manager.checkUserInCS2AndLobby()).resolves.toBe(false);
+      expect(SteamAPI.isPlayerInCS2).not.toHaveBeenCalled();
+    });
+
+    test("CS2 open by the log is in CS2 with no request; only the menu is left to Steam", async () => {
+      cs2State = { ...cs2State, running: true, startedAt: 2000 };
+      SteamAPI.isPlayerInCS2.mockResolvedValue(true);
+
+      await expect(cs2Manager.checkUserInCS2()).resolves.toBe(true);
+      expect(SteamAPI.isPlayerInCS2).not.toHaveBeenCalled();
+
+      await expect(cs2Manager.checkUserInCS2AndLobby()).resolves.toBe(true);
+      expect(SteamAPI.isPlayerInCS2).toHaveBeenCalledWith(
+        TEST_STEAM_ID,
+        TEST_AUTH,
+        true
+      );
+    });
+
+    test("a log that cannot tell leaves the answer to Steam, as before", async () => {
+      cs2State = { usable: false };
+      SteamAPI.isPlayerInCS2.mockResolvedValue(true);
+
+      await expect(cs2Manager.checkUserInCS2()).resolves.toBe(true);
+      expect(SteamAPI.isPlayerInCS2).toHaveBeenCalled();
+    });
+  });
 
   describe("with CS2 Game State Integration", () => {
     const OTHER_STEAM_ID = "76561198000000003";

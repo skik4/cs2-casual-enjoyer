@@ -20,6 +20,7 @@ jest.mock("../src/utils/logger.js", () => ({
 
 import joinManager from "../src/game/join-manager.js";
 import joinJournal from "../src/game/join-journal.js";
+import cs2Process from "../src/game/cs2-process.js";
 import steamLog from "../src/game/steam-log.js";
 import { API_CONFIG, STATUS_TYPES } from "../src/shared/constants.js";
 import SteamAPI from "../src/steam/steam-api.js";
@@ -695,6 +696,95 @@ describe("JoinManager join loop", () => {
 
       // Down for longer than the budget in total, but never that long in a row
       expect(joinManager.isActive(state())).toBe(true);
+    });
+  });
+
+  describe("CS2 closing, as Steam's game log has it", () => {
+    // What the log says: open, closed, or null when it cannot tell
+    let open;
+    let journal;
+
+    beforeEach(() => {
+      open = true;
+      joinManager.cs2Process = {
+        isOpen: jest.fn(() => open),
+        check: jest.fn(async () => open),
+      };
+      journal = {
+        record: jest.fn(),
+        attemptStarted: jest.fn(),
+        attemptEnded: jest.fn(),
+      };
+      joinManager.journal = journal;
+    });
+
+    afterEach(() => {
+      joinManager.cs2Process = cs2Process;
+      joinManager.journal = joinJournal;
+    });
+
+    test("ends a waiting join at once, though CS2's last state is still fresh, and sends nothing", async () => {
+      // CS2 in the menu, the friend's server full
+      cs2.getGsiUserState.mockReturnValue({
+        inMatch: false,
+        inMenu: true,
+        mode: null,
+        mapLoadedAt: 0,
+      });
+      steam.friends[FRIEND_ID] = friendInfo({ connect: null });
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(1000);
+      expect(status()).toBe(WAITING);
+
+      // The user closes CS2, and a slot opens just then
+      open = false;
+      steam.friends[FRIEND_ID] = friendInfo();
+      await jest.advanceTimersByTimeAsync(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
+
+      expect(status()).toBe(CANCELLED);
+      expect(openExternal).not.toHaveBeenCalled();
+      expect(journal.attemptEnded).toHaveBeenCalledWith(
+        FRIEND_ID,
+        "cs2-closed"
+      );
+    });
+
+    test("a CS2 that closes between the snapshot and the connect gets no connect", async () => {
+      // Open as the iteration starts, closed by the read right before the connect
+      joinManager.cs2Process.check = jest.fn(async () => false);
+
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(1000);
+
+      expect(status()).toBe(CANCELLED);
+      expect(openExternal).not.toHaveBeenCalled();
+      expect(journal.attemptEnded).toHaveBeenCalledWith(
+        FRIEND_ID,
+        "cs2-closed"
+      );
+    });
+
+    test("with CS2 open by the log, Steam not showing the user in CS2 does not end the join", async () => {
+      // Steam's copy lags, or the user hides their game from Steam
+      steam.user = userInfo({ inCS2: false });
+      steam.friends[FRIEND_ID] = friendInfo({ connect: null });
+
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(5000);
+
+      expect(joinManager.isActive(state())).toBe(true);
+    });
+
+    test("without the log, Steam not showing the user in CS2 ends the join, as before", async () => {
+      open = null;
+      steam.user = userInfo({ inCS2: false });
+
+      joinManager.startJoin(FRIEND_ID);
+      await jest.advanceTimersByTimeAsync(1000);
+
+      expect(status()).toBe(CANCELLED);
+      expect(openExternal).not.toHaveBeenCalled();
+      expect(journal.attemptEnded).toHaveBeenCalledWith(FRIEND_ID, "left-cs2");
     });
   });
 

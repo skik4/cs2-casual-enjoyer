@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The Maps pool keeps only the players of your own casual matches. Friends of pool players, friends of friends and your friends still feed the map list every round, but no longer join the pool.
+- Whether CS2 is open now has one answer everywhere: Steam's own game log (`logs\gameprocess_log.txt`), where Steam notes CS2's process starting and ending the moment it happens, with no token and no network. What CS2 is doing (menu, match, map, mode) still comes from CS2 itself through GSI, and Steam's Web API stands in only where the log cannot be read. The start of a join, the "CS2 is already running" check, a join ending when CS2 closes, the footer's GSI status and the Maps polling all go by it.
+
+### Fixed
+
+- The footer asks you to restart CS2 only while a CS2 opened before the app is still running. With CS2 closed it says "Waiting for CS2", as it should on a first start.
+- A join waiting for a slot ends the moment CS2 closes. Before, CS2's last state counted for 15 more seconds, and a connect in that time could start CS2 again.
 
 ## [0.9.6] - 2026-11-07
 

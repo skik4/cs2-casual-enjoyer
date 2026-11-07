@@ -202,6 +202,9 @@ class IPCManager {
     ipcMain.handle("steam-log-server-changes", (event, since) =>
       steamGameLog.serverChangesSince(since)
     );
+    // CS2's game process as Steam tracks it: the app's one answer to
+    // whether CS2 is open. The window hears every change as well.
+    ipcMain.handle("steam-log-cs2", () => steamGameLog.cs2State());
 
     // Updates: what the updater is doing, a check, then the download of a
     // new version and the restart into it, each at the user's click
@@ -299,12 +302,21 @@ class AppManager {
     );
 
     // Only what Steam logs from now on can follow a connect of this run, so
-    // the log's end is marked before any join starts. Not awaited: a join
-    // that asks earlier waits for it.
+    // the log's end is marked before any join starts, and the CS2 open now
+    // is read from what it holds. Not awaited: a question asked earlier
+    // waits for it.
     this.steamGameLog.start();
 
     // Create main window
     this.mainWindow = WindowManager.createMainWindow();
+
+    // CS2 opening and closing reach the window as Steam logs them
+    this.steamGameLog.watch((state) => {
+      const win = this.mainWindow;
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("steam-log-cs2", state);
+      }
+    });
 
     // Setup window controls
     WindowManager.setupWindowControls(this.mainWindow);
@@ -342,4 +354,5 @@ app.on("window-all-closed", () => {
 app.on("will-quit", () => {
   appManager.gsiService.stop();
   appManager.appUpdater.stop();
+  appManager.steamGameLog.stop();
 });

@@ -2,6 +2,7 @@
 import { GAME_MODES } from "../shared/constants.js";
 
 // Game singletons
+import cs2Process from "./cs2-process.js";
 import gsiManager from "./gsi-manager.js";
 
 // Steam modules
@@ -51,10 +52,14 @@ class UserLocation {
   }
 
   /**
-   * Whether CS2 runs: CS2 posting its state, or Steam showing the user in it
+   * Whether CS2 runs: as Steam's game log has it (see cs2-process.js), or,
+   * while the log cannot tell, CS2 posting its state or Steam showing the
+   * user in it
    * @returns {boolean}
    */
   isInCS2() {
+    const open = cs2Process.isOpen();
+    if (open !== null) return open;
     if (gsiManager.getUserState()) return true;
     return Boolean(this.steamPresence?.inCS2);
   }

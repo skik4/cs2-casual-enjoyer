@@ -214,6 +214,36 @@ const electronAPI = {
         return { usable: false, changes: [] };
       }
     },
+    /**
+     * CS2's game process as Steam tracks it, read now
+     * @returns {Promise<Object>} - See Cs2ProcessState in shared/types.js;
+     *   unusable when the main process cannot say
+     */
+    cs2State: async () => {
+      try {
+        return await ipcRenderer.invoke("steam-log-cs2");
+      } catch (error) {
+        console.error("Failed to read Steam's game log:", error);
+        return {
+          usable: false,
+          seen: false,
+          running: false,
+          fromAppStart: false,
+          startedAt: 0,
+          exitedAt: 0,
+        };
+      }
+    },
+    /**
+     * Subscribe to CS2 opening and closing as Steam logs them
+     * @param {Function} callback - Called with each new state
+     * @returns {Function} - Unsubscribe
+     */
+    onCs2State: (callback) => {
+      const listener = (_event, state) => callback(state);
+      ipcRenderer.on("steam-log-cs2", listener);
+      return () => ipcRenderer.removeListener("steam-log-cs2", listener);
+    },
   },
 
   /**

@@ -98,3 +98,92 @@ describe("the page's side", () => {
     }
   });
 });
+
+describe("CS2's process", () => {
+  const unknown = {
+    usable: false,
+    seen: false,
+    running: false,
+    fromAppStart: false,
+    startedAt: 0,
+    exitedAt: 0,
+  };
+  const open = {
+    usable: true,
+    seen: true,
+    running: true,
+    fromAppStart: false,
+    startedAt: 2000,
+    exitedAt: 1000,
+  };
+
+  test("the preload asks the main process, and hears each change it tells", async () => {
+    ipcRenderer.invoke.mockResolvedValue(open);
+    await expect(api.steamLog.cs2State()).resolves.toBe(open);
+    expect(ipcRenderer.invoke).toHaveBeenCalledWith("steam-log-cs2");
+
+    const callback = jest.fn();
+    const unsubscribe = api.steamLog.onCs2State(callback);
+    const [[channel, listener]] = ipcRenderer.on.mock.calls.filter(
+      ([name]) => name === "steam-log-cs2"
+    );
+    listener({}, open);
+    expect(callback).toHaveBeenCalledWith(open);
+
+    unsubscribe();
+    expect(ipcRenderer.removeListener).toHaveBeenCalledWith(channel, listener);
+  });
+
+  test("a main process that cannot answer leaves CS2's process unknown", async () => {
+    ipcRenderer.invoke.mockRejectedValue(new Error("No handler registered"));
+    jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(api.steamLog.cs2State()).resolves.toEqual(unknown);
+  });
+
+  test("the main process answers on that channel, and tells the window each change", () => {
+    const main = fs.readFileSync(
+      path.join(__dirname, "..", "src", "main", "main.js"),
+      "utf-8"
+    );
+
+    expect(main).toContain(
+      'ipcMain.handle("steam-log-cs2", () => steamGameLog.cs2State());'
+    );
+    const watch = main.indexOf("this.steamGameLog.watch((state) => {");
+    expect(watch).toBeGreaterThan(-1);
+    expect(
+      main.indexOf('webContents.send("steam-log-cs2", state)')
+    ).toBeGreaterThan(watch);
+    expect(main).toContain("appManager.steamGameLog.stop();");
+  });
+
+  test("the page's side passes answers on in a known shape, and none without the bridge", async () => {
+    await expect(steamLog.cs2State()).resolves.toEqual(unknown);
+    expect(steamLog.onCs2State(jest.fn())).toEqual(expect.any(Function));
+
+    let push;
+    global.window.electronAPI = {
+      steamLog: {
+        cs2State: jest.fn().mockResolvedValue({ ...open, extra: 1 }),
+        onCs2State: jest.fn((callback) => {
+          push = callback;
+          return () => {};
+        }),
+      },
+    };
+    await expect(steamLog.cs2State()).resolves.toEqual(open);
+
+    const listener = jest.fn();
+    steamLog.onCs2State(listener);
+    push({ usable: true, seen: true, running: "yes" });
+    expect(listener).toHaveBeenCalledWith({
+      usable: true,
+      seen: true,
+      running: true,
+      fromAppStart: false,
+      startedAt: 0,
+      exitedAt: 0,
+    });
+  });
+});

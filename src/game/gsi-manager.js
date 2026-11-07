@@ -5,6 +5,9 @@ import {
   INTERRUPTIBLE_MODES,
 } from "../shared/constants.js";
 
+// Whether CS2 is open, from Steam's own game log
+import cs2Process from "./cs2-process.js";
+
 // UI and utilities
 import Validators from "../utils/validators.js";
 import logger from "../utils/logger.js";
@@ -44,7 +47,8 @@ export function interpretGsiPayload(payload) {
  * the moment something changes, so while it is fresh it beats Steam's copy of
  * the same facts, which lags by seconds. Silence proves nothing - CS2 may be
  * closed, loading, or not have read the cfg yet - so callers fall back to the
- * Steam Web API whenever there is no fresh state.
+ * Steam Web API whenever there is no fresh state. A state stops counting the
+ * moment Steam's game log shows CS2 closed after it (see cs2-process.js).
  */
 class GSIManager {
   constructor() {
@@ -57,6 +61,7 @@ class GSIManager {
     this.listeners = new Set();
     this._staleTimer = null;
     this._unsubscribe = null;
+    this._cs2Unsubscribe = null;
   }
 
   /**
@@ -65,6 +70,14 @@ class GSIManager {
    */
   async initialize(getExpectedSteamId) {
     this.getExpectedSteamId = getExpectedSteamId;
+
+    // Whether CS2 is open comes from Steam's game log, GSI or not. CS2
+    // closing ends its last state at once, and closing the CS2 that was
+    // open before the cfg was written ends the call for a restart.
+    if (!this._cs2Unsubscribe) {
+      this._cs2Unsubscribe = cs2Process.onChange(() => this._notify());
+    }
+    const cs2Known = cs2Process.start();
 
     const api = window.electronAPI?.gsi;
     if (!api) {
@@ -78,6 +91,8 @@ class GSIManager {
 
     this.setupStatus = await api.getStatus();
     logger.info("GSIManager", "GSI setup status", this.setupStatus);
+    // The indicator's first state already knows whether to ask for a restart
+    await cs2Known;
     this._notify();
   }
 
@@ -103,6 +118,8 @@ class GSIManager {
     this.lastPayload = payload;
     this.receivedAt = now;
     this._armStaleTimer();
+    // A CS2 that posts is open, whatever Steam's game log says
+    cs2Process.noteGameState(now);
     this._notify();
   }
 
@@ -113,7 +130,9 @@ class GSIManager {
    */
   isFresh(now = Date.now()) {
     return (
-      this.lastPayload !== null && now - this.receivedAt <= GSI_CONFIG.FRESH_MS
+      this.lastPayload !== null &&
+      now - this.receivedAt <= GSI_CONFIG.FRESH_MS &&
+      !cs2Process.closedSince(this.receivedAt)
     );
   }
 
@@ -177,10 +196,10 @@ class GSIManager {
 
     switch (this.setupStatus?.setup) {
       case GSI_SETUP.READY:
-        // A cfg written this run is unknown to a CS2 that is already running
-        return this.setupStatus.changed && !this.lastPayload
-          ? "restart"
-          : "waiting";
+        // A cfg written this run is unknown to a CS2 that was open already.
+        // Steam's game log tells whether one is; without it the indicator
+        // asks for the restart, which is harmless.
+        return this._mayNeedRestart() ? "restart" : "waiting";
       case GSI_SETUP.CS2_NOT_FOUND:
         return "unavailable";
       case GSI_SETUP.ERROR:
@@ -207,13 +226,32 @@ class GSIManager {
   reset() {
     if (this._staleTimer) clearTimeout(this._staleTimer);
     if (this._unsubscribe) this._unsubscribe();
+    if (this._cs2Unsubscribe) this._cs2Unsubscribe();
     this._staleTimer = null;
     this._unsubscribe = null;
+    this._cs2Unsubscribe = null;
     this.lastPayload = null;
     this.receivedAt = 0;
     this.mapLoadedAt = 0;
     this.setupStatus = null;
     this.getExpectedSteamId = null;
+  }
+
+  /**
+   * Whether CS2 may still use a cfg older than the one this run wrote: the
+   * cfg changed, CS2 has not posted, and Steam's game log does not say that
+   * the CS2 open when the app started has closed. A CS2 started later reads
+   * the new cfg, and one that has posted has read it.
+   * @returns {boolean}
+   * @private
+   */
+  _mayNeedRestart() {
+    return Boolean(
+      this.setupStatus?.setup === GSI_SETUP.READY &&
+        this.setupStatus.changed &&
+        !this.lastPayload &&
+        cs2Process.openSinceAppStart() !== false
+    );
   }
 
   /**

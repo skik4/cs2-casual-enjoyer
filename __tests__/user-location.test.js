@@ -14,6 +14,7 @@ jest.mock("../src/utils/logger.js", () => ({
 }));
 
 import userLocation from "../src/game/user-location.js";
+import cs2Process from "../src/game/cs2-process.js";
 import gsiManager from "../src/game/gsi-manager.js";
 
 const USER = "76561198000000001";
@@ -93,4 +94,58 @@ test("listeners hear about a change once, from Steam or from CS2", () => {
 
   cs2(null);
   expect(listener).toHaveBeenCalledTimes(2);
+});
+
+describe("whether CS2 runs", () => {
+  let cs2State;
+
+  beforeEach(() => {
+    cs2Process.reset();
+    global.window.electronAPI = {
+      steamLog: {
+        cs2State: jest.fn(async () => cs2State),
+        onCs2State: jest.fn(() => jest.fn()),
+      },
+    };
+  });
+
+  afterEach(() => {
+    cs2Process.reset();
+    delete global.window.electronAPI;
+  });
+
+  test("Steam's game log decides, over CS2's last state and Steam's copy of the user", async () => {
+    cs2State = {
+      usable: true,
+      seen: true,
+      running: false,
+      fromAppStart: false,
+      startedAt: 0,
+      exitedAt: 1000,
+    };
+    await cs2Process.check();
+    userLocation.setSteamPresence(steam());
+
+    expect(userLocation.isInCS2()).toBe(false);
+
+    cs2State = { ...cs2State, running: true, startedAt: 2000 };
+    await cs2Process.check();
+    userLocation.setSteamPresence(steam({ inCS2: false }));
+
+    expect(userLocation.isInCS2()).toBe(true);
+  });
+
+  test("without the log, CS2 posting or Steam showing the user in CS2 is enough", async () => {
+    cs2State = { usable: false };
+    await cs2Process.check();
+
+    userLocation.setSteamPresence(steam());
+    expect(userLocation.isInCS2()).toBe(true);
+
+    userLocation.setSteamPresence(steam({ inCS2: false }));
+    expect(userLocation.isInCS2()).toBe(false);
+
+    cs2(null);
+    expect(userLocation.isInCS2()).toBe(true);
+  });
 });

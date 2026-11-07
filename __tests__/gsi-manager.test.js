@@ -13,6 +13,7 @@ jest.mock("../src/utils/logger.js", () => ({
 }));
 
 import gsiManager, { interpretGsiPayload } from "../src/game/gsi-manager.js";
+import cs2Process from "../src/game/cs2-process.js";
 import { GSI_CONFIG, GSI_SETUP } from "../src/shared/constants.js";
 
 const USER_ID = "76561198000000002";
@@ -289,6 +290,126 @@ describe("GSIManager", () => {
     await gsiManager.initialize(() => USER_ID);
 
     expect(gsiManager.getIndicatorState()).toBe("unavailable");
+    expect(gsiManager.getUserState()).toBeNull();
+  });
+});
+
+describe("GSIManager and Steam's game log", () => {
+  // What the main process says of CS2's process, and its pushes
+  let cs2State;
+  let pushCs2;
+  const closed = {
+    usable: true,
+    seen: true,
+    running: false,
+    fromAppStart: false,
+    startedAt: 0,
+    exitedAt: 0,
+  };
+  const at = (seconds, ms = 0) =>
+    new Date(2026, 10, 7, 20, 0, seconds, ms).getTime();
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(at(0));
+    gsiManager.reset();
+    cs2Process.reset();
+    cs2State = { ...closed };
+    global.window.electronAPI = {
+      gsi: {
+        onState: jest.fn(() => jest.fn()),
+        getStatus: jest
+          .fn()
+          .mockResolvedValue({ setup: GSI_SETUP.READY, changed: true }),
+      },
+      steamLog: {
+        cs2State: jest.fn(async () => cs2State),
+        onCs2State: jest.fn((callback) => {
+          pushCs2 = (state) => {
+            cs2State = state;
+            callback(state);
+          };
+          return jest.fn();
+        }),
+      },
+    };
+  });
+
+  afterEach(() => {
+    gsiManager.reset();
+    gsiManager.listeners.clear();
+    cs2Process.reset();
+    jest.useRealTimers();
+    delete global.window.electronAPI;
+  });
+
+  test("a new cfg asks for a restart only while the CS2 open at the app's start still is", async () => {
+    cs2State = {
+      ...closed,
+      running: true,
+      fromAppStart: true,
+      startedAt: at(-600),
+    };
+    await gsiManager.initialize(() => USER_ID);
+    expect(gsiManager.getIndicatorState()).toBe("restart");
+
+    // The user closes it: a CS2 started from now on reads the new cfg
+    const listener = jest.fn();
+    gsiManager.onChange(listener);
+    pushCs2({ ...closed, exitedAt: at(5) });
+    expect(gsiManager.getIndicatorState()).toBe("waiting");
+    expect(listener).toHaveBeenCalled();
+
+    // The new one starting does not bring the call back
+    pushCs2({ ...closed, running: true, startedAt: at(9), exitedAt: at(5) });
+    expect(gsiManager.getIndicatorState()).toBe("waiting");
+  });
+
+  test("a new cfg with CS2 closed waits for CS2, with no call for a restart", async () => {
+    await gsiManager.initialize(() => USER_ID);
+
+    expect(gsiManager.getIndicatorState()).toBe("waiting");
+  });
+
+  test("a new cfg with a CS2 started after the app's start waits for its first state", async () => {
+    cs2State = { ...closed, running: true, startedAt: at(0) };
+    await gsiManager.initialize(() => USER_ID);
+
+    expect(gsiManager.getIndicatorState()).toBe("waiting");
+  });
+
+  test("without the log a new cfg asks for the restart, as before", async () => {
+    cs2State = { usable: false };
+    await gsiManager.initialize(() => USER_ID);
+
+    expect(gsiManager.getIndicatorState()).toBe("restart");
+  });
+
+  test("CS2's last state stops counting the moment the log has CS2 closed", async () => {
+    cs2State = { ...closed, running: true, startedAt: at(-600) };
+    await gsiManager.initialize(() => USER_ID);
+    jest.setSystemTime(at(1, 400));
+    gsiManager.handlePayload(menuPayload());
+    expect(gsiManager.getUserState()).not.toBeNull();
+
+    const listener = jest.fn();
+    gsiManager.onChange(listener);
+    pushCs2({ ...closed, exitedAt: at(3) });
+
+    // Long before the FRESH_MS a silent CS2 is given
+    expect(gsiManager.getUserState()).toBeNull();
+    expect(gsiManager.getIndicatorState()).toBe("waiting");
+    expect(listener).toHaveBeenCalled();
+  });
+
+  test("a CS2 closed in the very second it posted counts as closed after posting", async () => {
+    cs2State = { ...closed, running: true, startedAt: at(-600) };
+    await gsiManager.initialize(() => USER_ID);
+    jest.setSystemTime(at(1, 900));
+    gsiManager.handlePayload(menuPayload());
+
+    pushCs2({ ...closed, exitedAt: at(1) });
+
     expect(gsiManager.getUserState()).toBeNull();
   });
 });

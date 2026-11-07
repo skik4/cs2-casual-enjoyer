@@ -329,7 +329,7 @@ export default {
     waiting:
       "CS2 Game State Integration is set up and connects when CS2 starts.",
     restart:
-      "CS2 Game State Integration was just set up. If CS2 is already running, restart it once.",
+      "CS2 Game State Integration was just set up, and the open CS2 reads it only after a restart. Restart CS2 once.",
     otherAccount:
       "CS2 is running on a different Steam account than the one entered here, so its game state is ignored.",
     unavailable:

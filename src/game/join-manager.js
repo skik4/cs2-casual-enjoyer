@@ -17,6 +17,7 @@ import logger from "../utils/logger.js";
 import joinJournal from "./join-journal.js";
 
 // The Steam client
+import cs2Process from "./cs2-process.js";
 import steamLog from "./steam-log.js";
 import { joinUrl, openSteamUrl } from "./steam-protocol.js";
 
@@ -63,6 +64,8 @@ class JoinManager {
     this.getCredentials = null;
     this.journal = joinJournal;
     this.steamLog = steamLog;
+    // Whether CS2 is open, from the same log
+    this.cs2Process = cs2Process;
     // Join tokens sent, or taken for the user's own arrival: none goes out
     // twice, from any attempt. CS2 turns a token away for as long as the
     // server stays full, and a player arriving or leaving gives a new one -
@@ -517,14 +520,18 @@ class JoinManager {
         // CS2 reports the user's own game the moment it changes, while
         // Steam's copy of it lags by seconds - a fresh GSI state wins
         const gsiState = this.cs2Manager?.getGsiUserState?.() ?? null;
-        const userInCS2 = gsiState ? true : user.inCS2;
+        // Whether CS2 is open at all, Steam's game log says the moment it
+        // closes (see cs2-process.js); only without the log do CS2's state
+        // and Steam's copy of the user stand in
+        const open = this.cs2Process.isOpen();
+        const userInCS2 = open ?? (gsiState ? true : user.inCS2);
         const userInProtectedMatch = this._inProtectedMatch(user, gsiState);
 
         if (!userInCS2) {
           logger.info("JoinManager", "User no longer in CS2, stopping join", {
             join_id,
           });
-          this.cancelJoin(join_id, "left-cs2");
+          this.cancelJoin(join_id, open === false ? "cs2-closed" : "left-cs2");
           break;
         }
 
@@ -640,6 +647,17 @@ class JoinManager {
           });
           await this.sleep(API_CONFIG.JOIN_LOOP_INTERVAL_MS);
           continue;
+        }
+
+        // A connect is coming: the log is read once more first, since one
+        // sent to a CS2 that has just closed would start it again through
+        // steam://rungame
+        const stillOpen = await this.cs2Process.check();
+        if (!alive()) break;
+        if (stillOpen === false) {
+          logger.info("JoinManager", "CS2 closed, stopping join", { join_id });
+          this.cancelJoin(join_id, "cs2-closed");
+          break;
         }
 
         // A new token: someone arrived or left. It may be the user, whose

@@ -2,6 +2,7 @@
 import { API_CONFIG } from "../shared/constants.js";
 
 // Game singletons
+import cs2Process from "./cs2-process.js";
 import gsiManager from "./gsi-manager.js";
 import { LAUNCH_CS2_URL, openSteamUrl } from "./steam-protocol.js";
 
@@ -11,8 +12,9 @@ import logger from "../utils/logger.js";
 
 /**
  * Manages CS2 launch functionality.
- * The user's own state comes from CS2's Game State Integration while it is
- * fresh and from the Steam Web API otherwise.
+ * Whether CS2 is open comes from Steam's own game log; what it is doing from
+ * CS2's Game State Integration while it is fresh, and from the Steam Web API
+ * otherwise.
  */
 class CS2Manager {
   constructor() {
@@ -78,6 +80,14 @@ class CS2Manager {
       return false;
     }
 
+    // Whether CS2 is open at all, Steam's game log says at once and for
+    // free (see cs2-process.js); null when it cannot tell
+    const open = await cs2Process.check();
+    if (open === false) {
+      logger.debug("CS2Manager", "Steam's game log has CS2 closed");
+      return false;
+    }
+
     // A fresh state from CS2 is proof enough, and costs no request
     const gsiState = this.getGsiUserState();
     if (gsiState) {
@@ -86,6 +96,9 @@ class CS2Manager {
       });
       return requireLobby ? gsiState.inMenu : true;
     }
+    // Open, though not posting: still starting, or on an old cfg. Only the
+    // menu is left for Steam to tell.
+    if (open === true && !requireLobby) return true;
 
     try {
       const { steamId, auth } = this.getCredentials();
