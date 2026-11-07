@@ -12,7 +12,7 @@ The app keeps itself up to date from the same page. It looks for a new version w
 
 ## Features
 
-- **Friends**: join a friend in Casual or Deathmatch. The app connects on every new join token the friend shows and never sends the same one twice, says when the server is full, and stops rather than pull you out of a match of another mode (Competitive, Premier, Wingman).
+- **Friends**: join a friend in Casual. The app connects on every new join token the friend shows and never sends the same one twice, says when the server is full, and stops rather than pull you out of a match that must not be left (Competitive, Premier, Wingman). Your own Casual or Deathmatch match may be left for the join.
 - **Maps**: official casual servers by map, found through other players: your friends, players seen on official servers before, their friends and friends of friends (read with an API key when you ask), and the players of your own matches. Join any server of a map or a chosen one. Pin maps, and the app rejoins one of them when a match ends. "Prime only" keeps to servers where a player shows a sign of Prime (CS2 XP or a Premier match).
 - **Fake friends**: join any Steam ID like a friend.
 - **CS2 Game State Integration**: CS2 reports your own state (menu, match, mode, map) to the app directly. The app writes its config into CS2's `game/csgo/cfg` folder. If CS2 was already open, the footer asks you to restart it once.
