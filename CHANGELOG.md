@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Maps pool keeps only the players of your own casual matches. Friends of pool players, friends of friends and your friends still feed the map list every round, but no longer join the pool.
 - Whether CS2 is open now has one answer everywhere: Steam's own game log (`logs\gameprocess_log.txt`), where Steam notes CS2's process starting and ending the moment it happens, with no token and no network. What CS2 is doing (menu, match, map, mode) still comes from CS2 itself through GSI, and Steam's Web API stands in only where the log cannot be read. The start of a join, the "CS2 is already running" check, a join ending when CS2 closes, the footer's GSI status and the Maps polling all go by it.
+- Fewer requests to Steam. The friends list is not refreshed while the window is minimized, and catches up the moment it is back. An open Maps tab stops polling while the window is minimized, or while CS2 is closed and you are in another program. A pinned map keeps the Maps polling going only in CS2's menu and in a casual match from match point on, when one more round can end it.
 
 ### Fixed
 

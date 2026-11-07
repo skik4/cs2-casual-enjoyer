@@ -108,6 +108,7 @@
  * @property {string|null} mode - Game mode of the match (casual, competitive, ...)
  * @property {string|null} mapName - Map of the match
  * @property {string|null} phase - Match phase (warmup, live, intermission, gameover)
+ * @property {{ct: number, t: number}|null} score - Rounds each side has won, null when CS2 does not say
  * @property {string|null} activity - Player activity (menu, playing, textinput)
  * @property {boolean} inProtectedMatch - Whether a match runs in a mode a join must not interrupt (any but casual and deathmatch); CS2 does not tell offline training apart
  * @property {number} mapLoadedAt - When CS2 first reported the current map (ms), 0 if never

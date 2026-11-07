@@ -47,9 +47,19 @@ describe("interpretGsiPayload", () => {
       mode: null,
       mapName: null,
       phase: null,
+      score: null,
       activity: "menu",
       inProtectedMatch: false,
     });
+  });
+
+  test("reads the rounds each side has won, when CS2 gives them", () => {
+    const payload = matchPayload("casual");
+    expect(interpretGsiPayload(payload).score).toBeNull();
+
+    payload.map.team_ct = { score: 7, consecutive_round_losses: 0 };
+    payload.map.team_t = { score: 5, consecutive_round_losses: 1 };
+    expect(interpretGsiPayload(payload).score).toEqual({ ct: 7, t: 5 });
   });
 
   test("reads a casual match", () => {

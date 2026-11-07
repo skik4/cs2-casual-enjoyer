@@ -1,11 +1,12 @@
 /**
  * @jest-environment jsdom
  *
- * Jest tests for the Maps view's need of fresh servers while the window is
- * minimized. The page cannot see that itself (Electron keeps visibilityState
- * "visible" with backgroundThrottling off), so the main process reports
- * minimize and restore. An open Maps tab stops polling Steam while the
- * window is minimized; a running map join and a pinned map hold needs of
+ * Jest tests for the Maps view's need of fresh servers while nobody can use
+ * the list. The page cannot see a minimize itself (Electron keeps
+ * visibilityState "visible" with backgroundThrottling off), so the main
+ * process reports minimize and restore. An open Maps tab stops polling
+ * Steam while the window is minimized, and while it is left for another
+ * program with CS2 closed; a running map join and a pinned map hold needs of
  * their own and keep the finder polling.
  */
 
@@ -22,6 +23,7 @@ jest.mock("../src/utils/logger.js", () => ({
 
 import MapFinderView from "../src/ui/map-finder-view.js";
 import mapFinder from "../src/game/map-finder.js";
+import userLocation from "../src/game/user-location.js";
 import { MAP_FINDER_CONFIG } from "../src/shared/constants.js";
 
 const POLL_MS = MAP_FINDER_CONFIG.REFRESH_INTERVAL_MS;
@@ -72,8 +74,14 @@ afterAll(() => {
   delete window.electronAPI;
 });
 
+/** The user moves to another program and back */
+const leave = () => window.dispatchEvent(new Event("blur"));
+const come = () => window.dispatchEvent(new Event("focus"));
+
 beforeEach(() => {
   jest.useFakeTimers();
+  // The window has the focus, as one just opened has
+  jest.spyOn(document, "hasFocus").mockReturnValue(true);
   mapFinder.reset();
   // Each poll counted, none sent; the rows are not looked at here
   jest.spyOn(mapFinder, "refresh").mockResolvedValue();
@@ -83,6 +91,8 @@ beforeEach(() => {
 afterEach(async () => {
   MapFinderView.hide();
   main.report(false);
+  come();
+  userLocation.setSteamPresence(null);
   await settle();
   mapFinder.reset();
   jest.restoreAllMocks();
@@ -202,4 +212,44 @@ test("a page reloaded in a minimized window starts out not polling", async () =>
     finder.reset();
     window.electronAPI = { window: main.bridge };
   }
+});
+
+describe("with CS2 closed, only a window the user is in polls", () => {
+  test("leaving the window for another program stops polling, and coming back resumes it", async () => {
+    MapFinderView.show();
+    await settle();
+    expect(await pollsOver(mapFinder, POLL_MS)).toBe(1);
+
+    leave();
+    expect(mapFinder.active).toBe(false);
+    expect(await pollsOver(mapFinder, 3 * POLL_MS)).toBe(0);
+
+    // Fresh servers at once
+    come();
+    expect(await pollsOver(mapFinder, 0)).toBe(1);
+  });
+
+  test("with CS2 open the list goes on behind CS2, or on a second screen", async () => {
+    userLocation.setSteamPresence({ inCS2: true });
+    MapFinderView.show();
+    await settle();
+
+    leave();
+    expect(mapFinder.active).toBe(true);
+    expect(await pollsOver(mapFinder, 2 * POLL_MS)).toBe(2);
+
+    // CS2 closed while the user is elsewhere: nobody can use the list
+    userLocation.setSteamPresence({ inCS2: false });
+    expect(mapFinder.active).toBe(false);
+  });
+
+  test("a minimized window does not poll, CS2 open or not", async () => {
+    userLocation.setSteamPresence({ inCS2: true });
+    MapFinderView.show();
+    await settle();
+
+    main.report(true);
+
+    expect(mapFinder.active).toBe(false);
+  });
 });

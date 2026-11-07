@@ -3,6 +3,7 @@ import { API_CONFIG } from "../shared/constants.js";
 
 // Core singletons
 import appStateManager from "./app-state-manager.js";
+import windowState from "./window-state.js";
 
 // Game singletons
 import joinManager from "../game/join-manager.js";
@@ -31,6 +32,9 @@ class AppFriendsManager {
     this.inputManager = null;
     // Set once the startup refresh has started; it never starts twice
     this.initialLoadAttempted = false;
+    // A round of the auto-refresh is out
+    this._refreshing = false;
+    this._windowFollowed = false;
   }
 
   /**
@@ -356,11 +360,6 @@ class AppFriendsManager {
       return;
     }
 
-    // Read on every refresh: a token pasted later must replace the old one,
-    // which expires after a day
-    const currentAuth = () =>
-      this.inputManager ? this.inputManager.getAuth() : "";
-
     const savedFriendsIds = FakeFriendsManager.mergeIds(
       appStateManager.getState("savedFriendsIds") || []
     );
@@ -380,52 +379,25 @@ class AppFriendsManager {
     try {
       await this.fetchAndRenderFriendsByIds(
         savedFriendsIds,
-        currentAuth(),
+        this._currentAuth(),
         true
       );
 
       // Clear existing interval
       appStateManager.clearRefreshInterval();
+      this._followWindow();
+      // A new start begins with no round out, as each start always has: a
+      // round of the old one that never ends must not hold up the new one
+      this._refreshing = false;
 
       // Set new interval
       const autoRefreshIntervalMs = appStateManager.getState(
         "autoRefreshIntervalMs"
       );
-      let refreshing = false;
-      const interval = setInterval(async () => {
-        // Check if tutorial is active before each refresh
-        if (tutorialManager.isActive) {
-          logger.debug("App", "Auto-refresh skipped - tutorial is active");
-          return;
-        }
-        // A slow Steam must not pile up overlapping refreshes
-        if (refreshing) return;
-        // Steam turned the credential down: nothing to gain from asking
-        // again until another one is pasted, or a reload is asked for
-        if (credentialState.isRejected(currentAuth())) return;
-
-        const usingSavedFriends = appStateManager.getState("usingSavedFriends");
-        const currentSavedFriendsIds = FakeFriendsManager.mergeIds(
-          appStateManager.getState("savedFriendsIds") || []
-        );
-
-        if (usingSavedFriends && currentSavedFriendsIds.length) {
-          refreshing = true;
-          try {
-            await this.fetchAndRenderFriendsByIds(
-              currentSavedFriendsIds,
-              currentAuth(),
-              true
-            );
-          } catch (error) {
-            logger.warn("App", "Auto-refresh fetch failed", {
-              error: error.message,
-            });
-          } finally {
-            refreshing = false;
-          }
-        }
-      }, autoRefreshIntervalMs);
+      const interval = setInterval(
+        () => this._autoRefreshRound(),
+        autoRefreshIntervalMs
+      );
 
       appStateManager.setState("friendsRefreshInterval", interval);
       logger.info("App", "Auto-refresh of supported friends status started");
@@ -435,6 +407,76 @@ class AppFriendsManager {
       });
       throw error;
     }
+  }
+
+  /**
+   * One round of the auto-refresh
+   * @returns {Promise<void>}
+   * @private
+   */
+  async _autoRefreshRound() {
+    // Check if tutorial is active before each refresh
+    if (tutorialManager.isActive) {
+      logger.debug("App", "Auto-refresh skipped - tutorial is active");
+      return;
+    }
+    // Nobody sees the list in a minimized window, and a running join asks
+    // Steam about its friend itself: the list catches up on the restore
+    if (windowState.isMinimized()) return;
+    // A slow Steam must not pile up overlapping refreshes
+    if (this._refreshing) return;
+    // Steam turned the credential down: nothing to gain from asking
+    // again until another one is pasted, or a reload is asked for
+    if (credentialState.isRejected(this._currentAuth())) return;
+
+    const usingSavedFriends = appStateManager.getState("usingSavedFriends");
+    const currentSavedFriendsIds = FakeFriendsManager.mergeIds(
+      appStateManager.getState("savedFriendsIds") || []
+    );
+
+    if (usingSavedFriends && currentSavedFriendsIds.length) {
+      this._refreshing = true;
+      try {
+        await this.fetchAndRenderFriendsByIds(
+          currentSavedFriendsIds,
+          this._currentAuth(),
+          true
+        );
+      } catch (error) {
+        logger.warn("App", "Auto-refresh fetch failed", {
+          error: error.message,
+        });
+      } finally {
+        this._refreshing = false;
+      }
+    }
+  }
+
+  /**
+   * The credential to ask with, read on every refresh: a token pasted later
+   * must replace the old one, which expires after a day
+   * @returns {string}
+   * @private
+   */
+  _currentAuth() {
+    return this.inputManager ? this.inputManager.getAuth() : "";
+  }
+
+  /**
+   * Refresh at once when the window comes back from a minimize, while the
+   * auto-refresh runs; wired once
+   * @private
+   */
+  _followWindow() {
+    if (this._windowFollowed) return;
+    this._windowFollowed = true;
+    windowState.follow();
+    windowState.onChange((what) => {
+      if (what !== "minimized" || windowState.isMinimized()) return;
+      if (appStateManager.getState("friendsRefreshInterval")) {
+        this._autoRefreshRound();
+      }
+    });
   }
 
   /**

@@ -1,12 +1,15 @@
 // Shared constants
-import { GAME_MODES, PINNED_MAPS_JOIN_ID } from "../shared/constants.js";
+import {
+  CASUAL_ROUNDS_TO_WIN,
+  GAME_MODES,
+  PINNED_MAPS_JOIN_ID,
+} from "../shared/constants.js";
 import { mapLabel } from "../shared/map-labels.js";
 
 // Game singletons
 import gsiManager from "./gsi-manager.js";
 import joinManager from "./join-manager.js";
 import mapFinder from "./map-finder.js";
-import userLocation from "./user-location.js";
 
 // UI and utilities
 import logger from "../utils/logger.js";
@@ -26,7 +29,6 @@ class MapKeeper {
     this.maps = [];
     this.listeners = new Set();
     this._gsiUnsubscribe = null;
-    this._locationUnsubscribe = null;
     // CS2's last map and match state seen in a casual match
     this._lastSeen = "";
   }
@@ -126,8 +128,6 @@ class MapKeeper {
   reset() {
     if (this._gsiUnsubscribe) this._gsiUnsubscribe();
     this._gsiUnsubscribe = null;
-    if (this._locationUnsubscribe) this._locationUnsubscribe();
-    this._locationUnsubscribe = null;
     this.maps = [];
     this._lastSeen = "";
     this.listeners.clear();
@@ -136,12 +136,34 @@ class MapKeeper {
 
   /**
    * The pinned maps' join needs servers known now, not when the Maps view
-   * last looked - but only while CS2 runs. With it closed no match can end
-   * and no join can start, and the finder would poll Steam for nothing.
+   * last looked - but only while a pin may start it soon (see
+   * _mayJoinSoon). The rest of the time the finder would poll Steam for
+   * nothing.
    * @private
    */
   _updateNeed() {
-    mapFinder.setNeed("keep", this.maps.length > 0 && userLocation.isInCS2());
+    mapFinder.setNeed("keep", this.maps.length > 0 && this._mayJoinSoon());
+  }
+
+  /**
+   * Whether a pin may start its join soon. It starts one only on CS2's own
+   * state: a casual match on a map not pinned, found from the menu, or a
+   * casual match over. So servers must be fresh in the menu, and in a
+   * casual match from match point on, when one more round can end it: a
+   * round lasts long enough for the finder to look again before the match
+   * ends. Before match point, in other modes, and with CS2 closed or
+   * posting nothing, no join can start.
+   * @returns {boolean}
+   * @private
+   */
+  _mayJoinSoon() {
+    const gsi = gsiManager.getUserState();
+    if (!gsi) return false;
+    if (!gsi.inMatch) return true;
+    if (gsi.mode !== GAME_MODES.CASUAL) return false;
+    // A score CS2 does not give leaves the end unknown: look as before
+    if (gsi.phase === "gameover" || !gsi.score) return true;
+    return Math.max(gsi.score.ct, gsi.score.t) >= CASUAL_ROUNDS_TO_WIN - 1;
   }
 
   /**
@@ -159,10 +181,10 @@ class MapKeeper {
    */
   _changed() {
     if (this.maps.length && !this._gsiUnsubscribe) {
-      this._gsiUnsubscribe = gsiManager.onChange(() => this._check());
-      this._locationUnsubscribe = userLocation.onChange(() =>
-        this._updateNeed()
-      );
+      this._gsiUnsubscribe = gsiManager.onChange(() => {
+        this._check();
+        this._updateNeed();
+      });
     }
     // With nothing pinned any more, its join has nowhere to go
     if (!this.maps.length && this._joining()) {

@@ -26,11 +26,28 @@ import {
 
 const USER = "76561198000000001";
 
-/** A state CS2 posts: in a casual match on a map, or in the menu without one */
-const cs2 = (map, phase = "live", mode = "casual") =>
+/**
+ * A state CS2 posts: in a casual match on a map, or in the menu without one
+ * @param {string|null} map - Map code, null for the menu
+ * @param {string} [phase] - Match phase
+ * @param {string} [mode] - Game mode
+ * @param {[number, number]} [score] - Rounds won by CT and T, when CS2 gives them
+ */
+const cs2 = (map, phase = "live", mode = "casual", score = null) =>
   gsiManager.handlePayload({
     provider: { steamid: USER },
-    ...(map ? { map: { name: map, mode, phase } } : {}),
+    ...(map
+      ? {
+          map: {
+            name: map,
+            mode,
+            phase,
+            ...(score
+              ? { team_ct: { score: score[0] }, team_t: { score: score[1] } }
+              : {}),
+          },
+        }
+      : {}),
     player: { steamid: USER, activity: map ? "playing" : "menu" },
   });
 
@@ -147,7 +164,7 @@ test("unpinning the last map ends its join and lets the map finder rest", () => 
   expect(listener).toHaveBeenCalledTimes(2);
 });
 
-describe("pins poll Steam only while CS2 runs", () => {
+describe("pins poll Steam only while one may start its join soon", () => {
   test("pinned with CS2 closed: the finder rests until CS2 posts", () => {
     mapKeeper.toggle("de_dust2");
     expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
@@ -157,26 +174,62 @@ describe("pins poll Steam only while CS2 runs", () => {
     expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
   });
 
-  test("CS2 falling silent and Steam showing it closed lets the finder rest", () => {
+  test("CS2 falling silent lets the finder rest", () => {
     jest.useFakeTimers();
-    cs2("de_dust2");
+    cs2(null);
     mapKeeper.toggle("de_dust2");
     expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
 
-    // CS2 closed: no more posts, and Steam's copy says so too
-    userLocation.setSteamPresence({ inCS2: false });
+    // CS2 closed: no more posts
     jest.advanceTimersByTime(GSI_CONFIG.FRESH_MS + 1);
 
     expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
   });
 
-  test("without CS2's state, Steam showing the user in CS2 is enough", () => {
+  test("without CS2's own state no pin can join: Steam showing CS2 open is not enough", () => {
     userLocation.setSteamPresence({ inCS2: true });
     mapKeeper.toggle("de_dust2");
-    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
-
-    userLocation.setSteamPresence({ inCS2: false });
 
     expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
+  });
+
+  test("in a casual match the finder rests until match point, then looks until the match ends", () => {
+    cs2("de_dust2", "live", "casual", [3, 2]);
+    mapKeeper.toggle("de_dust2");
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
+
+    // One more round can end it: a side has CASUAL_ROUNDS_TO_WIN - 1
+    cs2("de_dust2", "live", "casual", [6, 7]);
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
+
+    cs2("de_dust2", "gameover", "casual", [6, 8]);
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
+  });
+
+  test("a casual match without a score from CS2 keeps the finder looking, as before", () => {
+    cs2("de_dust2", "live", "casual");
+    mapKeeper.toggle("de_dust2");
+
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
+  });
+
+  test.each(["competitive", "deathmatch"])(
+    "%s starts no pin's join, and the finder rests",
+    (mode) => {
+      cs2("de_dust2", "live", mode, [7, 7]);
+      mapKeeper.toggle("de_dust2");
+
+      expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
+    }
+  );
+
+  test("back in the menu the finder looks again", () => {
+    cs2("de_dust2", "live", "casual", [1, 0]);
+    mapKeeper.toggle("de_dust2");
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", false);
+
+    cs2(null);
+
+    expect(mapFinder.setNeed).toHaveBeenLastCalledWith("keep", true);
   });
 });

@@ -13,6 +13,18 @@ import Validators from "../utils/validators.js";
 import logger from "../utils/logger.js";
 
 /**
+ * Rounds each side has won, as the map block of a game state gives them
+ * (map.team_ct.score and map.team_t.score, names found in CS2's client.dll)
+ * @param {Object} map - The map block
+ * @returns {{ct: number, t: number}|null} - Null when CS2 does not say
+ */
+function readScore(map) {
+  const ct = map?.team_ct?.score;
+  const t = map?.team_t?.score;
+  return Number.isInteger(ct) && Number.isInteger(t) ? { ct, t } : null;
+}
+
+/**
  * Read what one CS2 game state says about the user's game
  * @param {Object} payload - Game state as posted by CS2
  * @returns {Omit<import('../shared/types.js').GsiUserState, 'mapLoadedAt'>}
@@ -32,6 +44,7 @@ export function interpretGsiPayload(payload) {
     mode,
     mapName: inMatch ? map.name : null,
     phase: inMatch && typeof map.phase === "string" ? map.phase : null,
+    score: inMatch ? readScore(map) : null,
     activity:
       typeof payload?.player?.activity === "string"
         ? payload.player.activity

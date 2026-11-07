@@ -1,6 +1,7 @@
 /**
  * Jest tests for the friends auto-refresh: a fresh credential every round,
- * and no overlapping rounds when Steam is slow
+ * no overlapping rounds when Steam is slow, and none while the window is
+ * minimized
  */
 
 jest.mock("../src/game/join-manager.js", () => ({
@@ -37,6 +38,29 @@ import { API_CONFIG } from "../src/shared/constants.js";
 
 const USER = "76561198000000001";
 const FRIEND = "76561198000000002";
+
+// The preload's window bridge, with the main process played by the test.
+// The window's state is followed from the first refresh on, so the bridge
+// is there before any test.
+const minimizedListeners = [];
+const reportMinimized = (minimized) =>
+  minimizedListeners.forEach((callback) => callback(minimized));
+
+beforeAll(() => {
+  global.window.electronAPI = {
+    window: {
+      isMinimized: jest.fn(async () => false),
+      onMinimized: jest.fn((callback) => {
+        minimizedListeners.push(callback);
+        return () => {};
+      }),
+    },
+  };
+});
+
+afterAll(() => {
+  delete global.window.electronAPI;
+});
 
 describe("startAutoRefresh", () => {
   let auth;
@@ -130,5 +154,58 @@ describe("startAutoRefresh", () => {
 
     expect(SteamAPI.getPresence).toHaveBeenCalledWith([USER], "token-1");
     expect(userLocation.getServerId()).toBe(SERVER);
+  });
+});
+
+describe("while the window is minimized", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+    appFriendsManager.setInputManager({ getAuth: () => "token-1" });
+    appStateManager.batchUpdate({
+      savedFriendsIds: [FRIEND],
+      usingSavedFriends: true,
+      savedSettings: { fake_friend_ids: [] },
+    });
+    SteamAPI.getFriendsStatuses.mockResolvedValue([]);
+    SteamAPI.getPresence.mockResolvedValue(new Map());
+  });
+
+  afterEach(() => {
+    reportMinimized(false);
+    userLocation.reset();
+    appStateManager.clearRefreshInterval();
+    jest.useRealTimers();
+  });
+
+  test("no round goes out, and the list catches up the moment the window is back", async () => {
+    await appFriendsManager.startAutoRefresh();
+    SteamAPI.getFriendsStatuses.mockClear();
+
+    reportMinimized(true);
+    await jest.advanceTimersByTimeAsync(
+      API_CONFIG.AUTO_REFRESH_INTERVAL_MS * 5
+    );
+    expect(SteamAPI.getFriendsStatuses).not.toHaveBeenCalled();
+
+    reportMinimized(false);
+    await jest.advanceTimersByTimeAsync(0);
+    expect(SteamAPI.getFriendsStatuses).toHaveBeenCalledTimes(1);
+
+    // Then every round as before
+    await jest.advanceTimersByTimeAsync(API_CONFIG.AUTO_REFRESH_INTERVAL_MS);
+    expect(SteamAPI.getFriendsStatuses).toHaveBeenCalledTimes(2);
+  });
+
+  test("a restore while the auto-refresh is stopped asks nothing", async () => {
+    await appFriendsManager.startAutoRefresh();
+    appFriendsManager.stopAutoRefresh();
+    SteamAPI.getFriendsStatuses.mockClear();
+
+    reportMinimized(true);
+    reportMinimized(false);
+    await jest.advanceTimersByTimeAsync(API_CONFIG.AUTO_REFRESH_INTERVAL_MS);
+
+    expect(SteamAPI.getFriendsStatuses).not.toHaveBeenCalled();
   });
 });

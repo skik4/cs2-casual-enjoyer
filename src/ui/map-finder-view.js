@@ -7,6 +7,7 @@ import { mapLabel } from "../shared/map-labels.js";
 
 // Core singletons
 import appStateManager from "../core/app-state-manager.js";
+import windowState from "../core/window-state.js";
 
 // Game singletons
 import mapFinder, { PRIME_CHECK } from "../game/map-finder.js";
@@ -129,19 +130,17 @@ class MapFinderView {
     onLanguageChange(() => this.render());
   }
 
-  // Whether the Maps tab is open, and whether the window is minimized as
-  // the main process last said: the "view" need holds only for an open tab
-  // in a window that is not minimized
+  // Whether the Maps tab is open: the "view" need holds only for an open tab
   static _shown = false;
-  static _minimized = false;
-  static _minimizedWired = false;
+  static _followed = false;
 
   /**
-   * The view opened: start finding, unless the window is minimized
+   * The view opened: start finding, unless nobody can use the list (see
+   * _updateViewNeed)
    */
   static show() {
     this._shown = true;
-    this._followMinimized();
+    this._follow();
     this._updateViewNeed();
     this.render();
   }
@@ -156,40 +155,36 @@ class MapFinderView {
 
   /**
    * Hold the "view" need while the tab is open in a window that is not
-   * minimized. A Maps tab left open in a minimized window would otherwise
-   * poll Steam all evening for nobody. A running join and a kept map hold
-   * needs of their own and go on.
+   * minimized, and that the user is in or that CS2 runs beside: with CS2
+   * open the list may be watched on a second screen during play. A Maps tab
+   * left open in a minimized window, or in one left for another program with
+   * CS2 closed, would otherwise poll Steam all evening, or all night, for
+   * nobody; coming back to the window brings fresh servers at once. A
+   * running join and a kept map hold needs of their own and go on.
    * @private
    */
   static _updateViewNeed() {
-    mapFinder.setNeed("view", this._shown && !this._minimized);
+    mapFinder.setNeed(
+      "view",
+      this._shown &&
+        !windowState.isMinimized() &&
+        (windowState.isFocused() || userLocation.isInCS2())
+    );
   }
 
   /**
-   * Hear the window's minimize and restore from the main process, wired
-   * once. The page cannot see them itself: with backgroundThrottling off,
-   * Electron keeps its visibilityState "visible". The state is asked for
-   * as well, since a page reloaded in a minimized window hears no minimize;
-   * a report that comes first wins over that answer, which may be older.
+   * Follow the window and CS2, wired once
    * @private
    */
-  static _followMinimized() {
-    const bridge = window.electronAPI?.window;
-    if (this._minimizedWired || !bridge?.onMinimized) return;
-    this._minimizedWired = true;
-
-    let heard = false;
-    const apply = (minimized) => {
-      this._minimized = Boolean(minimized);
+  static _follow() {
+    if (this._followed) return;
+    this._followed = true;
+    windowState.follow();
+    const update = () => {
       if (this._shown) this._updateViewNeed();
     };
-    bridge.onMinimized((minimized) => {
-      heard = true;
-      apply(minimized);
-    });
-    bridge.isMinimized?.().then((minimized) => {
-      if (!heard) apply(minimized);
-    });
+    windowState.onChange(update);
+    userLocation.onChange(update);
   }
 
   /**
