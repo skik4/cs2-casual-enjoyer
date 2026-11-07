@@ -208,8 +208,7 @@ export default {
     },
     source: {
       pool: "Pool",
-      poolTitle:
-        "Players the app has seen on official casual servers in the last two weeks",
+      poolTitle: "Players from your casual matches in the last two weeks",
       poolFriends: "Friends of pool players",
       poolFriendsTitle:
         "Friends of pool players, from their public friends lists",

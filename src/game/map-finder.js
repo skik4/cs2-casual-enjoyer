@@ -186,12 +186,13 @@ export function buildServers(
  * Finds official casual servers by map through the people on them. Valve
  * publishes no list of its servers, but a player's rich presence tells the
  * map, the score and - when there is a free slot - the connect string.
- * Players come from the user's friends, a pool of people seen on official
- * servers before, the friends of those pool players and friends of friends
- * (both read with an API key, and only when the user asks), and whoever CS2
- * shows or lists in the user's own matches. The pool is polled every round;
- * the friends lists, far bigger and far fewer of them in casual, a slice each
- * round in turn.
+ * Players come from the user's friends, the pool, the friends of pool
+ * players and friends of friends (both read with an API key, and only when
+ * the user asks). The pool holds the players of the user's own casual
+ * matches, whoever CS2 shows or lists there, and nobody else: the other
+ * sources feed the map list every round but never join it. The pool is
+ * polled every round; the friends lists, far bigger and far fewer of them
+ * in casual, a slice each round in turn.
  *
  * Whoever shows a sign of Prime is remembered for good, since Prime is never
  * taken away. A server with one of them on it is marked, and with "Prime
@@ -348,8 +349,9 @@ class MapFinder {
   }
 
   /**
-   * Remember the players on official servers
-   * @param {Iterable<import('../shared/types.js').PlayerPresence>} players
+   * Take into the pool the players of the user's own matches (the seeds)
+   * who are on an official server. Nobody else joins the pool.
+   * @param {Iterable<import('../shared/types.js').PlayerPresence>} players - Seeds Steam answered about
    * @param {number} now - Time to remember them by
    * @returns {number} - How many were not in the pool before
    * @private
@@ -357,11 +359,26 @@ class MapFinder {
   _addToPool(players, now) {
     let added = 0;
     for (const player of players) {
-      if (!player.official || !player.steamid) continue;
+      if (!player?.official || !player.steamid) continue;
       if (!this.pool.has(player.steamid)) added++;
       this.pool.set(player.steamid, { lastSeen: now, map: player.map });
     }
     return added;
+  }
+
+  /**
+   * Note the pool players seen on an official server again, so they stay
+   * another POOL_TTL_MS. Anyone else polled feeds the map list alone.
+   * @param {Iterable<import('../shared/types.js').PlayerPresence>} players
+   * @param {number} now - Time to remember them by
+   * @private
+   */
+  _keepPoolSeen(players, now) {
+    for (const player of players) {
+      if (player?.official && this.pool.has(player.steamid)) {
+        this.pool.set(player.steamid, { lastSeen: now, map: player.map });
+      }
+    }
   }
 
   /**
@@ -550,7 +567,12 @@ class MapFinder {
         logger.warn("MapFinder", "Refresh got no answer", { asked: ids.size });
       } else {
         const now = Date.now();
-        this._addToPool(presence.values(), now);
+        // Only the seeds join the pool; a pool player seen again stays
+        this._addToPool(
+          polledSeeds.map((id) => presence.get(id)),
+          now
+        );
+        this._keepPoolSeen(presence.values(), now);
         this._rememberPrime(presence.values(), now);
         if (polledSeeds.length) {
           this.journal.record(
@@ -1035,8 +1057,9 @@ class MapFinder {
    * Read the friends lists of pool players, when the user asks. Their
    * friends sat on official casual servers about three times as often as
    * friends of the user's friends (0.69% against 0.21%, measured
-   * 2026-10-25), and whoever turns up there joins the pool and brings
-   * friends of their own. A list read in the last day is not read again.
+   * 2026-10-25). They are polled a slice each round for the map list, and
+   * do not join the pool, which keeps to the user's own matches. A list
+   * read in the last day is not read again.
    * @private
    */
   async _crawlPoolFriends() {
@@ -1409,6 +1432,9 @@ class MapFinder {
     }
     this.friendLists = new Map(lists.sort((a, b) => a[1].at - b[1].at));
     this._prunePool(Date.now());
+    // The view shows the counts read, not those of an empty finder, even
+    // when no refresh follows: without a working token none does
+    this._notify();
   }
 
   /**

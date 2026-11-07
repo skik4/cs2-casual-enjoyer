@@ -262,7 +262,7 @@ describe("finished matches and the user's own server", () => {
 });
 
 describe("refresh", () => {
-  test("lists maps and remembers official players in the pool", async () => {
+  test("lists maps, and the friends on them do not join the pool", async () => {
     configure({ getFriendIds: () => [A, B, C, D] });
     SteamAPI.getPresence.mockResolvedValue(
       presenceMap(
@@ -291,7 +291,8 @@ describe("refresh", () => {
         primeServers: 0,
       },
     ]);
-    expect([...mapFinder.pool.keys()].sort()).toEqual([A, B, C].sort());
+    // The pool keeps to the user's own matches
+    expect(mapFinder.pool.size).toBe(0);
     expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A, B]);
     expect(mapFinder.getCandidateIds("de_dust2", MIRAGE_SERVER)).toEqual([]);
   });
@@ -417,6 +418,40 @@ describe("refresh", () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  test("only the user's own matches add to the pool: friends, friends of pool players and friends of friends feed the list alone", async () => {
+    const X = "76561198000000031";
+    const Y = "76561198000000032";
+    configure({ getFriendIds: () => [A] });
+    mapFinder.seeds.add(D);
+    mapFinder.poolFriends = { ids: [X], crawled: {} };
+    mapFinder.fof = { ids: [Y], fetchedAt: Date.now(), friendsCount: 1 };
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(presence(A), presence(D), presence(X), presence(Y))
+    );
+
+    await mapFinder.refresh();
+
+    expect([...mapFinder.pool.keys()]).toEqual([D]);
+    expect(mapFinder.getServers("de_dust2")).toHaveLength(1);
+    expect(mapFinder.getCandidateIds("de_dust2").sort()).toEqual(
+      [A, D, X, Y].sort()
+    );
+  });
+
+  test("a pool player seen on an official server again stays another two weeks", async () => {
+    configure();
+    const old = Date.now() - MAP_FINDER_CONFIG.POOL_TTL_MS + 60000;
+    mapFinder.pool.set(B, { lastSeen: old, map: "de_dust2" });
+    SteamAPI.getPresence.mockResolvedValue(
+      presenceMap(presence(B, { serverId: MIRAGE_SERVER, map: "de_mirage" }))
+    );
+
+    await mapFinder.refresh();
+
+    expect(mapFinder.pool.get(B).lastSeen).toBeGreaterThan(old);
+    expect(mapFinder.pool.get(B).map).toBe("de_mirage");
   });
 
   test("drops pool entries past their time and keeps the newest", async () => {
@@ -702,7 +737,8 @@ describe("store", () => {
     jest.useFakeTimers();
     const save = jest.fn().mockResolvedValue(true);
     global.window.electronAPI = { mapFinder: { save } };
-    configure({ getFriendIds: () => [A] });
+    configure();
+    mapFinder.seeds.add(A);
     SteamAPI.getPresence.mockResolvedValue(presenceMap(presence(A)));
 
     await mapFinder.refresh();
@@ -712,6 +748,25 @@ describe("store", () => {
     expect(save).toHaveBeenCalledTimes(1);
     expect(save.mock.calls[0][0].pool[A]).toMatchObject({ map: "de_dust2" });
     jest.useRealTimers();
+  });
+
+  test("a load tells the view, so it shows the pool read even with no refresh after", async () => {
+    global.window.electronAPI = {
+      mapFinder: {
+        load: jest.fn().mockResolvedValue({
+          pool: { [A]: { lastSeen: Date.now(), map: "de_dust2" } },
+        }),
+        save: jest.fn().mockResolvedValue(true),
+      },
+    };
+    const listener = jest.fn(() => mapFinder.getStatus().poolSize);
+    const unsubscribe = mapFinder.onChange(listener);
+
+    await mapFinder._load();
+    unsubscribe();
+
+    expect(listener).toHaveBeenCalled();
+    expect(listener.mock.results.at(-1).value).toBe(1);
   });
 });
 
@@ -1188,9 +1243,9 @@ describe("friend check", () => {
     expect(mapFinder.getServers("de_dust2")).toHaveLength(1);
     expect(mapFinder.getCandidateIds("de_dust2")).toEqual([A]);
     expect(mapFinder.getCandidateIdsForMaps(["de_dust2"])).toEqual([A]);
-    // The friends seen by the check join neither the pool nor the players
-    // remembered with Prime
-    expect([...mapFinder.pool.keys()]).toEqual([A]);
+    // Neither the friend nor the friends seen by the check join the pool,
+    // and those friends are not remembered with Prime
+    expect(mapFinder.pool.size).toBe(0);
     expect(mapFinder.isPrimePlayer({ steamid: F1 })).toBe(false);
   });
 
